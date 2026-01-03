@@ -47,10 +47,10 @@ $xl: 1200px;
 }
 
 :root {
-  --sans-serif: "Source Sans 3";
-  --serif: "Source Serif 4";
-  --cursive: "Nunito";
-  --monospace: "JetBrains Mono";
+  --sans-serif: 'Source Sans 3';
+  --serif: 'Source Serif 4';
+  --heading: 'Nunito';
+  --monospace: 'JetBrains Mono';
   --line-height: 1.6;
   --border: #efefef;
   --darker-border: #dedede;
@@ -60,10 +60,7 @@ $xl: 1200px;
 
   --border-width: 14px;
 
-  --md-main-width: 80%;
-  --md-aside-width: 20%;
-
-  --md-main-width: 6fr;
+  --md-main-width: 8fr;
   --md-aside-width: 2fr;
 }
 
@@ -79,7 +76,8 @@ a {
   }
 }
 
-body, html {
+body,
+html {
   background-color: var(--theme);
   scroll-behavior: smooth;
   margin: 0;
@@ -89,6 +87,24 @@ body, html {
 
 body {
   padding: var(--border-width);
+}
+
+button[type='submit'] {
+  background-color: var(--theme);
+  border: 0;
+  border-radius: 9px;
+  color: var(--foreground);
+  cursor: pointer;
+  font-family: var(--heading);
+  font-size: inherit;
+  padding: 7px 14px;
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.1);
+  transform: transform 0.1s ease-in;
+
+  &:hover,
+  &:focus {
+    transform: scale(103%);
+  }
 }
 
 input {
@@ -104,7 +120,7 @@ textarea {
   resize: none;
 }
 
-#header {
+header {
   display: flex;
   position: relative;
   justify-content: space-between;
@@ -155,6 +171,7 @@ textarea {
 }
 
 #footer {
+  background-color: var(--theme);
   color: var(--foreground);
   font-family: var(--sans-serif);
   font-size: 1.1rem;
@@ -166,24 +183,42 @@ textarea {
   }
 
   footer {
-    border: 1px solid;
-  
     @media screen and (min-width: $md) {
       display: flex;
       gap: 2rem;
+    }
+
+    a {
+      color: var(--foreground);
+    }
+
+    code {
+      font-size: 1rem;
+    }
+
+    .subscribe {
+      text-align: right;
+
+      form {
+        background-color: white;
+        margin-top: 1rem;
+        display: flex;
+        width: 100%;
+        padding: 7px;
+        border-radius: 14px;
+
+        input {
+          font-family: var(--heading);
+        }
+      }
     }
 
     > div {
       padding-top: 1rem;
       flex: 1;
 
-      a {
-        color: var(--foreground);
-      }
-
       code {
         font-family: var(--monospace);
-        font-size: 1rem;
       }
 
       &:nth-child(1) {
@@ -196,23 +231,6 @@ textarea {
         text-align: right;
       }
     }
-
-    .subscribe {
-      text-align: right;
-
-      form {
-        background-color: white;
-        border-radius: 14px;
-        margin-top: 1rem;
-        display: flex;
-        padding: 7px;
-        width: 100%;
-
-        input {
-          font-family: var(--heading);
-        }
-      }
-    }
   }
 }
 
@@ -223,10 +241,9 @@ textarea {
     0 -4px 8px 0 rgba(0, 0, 0, 0.1);
   position: relative;
 
- @media screen and (min-width: $md) {
+  @media screen and (min-width: $md) {
     display: grid;
     grid-template-columns: var(--md-aside-width) var(--md-main-width) var(--md-aside-width);
-    grid-auto-rows: 1fr;
   }
 
   aside {
@@ -235,12 +252,13 @@ textarea {
     }
   }
 
-  article, aside {
+  article,
+  aside {
     background-color: var(--foreground);
-    flex-basis: 0;
     font-size: 1.2rem;
 
-    h1, h2 {
+    h1,
+    h2 {
       font-family: var(--sans-serif);
       font-weight: 300;
 
@@ -255,6 +273,7 @@ textarea {
     border-right: 1px solid var(--border);
     line-height: var(--line-height);
     font-family: var(--serif);
+    padding: 2rem;
 
     a {
       color: var(--theme);
@@ -266,7 +285,7 @@ textarea {
       &::before {
         font-family: "Crimson Text", cursive;
         font-size: 5rem;
-        content: '"';
+        content: '“';
         position: absolute;
         top: -14px;
         left: -8px;
@@ -277,8 +296,9 @@ textarea {
       }
     }
 
-    code, pre {
-      font-family: var(--monospace);
+    code, 
+    pre {
+      font-family: var(--monospace) !important;
     }
 
     code {
@@ -295,6 +315,7 @@ textarea {
       display: flex;
       align-items: center;
       gap: 4px;
+      margin-bottom: 0;
 
       .link {
         color: black;
@@ -318,25 +339,58 @@ textarea {
     }
 
     img {
-      display: block;
       max-width: 100%;
+      display: block;
     }
 
-    p {
+    li {
+      padding: 0;
+      margin: 0;
+
+      p {
+        margin: 0 !important;
+      }
+    }
+
+    > p {
       text-indent: 1rem;
     }
 
-    .demo, pre {
+    .demo, 
+    pre {
       border-top: 1px solid var(--border);
       border-bottom: 1px solid var(--border);
       background-color: var(--background);
-      margin: 1.5rem 0;
+      margin-top: 1.5rem;
+      margin-bottom: 1.5rem;
+      position: relative;
 
       // Wow so jank.
+      @media screen and (max-width: $md) {
+        // width: calc(100vw - var(--border-width) * 2);
+        // margin-left: -2rem;
+      }
+
+      @media screen and (min-width: $md) {
+        width: calc(100vw - var(--border-width) * 2 - 1px);
+        // margin-left: calc(
+        //   -2rem + (var(--border-width) - 1px) -
+        //   var(--md-aside-grow) / (var(--md-main-grow) + var(--md-aside-grow) * 2) *
+        //   100vw
+        // );
+      }
     }
 
     pre {
       font-size: 0.995rem;
+
+      @media screen and (min-width: $md) {
+        // padding-left: calc(
+        //   -1 * var(--border-width) +
+        //   var(--md-aside-grow) / (var(--md-main-grow) + var(--md-aside-grow) * 2) *
+        //   100vw
+        // );
+      }
 
       div {
         line-height: 1.3;
@@ -355,27 +409,50 @@ textarea {
     }
 
     > .footnote {
-      p {
-        font-style: italic;
+      @media screen and (min-width: $md) {
+        display: grid;
+        grid-template-columns: 25% 75%
+      }
+
+      > div {
+        &:nth-child(1) {
+          border-right: 1px solid var(--border);
+          text-align: right;  
+          padding: 0.5rem 2rem;
+
+          p {
+            font-style: italic;
+            margin: 0;
+          }
+        }
+
+        &:nth-child(2) {
+          padding: 0.5rem 2rem;
+
+          p {
+            margin: 0;
+          }
+        }
       }
     }
-
+  
     #date {
       margin-bottom: 0;
       font-family: var(--sans-serif);
       font-style: italic;
       text-indent: 0;
     }
-  }
+  }  
+}
 
-  // More broadly, the aside on the right.
-  #toc {
-    font-family: var(--sans-serif);
-    padding: 2rem;
-    text-align: right;
+// More broadly, the aside on the right.
+#toc {
+  font-family: var(--sans-serif);
+  padding: 2rem;
+  text-align: right;
 
-    h2 {
-      margin-top: 0;
-    }
+  h2 {
+    margin-top: 0;
   }
 }
+

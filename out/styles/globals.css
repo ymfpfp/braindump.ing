@@ -1,3 +1,4 @@
+@charset "UTF-8";
 @font-face {
   font-family: "Crimson Text";
   src: url("/fonts/CrimsonText-BoldItalic.ttf") format("truetype");
@@ -34,10 +35,10 @@
   src: url("/fonts/SourceSerif4-ItalicVariable.ttf") format("truetype");
 }
 :root {
-  --sans-serif: "Source Sans 3";
-  --serif: "Source Serif 4";
-  --cursive: "Nunito";
-  --monospace: "JetBrains Mono";
+  --sans-serif: 'Source Sans 3';
+  --serif: 'Source Serif 4';
+  --heading: 'Nunito';
+  --monospace: 'JetBrains Mono';
   --line-height: 1.6;
   --border: #efefef;
   --darker-border: #dedede;
@@ -45,9 +46,7 @@
   --theme: #690;
   --foreground: white;
   --border-width: 14px;
-  --md-main-width: 80%;
-  --md-aside-width: 20%;
-  --md-main-width: 6fr;
+  --md-main-width: 8fr;
   --md-aside-width: 2fr;
 }
 
@@ -62,7 +61,8 @@ a:hover {
   opacity: 0.8;
 }
 
-body, html {
+body,
+html {
   background-color: var(--theme);
   scroll-behavior: smooth;
   margin: 0;
@@ -72,6 +72,22 @@ body, html {
 
 body {
   padding: var(--border-width);
+}
+
+button[type=submit] {
+  background-color: var(--theme);
+  border: 0;
+  border-radius: 9px;
+  color: var(--foreground);
+  cursor: pointer;
+  font-family: var(--heading);
+  font-size: inherit;
+  padding: 7px 14px;
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.1);
+  transform: transform 0.1s ease-in;
+}
+button[type=submit]:hover, button[type=submit]:focus {
+  transform: scale(103%);
 }
 
 input {
@@ -87,20 +103,20 @@ textarea {
   resize: none;
 }
 
-#header {
+header {
   display: flex;
   position: relative;
   justify-content: space-between;
   color: var(--foreground);
 }
-#header a {
+header a {
   color: var(--foreground);
   text-decoration: none;
 }
-#header #logo {
+header #logo {
   padding-top: 5rem;
 }
-#header #logo h1 {
+header #logo h1 {
   font-family: var(--heading);
   font-size: 5rem;
   letter-spacing: -5px;
@@ -108,14 +124,14 @@ textarea {
   transition: 0.1s transform ease-in-out;
 }
 @media screen and (max-width: 576px) {
-  #header #logo h1 {
+  header #logo h1 {
     font-size: 4rem;
   }
 }
-#header #logo h1:hover {
+header #logo h1:hover {
   transform: rotate(-5deg);
 }
-#header #recent {
+header #recent {
   font-family: var(--sans-serif);
   text-align: right;
   padding-right: 1rem;
@@ -123,15 +139,16 @@ textarea {
   flex-direction: column;
   justify-content: space-between;
 }
-#header #recent h2 {
+header #recent h2 {
   font-weight: 300;
   margin: 0;
 }
-#header #recent p {
+header #recent p {
   margin-top: 0;
 }
 
 #footer {
+  background-color: var(--theme);
   color: var(--foreground);
   font-family: var(--sans-serif);
   font-size: 1.1rem;
@@ -143,25 +160,38 @@ textarea {
     grid-template-columns: var(--md-aside-width) var(--md-main-width) var(--md-aside-width);
   }
 }
-#footer footer {
-  border: 1px solid;
-}
 @media screen and (min-width: 768px) {
   #footer footer {
     display: flex;
     gap: 2rem;
   }
 }
+#footer footer a {
+  color: var(--foreground);
+}
+#footer footer code {
+  font-size: 1rem;
+}
+#footer footer .subscribe {
+  text-align: right;
+}
+#footer footer .subscribe form {
+  background-color: white;
+  margin-top: 1rem;
+  display: flex;
+  width: 100%;
+  padding: 7px;
+  border-radius: 14px;
+}
+#footer footer .subscribe form input {
+  font-family: var(--heading);
+}
 #footer footer > div {
   padding-top: 1rem;
   flex: 1;
 }
-#footer footer > div a {
-  color: var(--foreground);
-}
 #footer footer > div code {
   font-family: var(--monospace);
-  font-size: 1rem;
 }
 #footer footer > div:nth-child(1) {
   padding-left: 2rem;
@@ -170,20 +200,6 @@ textarea {
 #footer footer > div:nth-child(2) {
   padding-right: 2rem;
   text-align: right;
-}
-#footer footer .subscribe {
-  text-align: right;
-}
-#footer footer .subscribe form {
-  background-color: white;
-  border-radius: 14px;
-  margin-top: 1rem;
-  display: flex;
-  padding: 7px;
-  width: 100%;
-}
-#footer footer .subscribe form input {
-  font-family: var(--heading);
 }
 
 #post {
@@ -195,23 +211,28 @@ textarea {
   #post {
     display: grid;
     grid-template-columns: var(--md-aside-width) var(--md-main-width) var(--md-aside-width);
-    grid-auto-rows: 1fr;
   }
 }
 #post aside:nth-child(1) {
   text-align: right;
 }
-#post article, #post aside {
+#post article,
+#post aside {
   background-color: var(--foreground);
-  flex-basis: 0;
   font-size: 1.2rem;
 }
-#post article h1, #post article h2, #post aside h1, #post aside h2 {
+#post article h1,
+#post article h2,
+#post aside h1,
+#post aside h2 {
   font-family: var(--sans-serif);
   font-weight: 300;
 }
 @media screen and (max-width: 1200px) {
-  #post article h1, #post article h2, #post aside h1, #post aside h2 {
+  #post article h1,
+  #post article h2,
+  #post aside h1,
+  #post aside h2 {
     line-height: 1.4;
   }
 }
@@ -220,6 +241,7 @@ textarea {
   border-right: 1px solid var(--border);
   line-height: var(--line-height);
   font-family: var(--serif);
+  padding: 2rem;
 }
 #post article a {
   color: var(--theme);
@@ -230,7 +252,7 @@ textarea {
 #post article blockquote::before {
   font-family: "Crimson Text", cursive;
   font-size: 5rem;
-  content: '"';
+  content: "“";
   position: absolute;
   top: -14px;
   left: -8px;
@@ -239,8 +261,9 @@ textarea {
   color: var(--theme);
   opacity: 0.5;
 }
-#post article code, #post article pre {
-  font-family: var(--monospace);
+#post article code,
+#post article pre {
+  font-family: var(--monospace) !important;
 }
 #post article code {
   font-size: 1.1rem;
@@ -254,6 +277,7 @@ textarea {
   display: flex;
   align-items: center;
   gap: 4px;
+  margin-bottom: 0;
 }
 #post article h2 .link {
   color: black;
@@ -269,17 +293,33 @@ textarea {
   opacity: 1;
 }
 #post article img {
-  display: block;
   max-width: 100%;
+  display: block;
 }
-#post article p {
+#post article li {
+  padding: 0;
+  margin: 0;
+}
+#post article li p {
+  margin: 0 !important;
+}
+#post article > p {
   text-indent: 1rem;
 }
-#post article .demo, #post article pre {
+#post article .demo,
+#post article pre {
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
   background-color: var(--background);
-  margin: 1.5rem 0;
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+  position: relative;
+}
+@media screen and (min-width: 768px) {
+  #post article .demo,
+  #post article pre {
+    width: calc(100vw - var(--border-width) * 2 - 1px);
+  }
 }
 #post article pre {
   font-size: 0.995rem;
@@ -294,8 +334,26 @@ textarea {
   font-family: var(--sans-serif);
   text-indent: 0;
 }
-#post article > .footnote p {
+@media screen and (min-width: 768px) {
+  #post article > .footnote {
+    display: grid;
+    grid-template-columns: 25% 75%;
+  }
+}
+#post article > .footnote > div:nth-child(1) {
+  border-right: 1px solid var(--border);
+  text-align: right;
+  padding: 0.5rem 2rem;
+}
+#post article > .footnote > div:nth-child(1) p {
   font-style: italic;
+  margin: 0;
+}
+#post article > .footnote > div:nth-child(2) {
+  padding: 0.5rem 2rem;
+}
+#post article > .footnote > div:nth-child(2) p {
+  margin: 0;
 }
 #post article #date {
   margin-bottom: 0;
@@ -303,11 +361,12 @@ textarea {
   font-style: italic;
   text-indent: 0;
 }
-#post #toc {
+
+#toc {
   font-family: var(--sans-serif);
   padding: 2rem;
   text-align: right;
 }
-#post #toc h2 {
+#toc h2 {
   margin-top: 0;
 }
