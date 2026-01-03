@@ -18,10 +18,13 @@ common warnings
 executable braindumping
     import:           warnings
     main-is:          Main.hs
-    other-modules:    Markdown
+    other-modules:    Markdown,
+                      Parser
     -- other-extensions:
     build-depends:    base >=4.18.3.0,
-                      containers ^>=0.6.7
+                      containers ^>=0.6.7,
+                      directory >= 1.3.0,
+                      process >= 1.6.0
     hs-source-dirs:   app
     default-language: GHC2021
     ghc-options: -dynamic

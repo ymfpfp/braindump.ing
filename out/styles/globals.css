@@ -1,0 +1,313 @@
+@font-face {
+  font-family: "Crimson Text";
+  src: url("/fonts/CrimsonText-BoldItalic.ttf") format("truetype");
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("/fonts/JetBrainsMono-Variable.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Nunito";
+  src: url("/fonts/Nunito-Variable.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Nunito";
+  font-style: italic;
+  src: url("/fonts/Nunito-ItalicVariable.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Source Sans 3";
+  src: url("/fonts/SourceSans3-Variable.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Source Sans 3";
+  font-style: italic;
+  src: url("/fonts/SourceSans3-ItalicVariable.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Source Serif 4";
+  src: url("/fonts/SourceSerif4-Variable.ttf") format("truetype");
+}
+@font-face {
+  font-family: "Source Serif 4";
+  font-style: italic;
+  src: url("/fonts/SourceSerif4-ItalicVariable.ttf") format("truetype");
+}
+:root {
+  --sans-serif: "Source Sans 3";
+  --serif: "Source Serif 4";
+  --cursive: "Nunito";
+  --monospace: "JetBrains Mono";
+  --line-height: 1.6;
+  --border: #efefef;
+  --darker-border: #dedede;
+  --background: #f5f2f0;
+  --theme: #690;
+  --foreground: white;
+  --border-width: 14px;
+  --md-main-width: 80%;
+  --md-aside-width: 20%;
+  --md-main-width: 6fr;
+  --md-aside-width: 2fr;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+a {
+  transition: opacity 0.1s ease-in-out;
+}
+a:hover {
+  opacity: 0.8;
+}
+
+body, html {
+  background-color: var(--theme);
+  scroll-behavior: smooth;
+  margin: 0;
+  overflow-x: clip;
+  padding: 0;
+}
+
+body {
+  padding: var(--border-width);
+}
+
+input {
+  border: 0;
+  background: transparent;
+  font-size: inherit;
+  flex: 1;
+  outline: none;
+  padding-inline: 7px;
+}
+
+textarea {
+  resize: none;
+}
+
+#header {
+  display: flex;
+  position: relative;
+  justify-content: space-between;
+  color: var(--foreground);
+}
+#header a {
+  color: var(--foreground);
+  text-decoration: none;
+}
+#header #logo {
+  padding-top: 5rem;
+}
+#header #logo h1 {
+  font-family: var(--heading);
+  font-size: 5rem;
+  letter-spacing: -5px;
+  margin: 0;
+  transition: 0.1s transform ease-in-out;
+}
+@media screen and (max-width: 576px) {
+  #header #logo h1 {
+    font-size: 4rem;
+  }
+}
+#header #logo h1:hover {
+  transform: rotate(-5deg);
+}
+#header #recent {
+  font-family: var(--sans-serif);
+  text-align: right;
+  padding-right: 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+#header #recent h2 {
+  font-weight: 300;
+  margin: 0;
+}
+#header #recent p {
+  margin-top: 0;
+}
+
+#footer {
+  color: var(--foreground);
+  font-family: var(--sans-serif);
+  font-size: 1.1rem;
+  position: relative;
+}
+@media screen and (min-width: 768px) {
+  #footer {
+    display: grid;
+    grid-template-columns: var(--md-aside-width) var(--md-main-width) var(--md-aside-width);
+  }
+}
+#footer footer {
+  border: 1px solid;
+}
+@media screen and (min-width: 768px) {
+  #footer footer {
+    display: flex;
+    gap: 2rem;
+  }
+}
+#footer footer > div {
+  padding-top: 1rem;
+  flex: 1;
+}
+#footer footer > div a {
+  color: var(--foreground);
+}
+#footer footer > div code {
+  font-family: var(--monospace);
+  font-size: 1rem;
+}
+#footer footer > div:nth-child(1) {
+  padding-left: 2rem;
+  text-align: left;
+}
+#footer footer > div:nth-child(2) {
+  padding-right: 2rem;
+  text-align: right;
+}
+#footer footer .subscribe {
+  text-align: right;
+}
+#footer footer .subscribe form {
+  background-color: white;
+  border-radius: 14px;
+  margin-top: 1rem;
+  display: flex;
+  padding: 7px;
+  width: 100%;
+}
+#footer footer .subscribe form input {
+  font-family: var(--heading);
+}
+
+#post {
+  background-color: var(--foreground);
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.1), 0 -4px 8px 0 rgba(0, 0, 0, 0.1);
+  position: relative;
+}
+@media screen and (min-width: 768px) {
+  #post {
+    display: grid;
+    grid-template-columns: var(--md-aside-width) var(--md-main-width) var(--md-aside-width);
+    grid-auto-rows: 1fr;
+  }
+}
+#post aside:nth-child(1) {
+  text-align: right;
+}
+#post article, #post aside {
+  background-color: var(--foreground);
+  flex-basis: 0;
+  font-size: 1.2rem;
+}
+#post article h1, #post article h2, #post aside h1, #post aside h2 {
+  font-family: var(--sans-serif);
+  font-weight: 300;
+}
+@media screen and (max-width: 1200px) {
+  #post article h1, #post article h2, #post aside h1, #post aside h2 {
+    line-height: 1.4;
+  }
+}
+#post article {
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  line-height: var(--line-height);
+  font-family: var(--serif);
+}
+#post article a {
+  color: var(--theme);
+}
+#post article blockquote {
+  position: relative;
+}
+#post article blockquote::before {
+  font-family: "Crimson Text", cursive;
+  font-size: 5rem;
+  content: '"';
+  position: absolute;
+  top: -14px;
+  left: -8px;
+  line-height: 1;
+  z-index: 0;
+  color: var(--theme);
+  opacity: 0.5;
+}
+#post article code, #post article pre {
+  font-family: var(--monospace);
+}
+#post article code {
+  font-size: 1.1rem;
+}
+#post article h1 {
+  font-size: 2.4rem;
+  line-height: 1.3;
+  margin-top: 0;
+}
+#post article h2 {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+#post article h2 .link {
+  color: black;
+  cursor: pointer;
+  font-size: 1.2rem;
+  opacity: 0;
+  transition: color 0.1s ease-in-out, opacity 0.1s ease-in-out;
+}
+#post article h2 .link:hover {
+  color: var(--theme);
+}
+#post article h2:hover .link {
+  opacity: 1;
+}
+#post article img {
+  display: block;
+  max-width: 100%;
+}
+#post article p {
+  text-indent: 1rem;
+}
+#post article .demo, #post article pre {
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background-color: var(--background);
+  margin: 1.5rem 0;
+}
+#post article pre {
+  font-size: 0.995rem;
+}
+#post article pre div {
+  line-height: 1.3;
+}
+#post article pre div span {
+  background-color: transparent !important;
+}
+#post article .demo p {
+  font-family: var(--sans-serif);
+  text-indent: 0;
+}
+#post article > .footnote p {
+  font-style: italic;
+}
+#post article #date {
+  margin-bottom: 0;
+  font-family: var(--sans-serif);
+  font-style: italic;
+  text-indent: 0;
+}
+#post #toc {
+  font-family: var(--sans-serif);
+  padding: 2rem;
+  text-align: right;
+}
+#post #toc h2 {
+  margin-top: 0;
+}

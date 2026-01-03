@@ -1,0 +1,22 @@
+{
+  "name": "braindumping",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "format": "prettier --ignore-path ./.prettierignore --write ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ymfpfp/braindump.ing.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ymfpfp/braindump.ing/issues"
+  },
+  "homepage": "https://github.com/ymfpfp/braindump.ing#readme",
+  "devDependencies": {
+    "prettier": "^3.7.4"
+  }
+}
