@@ -18,6 +18,13 @@ import System.Process (readProcess)
 type Transformation = String -> IO (String, String)
 type Transformations = Map String Transformation
 
+-- main :: IO ()
+-- main = do
+--   raw <- readFile "../routes/index.md"
+--   let 
+--     (parsed, _) = Markdown.parseWithExtensions raw []
+--   putStrLn $ Markdown.documentToHtml parsed
+
 main :: IO ()
 main = do
   -- Output all assets.

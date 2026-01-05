@@ -3,6 +3,8 @@ $md: 768px;
 $lg: 992px;
 $xl: 1200px;
 
+@import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400..700;1,400..700&display=swap');
+
 @font-face {
   font-family: 'Crimson Text';
   src: url('/fonts/CrimsonText-BoldItalic.ttf') format('truetype');
@@ -60,7 +62,7 @@ $xl: 1200px;
 
   --border-width: 14px;
 
-  --md-main-width: 8fr;
+  --md-main-width: 7fr;
   --md-aside-width: 2fr;
 }
 
@@ -214,7 +216,7 @@ header {
     }
 
     > div {
-      padding-top: 1rem;
+      padding-top: var(--border-width);
       flex: 1;
 
       code {
@@ -246,12 +248,6 @@ header {
     grid-template-columns: var(--md-aside-width) var(--md-main-width) var(--md-aside-width);
   }
 
-  aside {
-    &:nth-child(1) {
-      text-align: right;
-    }
-  }
-
   article,
   aside {
     background-color: var(--foreground);
@@ -268,12 +264,18 @@ header {
     }
   }
 
+  aside {
+    &:nth-child(1) {
+      text-align: right;
+    }
+  }
+
   article {
     border-left: 1px solid var(--border);
     border-right: 1px solid var(--border);
     line-height: var(--line-height);
     font-family: var(--serif);
-    padding: 2rem;
+    padding: 2rem 4rem 4rem 4rem;
 
     a {
       color: var(--theme);
@@ -281,6 +283,7 @@ header {
 
     blockquote {
       position: relative;
+      margin-top: calc(1rem + 14px);
 
       &::before {
         font-family: "Crimson Text", cursive;
@@ -344,8 +347,7 @@ header {
     }
 
     li {
-      padding: 0;
-      margin: 0;
+      margin: 0.5rem;
 
       p {
         margin: 0 !important;
@@ -353,96 +355,9 @@ header {
     }
 
     > p {
-      text-indent: 1rem;
+      text-indent: 0.995rem;
     }
-
-    .demo, 
-    pre {
-      border-top: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
-      background-color: var(--background);
-      margin-top: 1.5rem;
-      margin-bottom: 1.5rem;
-      position: relative;
-
-      // Wow so jank.
-      @media screen and (max-width: $md) {
-        // width: calc(100vw - var(--border-width) * 2);
-        // margin-left: -2rem;
-      }
-
-      @media screen and (min-width: $md) {
-        width: calc(100vw - var(--border-width) * 2 - 1px);
-        // margin-left: calc(
-        //   -2rem + (var(--border-width) - 1px) -
-        //   var(--md-aside-grow) / (var(--md-main-grow) + var(--md-aside-grow) * 2) *
-        //   100vw
-        // );
-      }
-    }
-
-    pre {
-      font-size: 0.995rem;
-
-      @media screen and (min-width: $md) {
-        // padding-left: calc(
-        //   -1 * var(--border-width) +
-        //   var(--md-aside-grow) / (var(--md-main-grow) + var(--md-aside-grow) * 2) *
-        //   100vw
-        // );
-      }
-
-      div {
-        line-height: 1.3;
-
-        span {
-          background-color: transparent !important;
-        }
-      }
-    }
-
-    .demo {
-      p {
-        font-family: var(--sans-serif);
-        text-indent: 0;
-      }
-    }
-
-    > .footnote {
-      @media screen and (min-width: $md) {
-        display: grid;
-        grid-template-columns: 25% 75%
-      }
-
-      > div {
-        &:nth-child(1) {
-          border-right: 1px solid var(--border);
-          text-align: right;  
-          padding: 0.5rem 2rem;
-
-          p {
-            font-style: italic;
-            margin: 0;
-          }
-        }
-
-        &:nth-child(2) {
-          padding: 0.5rem 2rem;
-
-          p {
-            margin: 0;
-          }
-        }
-      }
-    }
-  
-    #date {
-      margin-bottom: 0;
-      font-family: var(--sans-serif);
-      font-style: italic;
-      text-indent: 0;
-    }
-  }  
+  }
 }
 
 // More broadly, the aside on the right.

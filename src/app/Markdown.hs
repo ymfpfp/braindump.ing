@@ -73,7 +73,8 @@ inlineToHtml inline = case inline of
   Bold nested -> wrap "b" $ concatMap inlineToHtml nested
   Code code -> wrap "code" code
   Link (link, nested) -> 
-    wrapWithProps "a" [("href", link)] $ concatMap inlineToHtml nested
+    wrapWithProps "a" [("href", link), ("target", "_blank")] $ 
+      concatMap inlineToHtml nested
 
 inlineToText :: Inline -> String
 inlineToText inline = case inline of
@@ -254,10 +255,10 @@ parseOrderedList = do
 parseUnorderedList :: Parser Block 
 parseUnorderedList = do
   -- Parse indentation, +2 is for the marker and space.
-  indent <- (+2) . length <$> many (match " ")
+  indent <- length <$> many (match " ")
   marker <- (match "*" <|> match "-")
   _ <- match " "
-  first <- parseItem indent
+  first <- parseItem (2 + indent)
 
   -- Now parse the rest, based on the first marker.
   rest <- many $ do
@@ -265,7 +266,7 @@ parseUnorderedList = do
     _ <- Parser.repeat indent $ match " "
     _ <- match marker
     _ <- match " " 
-    parseItem indent
+    parseItem (2 + indent)
 
   return $ UnorderedList (first:rest)
 

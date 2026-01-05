@@ -8,7 +8,7 @@ I like a lot of things, even if I'm not particularly good at them. Here I will t
 
 I really like programming. Right now my interest is in graphics programming and understanding the underlying architecture, and branching off from there. I want to write more shaders.
 
-I really like adventuring. I just got back to San Francisco from a ~half-year stint in South America. I've had the immense privilege of growing up in various places: Fuzhou, Fujian, China for the first four years of my life; Bay Ridge, Brooklyn, New York for eight years; western Massachusetts for four years; Boston, Massachusetts for two life-changing months; Burlington, Vermont for a year; San Francisco, California for a year. I've ran three official marathons to date, and I mostly do it for fun, although I hope to get better as I go along. I want to do one for every year I've lived. (Yes, this means I'm sixteen years behind.) It's a tradition I plan on doing for the rest of my life and nothing sort of illness should stop me. One time I ran an unofficial marathon (thirty miles) to the top of Cheaha Mountain in Alabama at 2AM in the morning because I missed the bus from Atlanta the day before. I've hiked the tallest natural points in four US states and plan to do the other forty-six sometime in the next few years, preferably by buying a car and going on a massive road trip. (Wahoo!) I've biked from Vancouver to Tijuana along the US Pacific coast and want to do more in the future: the [Tour Divide](https://tourdivide.org/), Transamerica, New York City to Key West, and New Zealand from top to bottom. (Don't tell anyone but I actually like biking more than I like running. Unfortunately it is also exponentially more expensive.)
+I really like adventuring. I just got back to San Francisco from a couple of months in South America. I've had the immense privilege of growing up in various places: Fuzhou, Fujian, China for the first four years of my life; Bay Ridge, Brooklyn, New York for eight years; western Massachusetts for four years; Boston, Massachusetts for two life-changing months; Burlington, Vermont for a year; San Francisco, California for a year. I've ran three official marathons to date, and I mostly do it for fun, although I hope to get better as I go along. I want to do one for every year I've lived. (Yes, this means I'm sixteen years behind.) It's a tradition I plan on doing for the rest of my life and nothing sort of illness should stop me. One time I ran an unofficial marathon (thirty miles) to the top of Cheaha Mountain in Alabama at 2AM in the morning because I missed the bus from Atlanta the day before. I've hiked the tallest natural points in four US states and plan to do the other forty-six sometime in the next few years, preferably by buying a car and going on a massive road trip. (Wahoo!) I've biked from Vancouver to Tijuana along the US Pacific coast and want to do more in the future: the [Tour Divide](https://tourdivide.org/), Transamerica, New York City to Key West, and New Zealand from top to bottom. (Don't tell anyone but I actually like biking more than I like running. Unfortunately it is also exponentially more expensive.)
 
 I really like reading. I consider myself a pretty diverse reader. My favorite reads range from: [this article about the making of *The Last Express*](https://www.filfre.net/2023/10/the-last-express/); the graphic novel series [*Bone*](https://www.goodreads.com/series/55051-bone) as well as [*Amulet*](https://www.goodreads.com/series/52042-amulet); [*A Little Life*](https://www.goodreads.com/book/show/22822858-a-little-life), [*A Death in the Family*](https://www.goodreads.com/book/show/113091.A_Death_in_the_Family), [*When You Reach Me*](https://www.goodreads.com/book/show/5310515-when-you-reach-me), [*Meddling Kids*](https://www.goodreads.com/book/show/32905343-meddling-kids); [*East of Eden*](https://www.goodreads.com/book/show/4406.East_of_Eden), [*Rooftoppers*](https://www.goodreads.com/book/show/17350491-rooftoppers); [*The Goldfinch*](https://www.goodreads.com/book/show/17333223-the-goldfinch). I'm torn between wanting a personal library one day and just sticking to public libraries, which I practically grew up in and are one of my favorite places in the whole entire world. (Not to mention life-changing. The day I decided to check out a copy of [*Python for Kids*](https://jasonrbriggs.com/python-for-kids/) I'd accidentally found at my local library was the day my life went down a completely different path.)
 
@@ -52,7 +52,7 @@ I believe in a lot of things:
     1. Related to this: You don't know what's normal without observing many different kinds of people and their thoughts/actions on what you think is normal, i.e. the average. This is why what you're born into really matters, and why traveling and talking to people of all different walks of life matters. Some of my biggest epiphanies have come from this, and a lot of my gratefulness for my life stems from this.
     2. Related to this: It's really hard to be the best at something or even get close. The good thing about this is that there's less ego in the way of actually doing something good. E.g., you might not be a piano virtuoso but that doesn't mean you can't write meaningful music that has the chance to change someone's life or even just make people more. Happy.
         1. Related to this: As a kid, you're forced to learn. As an adult, you realize that everything is about learning, yet no one is forcing you to learn. When you realize that learning is fun, it opens up a lot of new avenues of joy. See [*How to like everything more*](https://sashachapin.substack.com/p/how-to-like-everything-more).
-    3. Related to this: There is a particularly strong joy to be found in the mundane. Doing the same things every day.
+    3. Related to this: There is a particularly strong joy to be found in the mundane. Doing the same things every day, or the same thing every year.
 5. The world is not black and white. It's immature to think it is; everything grows and changes. I'm not black and white; the world is both worse and better for it. 
 
     > … things get broken, and sometimes they get repaired, and in most cases, you realize that no matter what gets damaged, life rearranges itself to compensate for your loss, sometimes wonderfully.
@@ -68,13 +68,13 @@ I believe in a lot of things:
     >
     > - *Texas*, Mallrat
 
-6. Don't let other people tell you what to do, either directly or indirectly; this is what most people want in life. Don't be indecisive if you're not actually indecisive, out of what you assume is courtesy. The people who really love you will believe in you; don't let other people tell you that what you're doing is straight up "stupid" without proper criticism. The people who really love you will figure out how to let you be you, even if it isn't always the easiest thing for them; don't let other people tell you that you can't do something or that you should wait for a specific condition determined by them to do it. If there are people in your life who do both, reconsider having them in your life ASAP; too long and you will hurt them and yourself deeply.
+6. Don't let other people tell you what to do, either directly or indirectly; this is what most people want in life. Don't be indecisive if you're not actually indecisive, out of what you assume is courtesy. The people who really love you will believe in you; don't let other people tell you that what you're doing is "stupid" without proper criticism. The people who really love you will figure out how to let you be you, even if it isn't always the easiest thing for them; don't let other people tell you that you can't do something or that you should wait for a specific condition determined by them to do it. If there are people in your life who do both, reconsider having them in your life ASAP; too long and you will hurt them and yourself deeply.
 7. Pay it forward when you can. God, I love bike tourers so much; every single one I've ever talked to regularly shares this like it's gospel. Which it is. 
 8. This quote from Franklin Roosevelt:
 
     > This generation of Americans has a rendezvous with destiny.
 
-9. Go for a walk, or a really long bike ride, feel your feelings, and realize:
+9. Go for a really long bike ride, feel your feelings, and one night you'll sit on a random sidewalk in Thousand Oaks with someone watching cars speed past and realize:
 
     > It took all of California
     > To remind you why you came
@@ -86,6 +86,7 @@ I believe in a lot of things:
     > Then all the nights in the bar turn on
     > And you remember why you came
     > And suddenly you're sober
+    > ...
     > Just happy, to be here at all
     > And suddenly you're older
     > Spinning the turnstile, over and over
@@ -95,8 +96,6 @@ I believe in a lot of things:
     
 10. You're not stupid, you're just missing the fundamentals. And it doesn't help that your attention span doesn't help you sometimes.
 11. Everything is so funny! I repeat everything is so funny
-
-Growing up I didn't have a lot of friends. Now I have really awesome ones who have some really nice and (I think) true things to say about me: "You're like a timid but curious cat" "One of my favorite things about you is... that if you set out to do something you usually actually do it" I am lucky to share very funny stories with them: Cheru (wild pigs); Thomas, Nila (Mansfield); Dieter (are we doing a road trip across America? smeday); Faisal; Ben; Dev; Sam; you if you email me at my name at this domain.
 
 If you would like to donate, I highly recommend donating to [Hack Club](https://hackclub.com), which changed my life personally and I'm sure has done so for many others.
 

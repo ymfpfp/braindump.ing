@@ -1,4 +1,5 @@
 @charset "UTF-8";
+@import url("https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400..700;1,400..700&display=swap");
 @font-face {
   font-family: "Crimson Text";
   src: url("/fonts/CrimsonText-BoldItalic.ttf") format("truetype");
@@ -46,7 +47,7 @@
   --theme: #690;
   --foreground: white;
   --border-width: 14px;
-  --md-main-width: 8fr;
+  --md-main-width: 7fr;
   --md-aside-width: 2fr;
 }
 
@@ -187,7 +188,7 @@ header #recent p {
   font-family: var(--heading);
 }
 #footer footer > div {
-  padding-top: 1rem;
+  padding-top: var(--border-width);
   flex: 1;
 }
 #footer footer > div code {
@@ -213,9 +214,6 @@ header #recent p {
     grid-template-columns: var(--md-aside-width) var(--md-main-width) var(--md-aside-width);
   }
 }
-#post aside:nth-child(1) {
-  text-align: right;
-}
 #post article,
 #post aside {
   background-color: var(--foreground);
@@ -236,18 +234,22 @@ header #recent p {
     line-height: 1.4;
   }
 }
+#post aside:nth-child(1) {
+  text-align: right;
+}
 #post article {
   border-left: 1px solid var(--border);
   border-right: 1px solid var(--border);
   line-height: var(--line-height);
   font-family: var(--serif);
-  padding: 2rem;
+  padding: 2rem 4rem 4rem 4rem;
 }
 #post article a {
   color: var(--theme);
 }
 #post article blockquote {
   position: relative;
+  margin-top: calc(1rem + 14px);
 }
 #post article blockquote::before {
   font-family: "Crimson Text", cursive;
@@ -297,69 +299,13 @@ header #recent p {
   display: block;
 }
 #post article li {
-  padding: 0;
-  margin: 0;
+  margin: 0.5rem;
 }
 #post article li p {
   margin: 0 !important;
 }
 #post article > p {
-  text-indent: 1rem;
-}
-#post article .demo,
-#post article pre {
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-  background-color: var(--background);
-  margin-top: 1.5rem;
-  margin-bottom: 1.5rem;
-  position: relative;
-}
-@media screen and (min-width: 768px) {
-  #post article .demo,
-  #post article pre {
-    width: calc(100vw - var(--border-width) * 2 - 1px);
-  }
-}
-#post article pre {
-  font-size: 0.995rem;
-}
-#post article pre div {
-  line-height: 1.3;
-}
-#post article pre div span {
-  background-color: transparent !important;
-}
-#post article .demo p {
-  font-family: var(--sans-serif);
-  text-indent: 0;
-}
-@media screen and (min-width: 768px) {
-  #post article > .footnote {
-    display: grid;
-    grid-template-columns: 25% 75%;
-  }
-}
-#post article > .footnote > div:nth-child(1) {
-  border-right: 1px solid var(--border);
-  text-align: right;
-  padding: 0.5rem 2rem;
-}
-#post article > .footnote > div:nth-child(1) p {
-  font-style: italic;
-  margin: 0;
-}
-#post article > .footnote > div:nth-child(2) {
-  padding: 0.5rem 2rem;
-}
-#post article > .footnote > div:nth-child(2) p {
-  margin: 0;
-}
-#post article #date {
-  margin-bottom: 0;
-  font-family: var(--sans-serif);
-  font-style: italic;
-  text-indent: 0;
+  text-indent: 0.995rem;
 }
 
 #toc {
