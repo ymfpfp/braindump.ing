@@ -3,7 +3,10 @@ $md: 768px;
 $lg: 992px;
 $xl: 1200px;
 
-@import url('https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400..700;1,400..700&display=swap');
+@font-face {
+  font-family: "Roberte";
+  src: url("/fonts/Roberte-Regular.ttf") format("truetype");
+}
 
 @font-face {
   font-family: 'Crimson Text';
@@ -51,7 +54,7 @@ $xl: 1200px;
 :root {
   --sans-serif: 'Source Sans 3';
   --serif: 'Source Serif 4';
-  --heading: 'Nunito';
+  --heading: 'Roberte';
   --monospace: 'JetBrains Mono';
   --line-height: 1.6;
   --border: #efefef;
@@ -62,8 +65,12 @@ $xl: 1200px;
 
   --border-width: 14px;
 
-  --md-main-width: 7fr;
+  --md-main-width: 8fr;
   --md-aside-width: 2fr;
+  --md-right-width: 10fr;
+
+  --article-block-padding: 3rem;
+  --article-inline-padding: 4.5rem;
 }
 
 * {
@@ -72,6 +79,7 @@ $xl: 1200px;
 
 a {
   transition: opacity 0.1s ease-in-out;
+
 
   &:hover {
     opacity: 0.8;
@@ -85,6 +93,7 @@ html {
   margin: 0;
   overflow-x: clip;
   padding: 0;
+  position: relative;
 }
 
 body {
@@ -97,7 +106,7 @@ button[type='submit'] {
   border-radius: 9px;
   color: var(--foreground);
   cursor: pointer;
-  font-family: var(--heading);
+  font-family: var(--sans-serif);
   font-size: inherit;
   padding: 7px 14px;
   box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.1);
@@ -123,10 +132,17 @@ textarea {
 }
 
 header {
-  display: flex;
-  position: relative;
-  justify-content: space-between;
   color: var(--foreground);
+
+  @media screen and (min-width: $md) {
+    display: grid;
+    grid-template-columns: var(--md-aside-width) var(--md-right-width);
+  }
+
+  > div {
+    display: flex;
+    justify-content: space-between;
+  }
 
   a {
     color: var(--foreground);
@@ -134,7 +150,7 @@ header {
   }
 
   #logo {
-    padding-top: 5rem;
+    padding-top: calc(20vh - 5rem);
 
     h1 {
       font-family: var(--heading);
@@ -142,21 +158,27 @@ header {
       letter-spacing: -5px;
       margin: 0;
       transition: 0.1s transform ease-in-out;
+      transform: rotate(-5deg);
 
       @media screen and (max-width: $sm) {
         font-size: 4rem;
       }
 
-      &:hover {
-        transform: rotate(-5deg);
-      }
+      // &:hover {
+      //   transform: rotate(-5deg);
+      // }
     }
   }
 
   #recent {
+    position: sticky;
+    top: 0;
     font-family: var(--sans-serif);
+    font-size: 1.1rem;
     text-align: right;
+    padding-top: 1rem;
     padding-right: 1rem;
+    // padding-bottom: 2rem;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -167,7 +189,7 @@ header {
     }
 
     p {
-      margin-top: 0;
+      margin: 0;
     }
   }
 }
@@ -185,6 +207,10 @@ header {
   }
 
   footer {
+    @media screen and (max-width: $md) {
+      padding-inline: 1rem;
+    }
+
     @media screen and (min-width: $md) {
       display: flex;
       gap: 2rem;
@@ -210,37 +236,39 @@ header {
         border-radius: 14px;
 
         input {
-          font-family: var(--heading);
+          font-family: var(--sans-serif);
         }
       }
     }
 
     > div {
       padding-top: var(--border-width);
+      padding-bottom: calc(var(--border-width) * 2);
       flex: 1;
 
       code {
         font-family: var(--monospace);
       }
 
-      &:nth-child(1) {
-        padding-left: 2rem;
-        text-align: left;
+      &:nth-child(2) {
+        text-align: right;
       }
 
-      &:nth-child(2) {
-        padding-right: 2rem;
-        text-align: right;
+      @media screen and (min-width: $md) {
+        &:nth-child(1) {
+          padding-left: 4rem;
+          text-align: left;
+        }
+
+        &:nth-child(2) {
+          padding-right: 4rem;
+        }
       }
     }
   }
 }
 
 #post {
-  background-color: var(--foreground);
-  box-shadow:
-    0 4px 8px 0 rgba(0, 0, 0, 0.1),
-    0 -4px 8px 0 rgba(0, 0, 0, 0.1);
   position: relative;
 
   @media screen and (min-width: $md) {
@@ -250,11 +278,11 @@ header {
 
   article,
   aside {
-    background-color: var(--foreground);
     font-size: 1.2rem;
 
     h1,
-    h2 {
+    h2,
+    h3 {
       font-family: var(--sans-serif);
       font-weight: 300;
 
@@ -265,17 +293,24 @@ header {
   }
 
   aside {
+    background-color: var(--theme);
+
     &:nth-child(1) {
       text-align: right;
     }
   }
 
   article {
-    border-left: 1px solid var(--border);
-    border-right: 1px solid var(--border);
+    box-shadow:
+      0 4px 8px 0 rgba(0, 0, 0, 0.1),
+      0 -4px 8px 0 rgba(0, 0, 0, 0.1);
+    background-color: var(--foreground);
+    // border-left: 1px solid var(--border);
+    // border-right: 1px solid var(--border);
     line-height: var(--line-height);
     font-family: var(--serif);
-    padding: 2rem 4rem 4rem 4rem;
+    padding: var(--article-block-padding) var(--article-inline-padding);
+    // overflow-x: hidden;
 
     a {
       color: var(--theme);
@@ -299,9 +334,47 @@ header {
       }
     }
 
+    b {
+      font-weight: 600;
+    }
+
     code, 
     pre {
       font-family: var(--monospace) !important;
+      overflow-x: auto;
+    }
+
+    .demo,
+    pre {
+      // border-top: 1px solid var(--darker-border);
+      // border-bottom: 1px solid var(--darker-border);
+      background-color: var(--background);
+      margin-top: 1.5rem;
+      margin-bottom: 1.5rem;
+      margin-left: calc(50% - 50vw) !important;
+      // margin-right: calc(50% - 50vw) !important;
+      width: calc(50% + 50vw + var(--article-inline-padding));
+      position: relative;
+      z-index: 99;
+      padding-top: 1.5rem;
+      padding-bottom: 1.5rem;
+    }
+
+    pre {
+      font-size: 0.995rem !important;
+      padding-left: calc(50vw - 50% - var(--article-inline-padding));
+
+      > code {
+        border-left: 1px solid var(--darker-border);
+        display: block;
+        font-size: 0.995rem !important;
+        padding-left: var(--article-inline-padding);
+        // margin-left: calc(50vw - 25% - 4.5rem);
+
+        span {
+          background-color: transparent !important;
+        }
+      }
     }
 
     code {
@@ -314,7 +387,7 @@ header {
       margin-top: 0;
     }
 
-    h2 {
+    h2, h3 {
       display: flex;
       align-items: center;
       gap: 4px;
@@ -341,6 +414,11 @@ header {
       }
     }
 
+
+    p {
+      text-wrap: pretty;
+    }
+
     img {
       max-width: 100%;
       display: block;
@@ -355,7 +433,7 @@ header {
     }
 
     > p {
-      text-indent: 0.995rem;
+      // text-indent: 0.995rem;
     }
   }
 }
@@ -363,8 +441,28 @@ header {
 // More broadly, the aside on the right.
 #toc {
   font-family: var(--sans-serif);
-  padding: 2rem;
-  text-align: right;
+  font-size: 0.995rem;
+  position: sticky;
+  top: 0;
+  padding-top: var(--article-block-padding);
+  padding-inline: 2rem;
+
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  a {
+    color: var(--foreground);
+    text-decoration: none;
+  }
+
+  p {
+    font-style: italic;
+    margin: 0 0 0.5rem 0;
+    // margin-bottom: 0.5rem;
+  }
 
   h2 {
     margin-top: 0;

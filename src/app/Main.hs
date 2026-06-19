@@ -6,7 +6,6 @@ import Control.Monad (when)
 import Data.List (isSuffixOf)
 import qualified Data.Map as Map
 import Data.Map (Map)
-import qualified Markdown as Markdown
 import Parser 
 import System.Directory (
   copyFile, 
@@ -14,6 +13,9 @@ import System.Directory (
   doesDirectoryExist,
   listDirectory)
 import System.Process (readProcess)
+
+import qualified Markdown as Markdown
+import qualified Extensions as Extensions
 
 type Transformation = String -> IO (String, String)
 type Transformations = Map String Transformation
@@ -24,6 +26,10 @@ type Transformations = Map String Transformation
 --   let 
 --     (parsed, _) = Markdown.parseWithExtensions raw []
 --   putStrLn $ Markdown.documentToHtml parsed
+
+-- main :: IO () 
+-- main = do
+--
 
 main :: IO ()
 main = do
@@ -82,13 +88,15 @@ main = do
   transformMarkdown :: Transformation
   transformMarkdown = \path -> do
     raw <- readFile path
-    let (parsed, _) = Markdown.parseWithExtensions raw []
+    let (parsed, injections) = Markdown.parseWithExtensions raw [Extensions.parseTOC]
 
     -- Reading the file is REALLY bad every time. TODO
     wrapperTemplate <- readFile $ assetsDirectory ++ "wrapper.html"
 
+    let injectionsToHtml = Map.map Markdown.documentToHtml injections
+
     -- Inject into HTML template.
-    let content = inject wrapperTemplate (Map.fromList $ [("content", Markdown.documentToHtml parsed)])
+    let content = inject wrapperTemplate $ Map.union injectionsToHtml (Map.fromList $ [("content", Markdown.documentToHtml parsed)])
 
     return ((filename path) ++ "html", content)
 
@@ -119,4 +127,3 @@ main = do
             -- This is an unreachable case.
             Nothing -> Nothing
             Just (y, ys) -> Just (x:y, ys))
-

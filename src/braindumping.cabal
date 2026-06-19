@@ -19,7 +19,8 @@ executable braindumping
     import:           warnings
     main-is:          Main.hs
     other-modules:    Markdown,
-                      Parser
+                      Parser,
+                      Extensions
     -- other-extensions:
     build-depends:    base >=4.18.3.0,
                       containers ^>=0.6.7,

@@ -7,9 +7,11 @@ import Parser
 
 type Document = [Block]
 
+type Props = [(String, String)]
+
 data Block
   = Paragraph [Inline]
-  | Heading (Int, [Inline])
+  | Heading (Int, [Inline], Props)
   | Blockquote [Block]
   | OrderedList [[Block]]
   | UnorderedList [[Block]]
@@ -36,7 +38,7 @@ documentToText = foldr (\block text -> blockToText block ++ text) ""
 wrap :: String -> String -> String
 wrap tag content = "<" ++ tag ++ ">" ++ content ++ "</" ++ tag ++ ">"
 
-wrapWithProps :: String -> [(String, String)] -> String -> String
+wrapWithProps :: String -> Props -> String -> String
 wrapWithProps tag props content = 
   "<" ++ tag ++ concatMap format props ++ ">" ++ content ++ "</" ++ tag ++ ">"
   where 
@@ -45,8 +47,8 @@ wrapWithProps tag props content =
 blockToHtml :: Block -> String
 blockToHtml block = case block of
   Paragraph inline -> wrap "p" $ concatMap inlineToHtml inline
-  Heading (depth, inline) -> 
-    wrap ("h" ++ show depth) $ concatMap inlineToHtml inline
+  Heading (depth, inline, props) -> 
+    wrapWithProps ("h" ++ show depth) props (concatMap inlineToHtml inline)
   Blockquote blocks -> wrap "blockquote" $ concatMap blockToHtml blocks
   OrderedList items -> wrap "ol" $ concatMap (wrap "li" . documentToHtml) items
   UnorderedList items -> wrap "ul" $ concatMap (wrap "li" . documentToHtml) items
@@ -58,7 +60,7 @@ blockToHtml block = case block of
 blockToText :: Block -> String
 blockToText block = case block of
   Paragraph inline -> concatMap inlineToText inline
-  Heading (_, inline) -> concatMap inlineToText inline
+  Heading (_, inline, _) -> concatMap inlineToText inline
   Blockquote blocks -> concatMap blockToText blocks
   OrderedList items -> concatMap documentToText items
   UnorderedList items -> concatMap documentToText items
@@ -73,7 +75,7 @@ inlineToHtml inline = case inline of
   Bold nested -> wrap "b" $ concatMap inlineToHtml nested
   Code code -> wrap "code" code
   Link (link, nested) -> 
-    wrapWithProps "a" [("href", link), ("target", "_blank")] $ 
+    wrapWithProps "a" [("href", link)] $ 
       concatMap inlineToHtml nested
 
 inlineToText :: Inline -> String
@@ -174,9 +176,9 @@ parseHeading :: Parser Block
 parseHeading = do
   depth <- length <$> some (match "#")
   _ <- match " " 
-  nested <- some parseInline
+  nested <- manyUntil (match "\n") parseInline
 
-  return $ Heading (depth, nested)
+  return $ Heading (depth, nested, [])
 
 parseBlockquote :: Parser Block
 parseBlockquote = do
@@ -192,9 +194,9 @@ parseBlockquote = do
   parseLines = do
     _ <- many $ match " "
     _ <- match ">"
-    _ <- Parser.optional $ match " "
-    content <- manyUntil (match "\n") (satisfy $ \c -> c /= '\n')
-    _ <- Parser.optional $ match "\n"
+    content <- 
+      (match " " *> manyUntil (match "\n") (satisfy $ \c -> c /= '\n') <* match "\n") 
+      <|> (match "\n" *> pure "<br>")
     return content
 
 parseImage :: Parser Block
@@ -231,7 +233,7 @@ parseOrderedList = do
   spaces <- length <$> many (match " ")
   firstIndent <- (+2) . length <$> some (satisfy isDigit)
   _ <- match "."
-  _ <- match " "
+  _ <- match " " <|> match "\t"
   first <- parseItem (spaces + firstIndent)
 
   rest <- many $ do
@@ -239,7 +241,7 @@ parseOrderedList = do
     _ <- Parser.repeat spaces $ match " "
     marker <- (+2) . length <$> some (satisfy isDigit)
     _ <- match "."
-    _ <- match " "
+    _ <- match " " <|> match "\t"
     parseItem (spaces + marker)
 
   return $ OrderedList (first:rest)
@@ -257,7 +259,7 @@ parseUnorderedList = do
   -- Parse indentation, +2 is for the marker and space.
   indent <- length <$> many (match " ")
   marker <- (match "*" <|> match "-")
-  _ <- match " "
+  _ <- match " " <|> match "\t"
   first <- parseItem (2 + indent)
 
   -- Now parse the rest, based on the first marker.
@@ -265,7 +267,7 @@ parseUnorderedList = do
     _ <- match "\n"
     _ <- Parser.repeat indent $ match " "
     _ <- match marker
-    _ <- match " " 
+    _ <- match " " <|> match "\t"
     parseItem (2 + indent)
 
   return $ UnorderedList (first:rest)
@@ -318,7 +320,7 @@ parseBold = do
 parseCode :: Parser Inline
 parseCode = do
   _ <- match "`"
-  code <- manyUntil (match "`") (satisfy isPlain)
+  code <- manyUntil (match "`") (satisfy $ \c -> c /= '`')
   _ <- match "`"
 
   return $ Code code

@@ -18,5 +18,9 @@
   "homepage": "https://github.com/ymfpfp/braindump.ing#readme",
   "devDependencies": {
     "prettier": "^3.7.4"
+  },
+  "dependencies": {
+    "mathjax-node": "^2.1.1",
+    "prismjs": "^1.30.0"
   }
 }

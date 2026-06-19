@@ -1,0 +1,1 @@
+-- Use Amazon SES to send emails.

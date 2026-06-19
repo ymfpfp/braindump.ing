@@ -88,11 +88,11 @@ instance Alternative Parser where
       Nothing -> Nothing
       Just (x, xs) ->
         case (runParser $ many parser) xs of
-        -- This is an unreachable case.
-        Nothing -> Nothing
-        Just (y, ys) -> Just (x:y, ys))
+          -- This is an unreachable case.
+          Nothing -> Nothing
+          Just (y, ys) -> Just (x:y, ys))
 
--- A couple more custom parser combinators.
+-- A couple more custom parsers.
 -- Look ahead, but don't alter the stream.
 check :: Parser t -> Parser t
 check parser = Parser (\stream -> 
