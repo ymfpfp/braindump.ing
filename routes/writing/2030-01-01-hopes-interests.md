@@ -8,6 +8,7 @@ Right now -
 * microVMs, 
 * Graphics stuff. Notably
 * Triathlons
+* Buying more books
 
 There are a lot of interesting things and not enough time. I'm usually able to focus (i.e., put 100% effort into) on 2 things max at once. Some things I hope to be interested in more in the future:
 

@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "format": "prettier --ignore-path ./.prettierignore --write ."
+    "format": "prettier --ignore-path ./.prettierignore --write .",
+    "prepare": "husky"
   },
   "repository": {
     "type": "git",

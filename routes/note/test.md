@@ -1,15 +1,20 @@
+---
+date: 2026-06-19
+title: Test
+---
+
 broadly, divide into primitives and frameworks that use these primitives to build actual security
 
 * enciphering/deciphering vs encoding/decoding
 * history
-    * ceasar
-    * viginere
-    * monoalphabetic/polyalphabetic
+	* ceasar
+	* viginere
+	* monoalphabetic/polyalphabetic
 * one time pad/xor
 * pem (privacy-enhanced mail) is format for storing and sharing keys. literally just `BEGIN <type>` followed by base64 encoded key and `END <type>`
 * pgp/gpg
 * password hashing algorithms
-    * bcrypt
+	* bcrypt
 	* scrypt
 	* argon2
 * constant time comparison
@@ -261,7 +266,7 @@ ok let me write down how wireguard works
 		* both peers do the following on their side to set up session state:
 			* $C := \text{HASH}(\text{CONSTRUCTION})$, where `CONSTRUCTION` is a fixed string "Noise_IKpsk2_25519_ChaChaPoly_BLAKE2s" -> chaining value for hashing 
 			* $H := \text{HASH}(C || \text{IDENTIFIER})$, where `IDENTIFIER` is a fixed string "WireGuard v1 zx2c4 Jason@zx2c4.com”
-			* $H := \text{HASH(H || )}
+			* $H := \text{HASH(H || )}$
 			* $(E^\text{priv}, E^\text{pub}) := \text{DH-GENERATE}()$  
 		* 4 keypairs as a result of this:
 			* initiator has (static private, static public)

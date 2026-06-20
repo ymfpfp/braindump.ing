@@ -55,6 +55,8 @@
   --md-right-width: 10fr;
   --article-block-padding: 3rem;
   --article-inline-padding: 4.5rem;
+  --aside-font-size: 1.1rem;
+  --aside-inline-padding: 1.5rem;
 }
 
 * {
@@ -304,8 +306,8 @@ header #recent p {
 #post article .demo,
 #post article pre {
   background-color: var(--background);
-  margin-top: 1.5rem;
-  margin-bottom: 1.5rem;
+  margin-top: 2rem;
+  margin-bottom: 2rem;
   margin-left: calc(50% - 50vw) !important;
   width: calc(50% + 50vw + var(--article-inline-padding));
   position: relative;
@@ -329,10 +331,17 @@ header #recent p {
 #post article code {
   font-size: 1.1rem;
 }
+#post article #date {
+  font-family: var(--sans-serif);
+  font-style: italic;
+  margin-bottom: 0;
+}
 #post article h1 {
   font-size: 2.4rem;
   line-height: 1.3;
   margin-top: 0;
+  text-wrap: balance;
+  padding-right: 1rem;
 }
 #post article h2, #post article h3 {
   display: flex;
@@ -354,7 +363,20 @@ header #recent p {
   opacity: 1;
 }
 #post article p {
+  position: relative;
   text-wrap: pretty;
+}
+#post article p span.aside {
+  color: white;
+  font-family: var(--sans-serif);
+  font-size: var(--aside-font-size);
+  font-style: italic;
+  position: absolute;
+  left: calc(50% - 50vw) !important;
+  max-width: calc((100vw - (100% + var(--article-inline-padding) * 2)) / 2);
+  z-index: 99;
+  padding-inline: var(--aside-inline-padding);
+  text-align: right;
 }
 #post article img {
   max-width: 100%;
@@ -368,11 +390,10 @@ header #recent p {
 }
 #toc {
   font-family: var(--sans-serif);
-  font-size: 0.995rem;
   position: sticky;
   top: 0;
   padding-top: var(--article-block-padding);
-  padding-inline: 2rem;
+  padding-inline: var(--aside-inline-padding);
 }
 #toc ul {
   list-style: none;
@@ -383,12 +404,14 @@ header #recent p {
   color: var(--foreground);
   text-decoration: none;
 }
-#toc p {
-  font-style: italic;
-  margin: 0 0 0.5rem 0;
+#toc h2, #toc h3, #toc h4, #toc h5, #toc h6 {
+  font-size: var(--aside-font-size);
+  font-weight: normal !important;
+  margin: 0;
 }
 #toc h2 {
   margin-top: 0;
 }
-
-/*# sourceMappingURL=globals.css.map */
+#toc h3 {
+  padding-left: 8px;
+}

@@ -20,17 +20,6 @@ import qualified Extensions as Extensions
 type Transformation = String -> IO (String, String)
 type Transformations = Map String Transformation
 
--- main :: IO ()
--- main = do
---   raw <- readFile "../routes/index.md"
---   let 
---     (parsed, _) = Markdown.parseWithExtensions raw []
---   putStrLn $ Markdown.documentToHtml parsed
-
--- main :: IO () 
--- main = do
---
-
 main :: IO ()
 main = do
   -- Output all assets.
@@ -88,7 +77,7 @@ main = do
   transformMarkdown :: Transformation
   transformMarkdown = \path -> do
     raw <- readFile path
-    let (parsed, injections) = Markdown.parseWithExtensions raw [Extensions.parseTOC]
+    let (parsed, injections) = Markdown.parseWithExtensions raw [Extensions.parseTOC, Extensions.parseFrontmatter, Extensions.parseFootnotes]
 
     -- Reading the file is REALLY bad every time. TODO
     wrapperTemplate <- readFile $ assetsDirectory ++ "wrapper.html"

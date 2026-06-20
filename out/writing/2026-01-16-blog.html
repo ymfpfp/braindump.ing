@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <link href="/styles/globals.css" rel="stylesheet" />
+    <link href="/styles/prism.css" rel="stylesheet" />
+    <link href="/styles/mjx.css" rel="stylesheet" />
+  </head>
+  <body>
+    <header>
+      <aside></aside>
+      <div>
+        <div id="logo">
+          <h1><a href="/">braindump.ing</a></h1>
+        </div>
+        <div id="recent">
+          <div>
+            <p><a href="/writing.html">Writing</a></p>
+            <p><a href="/notes.html">Notes</a></p>
+            <p><a href="/aesthetics.html">Aesthetics</a></p>
+            <p><i>When will I be ready to just enjoy sunburning with you?</i></p>
+          </div>
+        </div>
+      </aside>
+    </header>
+    <div id="post">
+      <aside>
+      </aside>
+      <article id="index">
+        <p id="date">2026-01-16</p>
+        <h1>Rewriting blog in Haskell (Haskell, parser combinators)</h1>
+        <p>I took the liberty of rewriting my blog in Haskell! Here I'm going to leave some notes about writing the blog for myself.</p><p>First off, we have a Markdown parser; I find writing a Markdown parser to be a quick litmus test for reasoning about a new language. As such you may find this useful if you're learning Haskell. tl;dr:</p><ul><li><p>Order of operations </p></li><li><p><code>type</code>/<code>data</code>/<code>newtype</code></p></li><li><p>Parser combinators</p></li><li><p>Functors </p></li><li><p>Monads</p></li><li><p>I/O monad</p></li></ul><p>Start out by defining:</p><pre><code class="language-haskell">type Document = [Block]
+
+data Block
+  = Paragraph [Inline]
+  | Heading (Int, [Inline], Props)
+  | Blockquote [Block]
+  | OrderedList [[Block]]
+  | UnorderedList [[Block]]
+  | Image (String, String)
+  | HorizontalBreak 
+  | CodeBlock (String, String)
+  | Fragment [Inline]
+  deriving Show
+
+data Inline
+  = Plain String
+  | Italic [Inline]
+  | Bold [Inline]
+  | Code String
+  | Link (String, [Inline])
+  deriving Show</code></pre><p>Using <code>type</code> is basically type aliasing. <code>data</code> actually introduces new types, made of multiple constructors. <code>deriving</code> lets us automatically derive instances of type classes for custom types. In this case we want to be able to show (log) these types. Type classes remind me of interfaces in other languages.</p><p>Ideally we have a function that look like this:</p><pre><code class="language-haskell">parse :: String -> Document 
+-- Either return `[]` or the `[Block]` part of the final `Just (blocks, stream)`.
+parse raw = maybe [] fst (runParser raw)</code></pre><p><code>maybe</code> is a built-in function:</p><pre><code class="language-haskell">data Maybe a
+  = Nothing
+  | Just a
+maybe :: b -> (a -> b) -> Maybe a -> b</code></pre><p>It takes a value of type <code>b</code>, a function that takes a value of type <code>a</code> and returns a value of type <code>b</code>, and a value that is wrapped in a <code>Maybe</code>. If this last value is wrapped in a <code>Just</code> constructor rather than <code>Nothing</code>, it gets passed to the function. In other words, <code>a ? f(a) : b</code>. </p><p><code>fst</code> is another function in the prelude; its type signature is <code>fst :: (a, b) -> a</code>. It takes a pair and returns the first item in that pair. This is useful because <code>runParser</code> has the following type signature: </p><pre><code class="language-haskell">-- Take a string, maybe return a value and the rest of the string. 
+runParser :: String -> Maybe (t, String)</code></pre><p>Once we have this list of blocks, we want to convert them to HTML or text. This is pretty straightforward:</p><pre><code class="language-haskell">documentToHtml :: Document -> String
+-- `foldr` is basically `reduce`, folding the given list from the right.
+documentToHtml = foldr (\block html -> blockToHtml block ++ html) ""
+
+documentToText :: Document -> String
+documentToText = foldr (\block text -> blockToText block ++ text) ""
+
+wrap :: String -> String -> String
+wrap tag content = "<" ++ tag ++ ">" ++ content ++ "</" ++ tag ++ ">"
+
+wrapWithProps :: String -> [(String, String)] -> String -> String
+wrapWithProps tag props content = 
+  "<" ++ tag ++ concatMap format props ++ ">" ++ content ++ "</" ++ tag ++ ">"
+  where 
+    format (k, v) = " " ++ k ++ "=\"" ++ v ++ "\""
+
+blockToHtml :: Block -> String
+blockToHtml block = case block of
+  Paragraph inline -> wrap "p" $ concatMap inlineToHtml inline
+  Heading (depth, inline, props) -> 
+    wrapWithProps ("h" ++ show depth) props (concatMap inlineToHtml inline)
+  Blockquote blocks -> wrap "blockquote" $ concatMap blockToHtml blocks
+  OrderedList items -> wrap "ol" $ concatMap (wrap "li" . documentToHtml) items
+  UnorderedList items -> wrap "ul" $ concatMap (wrap "li" . documentToHtml) items
+  Image (alt, src) -> wrapWithProps "img" [("alt", alt), ("src", src)] ""
+  HorizontalBreak -> "<hr>"
+  CodeBlock (language, code) -> 
+    wrap "pre" $ wrapWithProps "code" [("class", "language-" ++ language)] code
+  Fragment inline -> concatMap inlineToHtml inline
+
+blockToText :: Block -> String
+blockToText block = case block of
+  Paragraph inline -> concatMap inlineToText inline
+  Heading (_, inline, _) -> concatMap inlineToText inline
+  Blockquote blocks -> concatMap blockToText blocks
+  OrderedList items -> concatMap documentToText items
+  UnorderedList items -> concatMap documentToText items
+  Image (alt, _) -> alt
+  HorizontalBreak -> ""
+  CodeBlock (_, code) -> code
+  Fragment inline -> concatMap inlineToText inline
+
+inlineToHtml :: Inline -> String
+inlineToHtml inline = case inline of
+  Plain s -> s
+  Italic nested -> wrap "i" $ concatMap inlineToHtml nested
+  Bold nested -> wrap "b" $ concatMap inlineToHtml nested
+  Code code -> wrap "code" code
+  Link (link, nested) -> 
+    wrapWithProps "a" [("href", link), ("target", "_blank")] $ 
+      concatMap inlineToHtml nested</code></pre><h3 id="foldr">foldr</h3><p><code>documentToHtml</code> and <code>documentToText</code> both make use of a built-in function called <code>foldr</code>. Like the comment attests, <b>folds</b> let you reduce a data structure to a single value. There is <code>foldl</code>, which folds from the left:</p><pre><code class="language-haskell">-- `Num a` requires that type `a` is a instance of typeclass `Num`.
+sum' :: (Num a) => [a] -> a
+sum' xs = foldl (\acc x -> acc + x) 0 xs</code></pre><p>The special thing about <code>foldr</code> is that it works on infinite lists.</p><p><code>foldl1</code> and <code>foldr1</code> are functions that set the starting accumulator to the first item in the iterator. </p><p>Other higher-order built-in functions and useful tricks used here:</p><ul><li><p><code>concatMap</code></p></li><li><p>We use <code>case</code>-based pattern matching here.</p></li></ul><p>Let's take a look at the parser in more detail.</p><h2 id="parser-combinators">Parser combinators</h2><p>As it turns out, one functional way of writing parsers is <b>parser combinators</b>. You combine parsers, which at the end of the day are just functions over a stream, to generate The Ultimate Parser, and then you run it. <a href="https://theorangeduck.com/page/you-could-have-invented-parser-combinators"><i>You could have invented parser combinators</i></a> has a really good example:</p><pre><code class="language-javascript">function lit(c) {
+  return (function(input) {
+    var r = inputRead(input);
+    if (r == c) {
+      inputAdvance(input, 1);
+      return c;
+    } else {
+      return failure;
+    }
+  });
+}
+
+function or(parser0, parser1) {
+  return (function (input) {
+    var result0 = parser0(input);
+    if (result0 != failure) { return result0; }
+    var result1 = parser1(input);
+    if (result1 != failure) { return result1; }
+    return failure;
+  });
+}
+
+var parser = or(lit('a'), lit('b'));
+var result = parser(input);</code></pre><p>Haskell has some parser combinator libraries you can use, notably <a href="https://hackage.haskell.org/package/parsec">Parsec</a>, by using a package manager like <a href="https://www.haskell.org/cabal/">Cabal</a>. For educational purposes I wrote my own.</p><p>A parser looks something like this:</p><pre><code class="language-haskell">newtype Parser t = Parser { runParser :: String -> Maybe (t, String) }</code></pre><p><code>newtype</code> is very similar to <code>data</code>, except that you're passing in exactly one constructor. In this case, it's</p><p>We have <code>runParser</code> return the result wrapped in a <code>Maybe</code> in the case that there's any parsing error.</p><p>We can take advantage of some type classes that come in the prelude to construct some fundamental parser combinators:</p><h3 id="functors">Functors</h3><p>Functors are types that serve as a context around values, allowing functions to be mapped over the value inside. For example, <code>Maybe</code> is one, where you can run a function on the value it's wrapping, e.g. <code>fmap (* 2) (Just 200)</code> results in <code>Just 400</code>. </p><p>This is exactly what we want, we want to be able to wrap a parser in another parser.</p><p>The <code>Functor</code> type class in Haskell asks you to define this function <code>fmap</code>:</p><pre><code class="language-haskell">class Functor f where
+  fmap :: (a -> b) -> f a -> f b
+
+instance Functor Parser where
+  fmap :: Functor f => (a -> b) -> f a -> f b
+  fmap apply parser = Parser (\s ->
+    case (runParser parser) s of
+      Nothing -> Nothing
+      Just (inside, stream) -> Just (apply inside, stream))</code></pre><p>Take a function, take another instance of a <code>Functor</code> (in this case, another parser), and return a functor. The actual code returns a parser that runs the internal parser, and it </p><p>The infix operator for <code>fmap</code> is <code><$></code>. </p><h3 id="applicative-functors">Applicative functors</h3><p>Applicative functors are functors that wrap around functions. This means you can map the function inside one functor to another functor, thus why it's called "applicative". It's like chaining two values together by applying the function in one to another. Implement</p><pre><code class="language-haskell">instance Applicative Parser where
+  -- A parser that takes a value and returns it, but wrapped in the `Parser` context.
+  pure x = Parser (\stream -> Just (x, stream))
+
+  -- Apply, e.g. `Just (+3) <*> Just 4` will apply the function inside `Just` on lhs
+  -- to the inner value inside `Just` on rhs.
+  --
+  -- `*>` and `<*` will be implemented from this, and these are implemented
+  -- automatically with `<$>` and `<*>` for primitive chaining that ignores the 
+  -- context outside, e.g.
+  --
+  -- `Just 3 <* Just 5` becomes
+  -- `(\a _ -> a) <$> (Just 3) <*> (Just 5)`, as Haskell implements `*>` as
+  -- `(\a _ -> a) <$> a <*> b`. 
+  --
+  -- Thus we are able to execute both functions and return the result of the first 
+  -- which is pretty cool.
+  --
+  -- The difference between `*>` and `<*` and monadic chaining is that applicative
+  -- chaining means you have no way to change the "shape" of the result.
+  -- 
+  -- This is based off monad chaining for `Maybe` type, that is, we are able
+  pf <*> px = Parser (\stream -> do
+    -- `pf` is a parser that returns a function.
+    (f, fs) <- (runParser pf) stream
+    (x, xs) <- (runParser px) fs
+    Just (f x, xs))</code></pre><p>Along with implementing the functor typeclass, this lets us write a parser like <code>lit</code> in the JS example:</p><pre><code class="language-haskell">match :: String -> Parser String
+match [] = pure []
+-- We want to `fmap (:)` over the match so we can prepend it to `match`, which means
+-- this is recursive.
+--
+-- As for `<*>`, we take the function in the context on the lhs, and apply it to the
+-- value in the context on the rhs.
+match (x:xs) = (:) <$> satisfy (\c -> c == x) <*> match xs</code></pre><p>In this case, if we get an empty string we should return an empty match. Otherwise, we should</p><h3 id="alternative">Alternative </h3><p>This is a type class in the prelude that represent computations that can fail. Notably, it provides <code><|></code>, which is basically <code>or</code> in the JS example above. </p><pre><code class="language-haskell">instance Alternative Parser where
+  -- A parser that takes a value and returns `Nothing`.
+  empty = Parser (\_ -> Nothing)
+
+  -- A parser combinator that performs || on the results of two parsers.
+  px <|> py = Parser (\stream ->
+    case (runParser px) stream of
+      Nothing -> (runParser py) stream
+      Just pz -> Just pz)
+
+  -- A parser combinator that turns a parser that parses 1 thing into one that 
+  -- parses 0+, always returning a list.
+  many :: Parser t -> Parser [t]
+  many parser = Parser (\stream ->
+    case (runParser parser) stream of
+      Nothing -> Just ([], stream)
+      Just (x, xs) ->
+        case (runParser $ many parser) xs of
+          -- This is an unreachable case.
+          Nothing -> Nothing
+          Just (y, ys) -> Just (x:y, ys))
+
+  -- 1+.
+  some parser = Parser (\stream ->
+    case (runParser parser) stream of
+      Nothing -> Nothing
+      Just (x, xs) ->
+        case (runParser $ many parser) xs of
+          -- This is an unreachable case.
+          Nothing -> Nothing
+          Just (y, ys) -> Just (x:y, ys))</code></pre><h3 id="monads">Monads</h3><blockquote><p>A monad is a monoid in the category of endofunctors.</p></blockquote><p><span class="aside">(1) Hm. This feels <b>too</b> easy. </span>It's nice that I can finally understand what this means<sup>1</sup>:</p><ul><li><p>Endofunctor: We know a functor is a type that wraps around a value to provide a context and can be mapped over while keeping that context. An endofunctor is that, but with the extra definition that it can map to itself, e.g. <code>Maybe a -> Maybe b</code>. Anyways all functors as defined in the Haskell prelude are endofunctors.</p></li><li><p>Monoid: A type class that enforces three properties:</p><ul><li><p>An identity context, a base value.</p></li><li><p>A binary function.</p></li><li><p>Associativity. If the binary function is chained, which pairs are evaluated first should not matter.</p></li><li><p>A list is a monoid, for example: identity context is <code>[]</code>, binary function can be <code>++</code>, and associativity of the binary is indeed a property.</p></li></ul></li></ul><p>Monoids instinctively reminded me of a mathematical group, and my intuition was on point. The type class is defined as so:</p><pre><code class="language-haskell">class Semigroup a where
+  (<>) :: a -> a -> a
+
+class Semigroup a => Monoid a where
+  mempty  :: a
+  mappend :: a -> a -> a</code></pre><p> </p><p>So this sentence, "a monad is a monoid in the category of endofunctors", just means that a monad is a type that enforces all the constraints of a monoid that can map over itself. What is the binary function for a monad though? It's <code>join :: t (t a) -> t a</code>, which just merges the context. And you can see how that's an endofunctor, since we can map a monad over itself and use the binary function to get a third value. And that flattening should be associative.</p><p>Thus, a monad is a type that enforces all the constraints of the <code>Monoid</code> type class and can be mapped over; it's special power is that it can flatten nested instances associatively, which enables chaining. Haskell then provides two very useful constructs, <code>>>=</code> and then <code>do</code>, which is syntactical sugar on top of <code>>>=</code>. <code>do</code> makes a function seem almost imperative, when really what it is doing is chaining the functions together behind the scenes and flattening them.</p><p>Implementing the <code>Monad</code> type class looks like:</p><pre><code class="language-haskell">instance Monad Parser where
+  return = pure
+
+  (>>=) :: Parser a -> (a -> Parser b) -> Parser b
+  parser >>= f = Parser (\stream ->
+    case (runParser parser) stream of
+      Nothing -> Nothing
+      Just (x, xs) -> (runParser $ f x) xs)</code></pre><p>What is special about this is that behind the scenes, I can use</p><p>With monads, we can now write parsers that semantically look more iterative. A pretty good chunk of the parsers I wrote in fact make liberal use of the <code>do</code> syntax.</p><pre><code class="language-haskell">parseBlock :: Parser Block
+parseBlock = do
+  -- Parse as many newlines first.
+  _ <- many $ satisfy (\c -> c == '\n')
+  parseOrderedList <|> parseUnorderedList <|> parseCodeBlock <|> 
+   parseHorizontalBreak <|> parseImage <|> parseBlockquote <|> 
+    parseHeading <|> parseParagraph
+
+parseHeading :: Parser Block
+parseHeading = do
+  depth <- length <$> some (match "#")
+  _ <- match " " 
+  nested <- manyUntil (match "\n") parseInline
+
+  return $ Heading (depth, nested)
+
+parseBlockquote :: Parser Block
+parseBlockquote = do
+  -- We can start by parsing each line starting with "> " from this point onward,
+  -- and then joining them together to use that as the nested stream.
+  content <- unlines <$> some parseLines
+  case (runParser $ many parseBlock) content of
+    Nothing -> empty
+    Just (blocks, _) -> return $ Blockquote blocks
+
+  where 
+  parseLines :: Parser String
+  parseLines = do
+    _ <- many $ match " "
+    _ <- match ">"
+    content <- 
+      (match " " *> manyUntil (match "\n") (satisfy $ \c -> c /= '\n') <* match "\n") 
+      <|> (match "\n" *> pure "<br>")
+    return content</code></pre><p>With these building blocks we can basically write a parser</p><h3 id="combining-the-parsers">Combining the parsers</h3><h2 id="static-site-generation">Static site generation</h2><p>Onto static site generation. </p><p>I extended the parser to allow for extensions:</p><pre><code class="language-haskell">type Extension = Document -> (Document, Map String Document)
+
+parseWithExtensions :: String -> [Extension] -> (Document, Map String Document)
+parseWithExtensions raw [] = (parse raw, Map.empty)
+parseWithExtensions raw extensions =
+  foldr (\extension (doc, extras) -> 
+    let (out, extra) = extension doc in (out, Map.union extras extra))
+    (parse raw, Map.empty) extensions</code></pre><p>The <code>let in</code> syntax is similar to <code>where</code>, just scoped to an expression.</p><p>This is useful for table of contents, frontmatter, footnotes, etc. E.g. frontmatter:</p><pre><code class="language-haskell">import Data.List (dropWhileEnd)
+import qualified Markdown as Md
+
+trim :: String -> String
+trim = dropWhileEnd isSpace . dropWhile isSpace
+
+parseFrontmatter :: Md.Extension
+parseFrontmatter doc = case doc of
+  Md.HorizontalBreak : rest
+    | (fields, Md.HorizontalBreak : body) <- break isBreak rest ->
+      (body, Map.fromList (concatMap toEntry fields))
+  _ -> (doc, Map.empty)
+
+  where 
+    isBreak :: Md.Block -> Bool
+    isBreak Md.HorizontalBreak = True
+    isBreak _ = False
+
+    toEntry :: Md.Block -> [(String, Md.Document)]
+    toEntry (Md.Paragraph inline) = 
+      case break (== ':') (concatMap Md.inlineToText inline) of
+        (key, ':' : value) -> [(trim key, [Md.Fragment [Md.Plain $ trim value]])]
+        _ -> []
+    toEntry _ = []</code></pre><p>I wanted to point this out because this uses pattern matching</p><p>To actually interact with the real world and do Real World things, Haskell has the IO monad and some extra syntactical sugar to throw in your face. For example, to read from a file and pass it to the parser:</p><pre><code class="language-haskell">main :: IO ()
+main = do
+  raw <- readFile "../routes/index.md"
+  let 
+    (parsed, _) = Markdown.parseWithExtensions raw []
+  putStrLn $ Markdown.documentToHtml parsed</code></pre><p>The code with side effects (in <a href=""><i>Main.hs</i></a>) is somewhat messy but it fundamentally does this:</p><p><code></code><code>haskell
+</code><code></code></p><p>Some things have been left to a extra <code>transform.js</code>. For example, code generation is done with Prism.js, and of course I would like to have that performed statically. Math equations like $f(x) = x^2$ are also rendered statically. For this boring stuff I had Claude write some code, which is run as a Husky precommit hook (might as well, this is hosted on GitHub Pages).</p><p>Some things are </p><h2 id="et-cetera">Et cetera</h2><p><span class="aside">(2) I have a spare laptop at home that I could use. </span>I also set up GoatCounter for personal use. Email signups use SES, they are stored in a Hetzner server.<sup>2</sup></p><p><span class="aside">(3) It seems like it's the hot rage for everyone to set up one of these nowadays. </span>The <a href="">aesthetics</a> page pulls from a Cloudflare CDN backed by R2.<sup>3</sup></p><p>I really like <i>Learn You A Haskell For Great Good</i>. I haven't finished reading it (as is the case with most things I'm reading nowadays) but yeah. I like the illustrations.</p><p>I need to get more used to reading <a href="https://hoogle.haskell.org/">Hoogle</a>.</p><p>Having some knowledge of abstract algebra would probably be useful, it seems a lot of the concepts here are abstract algebra concepts.</p><p>Other functional languages that are in the vein of Haskell are OCaml. </p>
+      </article>
+      <aside>
+        <div id="toc"><h3><a href="#foldr">foldr</a></h3><h2><a href="#parser-combinators">Parser combinators</a></h2><h3><a href="#functors">Functors</a></h3><h3><a href="#applicative-functors">Applicative functors</a></h3><h3><a href="#alternative">Alternative </a></h3><h3><a href="#monads">Monads</a></h3><h3><a href="#combining-the-parsers">Combining the parsers</a></h3><h2><a href="#static-site-generation">Static site generation</a></h2><h2><a href="#et-cetera">Et cetera</a></h2></div>
+      </aside>
+    </div>
+    <div id="footer">
+      <aside></aside>
+      <footer>
+        <div class="subscribe">
+          <p>Sometimes I write posts! This happens at infrequent intervals so if you like what I write you can subscribe to get notified when I do.</p>
+          <p>No spam.</p>
+          <form>
+            <input type="email" placeholder="sven.wonders@braindump.ing" />
+            <button type="submit">Subscribe</button>
+          </form>
+        </div>
+        <div>
+          <p>Hi, I'm JC! This is my blog where I like to braindump. You can find the Haskell source <a href="https://github.com/ymfpfp/braindump.ing">here</a>.</p>
+          <p>Questions? Something wrong? Want someone to talk to? Feel free to email at <i>jc[at]website</i>.</p>
+        </div>
+      </footer>
+      <aside></aside>
+    </div>
+  </body>
+</html>

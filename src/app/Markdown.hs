@@ -18,6 +18,7 @@ data Block
   | Image (String, String)
   | HorizontalBreak 
   | CodeBlock (String, String)
+  | Fragment [Inline]
   deriving Show
 
 data Inline
@@ -26,6 +27,7 @@ data Inline
   | Bold [Inline]
   | Code String
   | Link (String, [Inline])
+  | Span ([Inline], Props)
   deriving Show
 
 documentToHtml :: Document -> String
@@ -56,6 +58,7 @@ blockToHtml block = case block of
   HorizontalBreak -> "<hr>"
   CodeBlock (language, code) -> 
     wrap "pre" $ wrapWithProps "code" [("class", "language-" ++ language)] code
+  Fragment inline -> concatMap inlineToHtml inline
 
 blockToText :: Block -> String
 blockToText block = case block of
@@ -67,6 +70,7 @@ blockToText block = case block of
   Image (alt, _) -> alt
   HorizontalBreak -> ""
   CodeBlock (_, code) -> code
+  Fragment inline -> concatMap inlineToText inline
 
 inlineToHtml :: Inline -> String
 inlineToHtml inline = case inline of
@@ -77,6 +81,7 @@ inlineToHtml inline = case inline of
   Link (link, nested) -> 
     wrapWithProps "a" [("href", link)] $ 
       concatMap inlineToHtml nested
+  Span (nested, props) -> wrapWithProps "span" props $ concatMap inlineToHtml nested
 
 inlineToText :: Inline -> String
 inlineToText inline = case inline of
@@ -86,6 +91,7 @@ inlineToText inline = case inline of
   -- Ignore code.
   Code code -> code
   Link (_, nested) -> concatMap inlineToText nested
+  Span (nested, _) -> concatMap inlineToText nested
 
 -- Also support extensions.
 type Extension = Document -> (Document, Map String Document)
@@ -227,6 +233,7 @@ parseCodeBlock = do
   _ <- match "\n```"
   return $ CodeBlock (language, code)
 
+-- TODO: Fix
 parseOrderedList :: Parser Block
 parseOrderedList = do
   -- Parse identation, +2 is for the period and space.
@@ -254,21 +261,22 @@ parseOrderedList = do
 
     return (first:rest)
 
+-- TODO: Fix
 parseUnorderedList :: Parser Block 
 parseUnorderedList = do
   -- Parse indentation, +2 is for the marker and space.
-  indent <- length <$> many (match " ")
+  indent <- length <$> many (match " " <|> match "\t") 
   marker <- (match "*" <|> match "-")
   _ <- match " " <|> match "\t"
-  first <- parseItem (2 + indent)
+  first <- parseItem (1 + indent)
 
   -- Now parse the rest, based on the first marker.
   rest <- many $ do
     _ <- match "\n"
-    _ <- Parser.repeat indent $ match " "
+    _ <- Parser.repeat indent $ (match " " <|> match "\t")
     _ <- match marker
     _ <- match " " <|> match "\t"
-    parseItem (2 + indent)
+    parseItem (1 + indent)
 
   return $ UnorderedList (first:rest)
 
@@ -286,7 +294,7 @@ parseUnorderedList = do
 parseNested :: Int -> Parser Block 
 parseNested indent = do
   _ <- some $ match "\n"
-  _ <- check $ Parser.repeat indent $ match " "
+  _ <- check $ Parser.repeat indent $ (match " " <|> match "\t")
   parseBlock
 
 parseInline :: Parser Inline 

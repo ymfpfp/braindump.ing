@@ -25,7 +25,11 @@
     <div id="post">
       <aside>
       </aside>
-      <article id="index">{content}</article>
+      <article id="index">
+        <p id="date">{date}</p>
+        <h1>{title}</h1>
+        {content}
+      </article>
       <aside>
         <div id="toc">{toc}</div>
       </aside>
@@ -37,7 +41,7 @@
           <p>Sometimes I write posts! This happens at infrequent intervals so if you like what I write you can subscribe to get notified when I do.</p>
           <p>No spam.</p>
           <form>
-            <input type="email" placeholder="jc@braindump.ing" />
+            <input type="email" placeholder="sven.wonders@braindump.ing" />
             <button type="submit">Subscribe</button>
           </form>
         </div>

@@ -1,6 +1,8 @@
 import prism from "prismjs";
 import mjAPI from "mathjax-node";
-import { readFileSync, writeFileSync } from "fs";
+import { readFileSync, writeFileSync, readdirSync } from "fs";
+import { join } from "path";
+import { fileURLToPath } from "url";
 
 const loadLanguages = require("prismjs/components/");
 
@@ -118,11 +120,21 @@ function splitOutsidePre(html, preRegex) {
   return segments;
 }
 
-// Read the parsed Markdown HTML from the file given as the first argument.
-const path = process.argv[2];
-if (!path) {
-  console.error("usage: transform.js <file>");
-  process.exit(1);
+// Recursively collect every `.html` file under a directory.
+function htmlFiles(dir) {
+  const files = [];
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) files.push(...htmlFiles(full));
+    else if (entry.isFile() && entry.name.endsWith(".html")) files.push(full);
+  }
+  return files;
 }
-const input = readFileSync(path, "utf8");
-writeFileSync(path, await transform(input));
+
+// Transform every HTML file in the built `out/` directory in place. The path is
+// resolved relative to this script so it works regardless of the cwd.
+const outDir = fileURLToPath(new URL("../out/", import.meta.url));
+for (const path of htmlFiles(outDir)) {
+  const input = readFileSync(path, "utf8");
+  writeFileSync(path, await transform(input));
+}
