@@ -6,6 +6,7 @@ cabal run notes
 cabal run ssg
 
 bun run transform.js
+bun run build
 bun run format
 
 git add ..
