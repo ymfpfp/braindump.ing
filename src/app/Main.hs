@@ -1,5 +1,3 @@
--- This might be kind of messy right now, i.e. `Template` could be a `String` rather
--- than `IO String`. To be fixed 
 module Main where
 
 import Control.Monad (when)
@@ -14,7 +12,7 @@ import System.Directory (
   listDirectory)
 import System.Process (readProcess)
 
-import qualified Markdown as Markdown
+import qualified Markdown as Md
 import qualified Extensions as Extensions
 
 type Transformation = String -> IO (String, String)
@@ -22,16 +20,17 @@ type Transformations = Map String Transformation
 
 main :: IO ()
 main = do
+  createDirectoryIfMissing True outputDirectory
+
   -- Output all assets.
-  outputDirectoryTo assetsDirectory outputDirectory
+  outputDirectoryTo assetsDirectory outputDirectory [".html", ".ts"]
 
   -- Now begin to process the actual Markdown content.
-  outputDirectoryTo inputDirectory outputDirectory
+  outputDirectoryTo inputDirectory outputDirectory []
 
   where
-  outputDirectoryTo :: String -> String -> IO ()
-  outputDirectoryTo input output = do
-    -- Directly output anything that isn't `.html`.
+  outputDirectoryTo :: String -> String -> [String] -> IO ()
+  outputDirectoryTo input output blacklist = do
     entries <- listDirectory input
     -- mapM_ :: Monad m -> (a -> m ()) -> [a] -> m ()
     -- mapM_ :: Monad IO -> (String -> IO ()) -> [String] -> IO ()
@@ -42,8 +41,8 @@ main = do
       case isDir of
         True -> do
           createDirectoryIfMissing True outputPath
-          outputDirectoryTo (path ++ "/") (outputPath ++ "/")
-        False -> when (not $ ".html" `isSuffixOf` entry) $ do
+          outputDirectoryTo (path ++ "/") (outputPath ++ "/") blacklist
+        False -> when (not $ any (\suffix -> suffix `isSuffixOf` entry) blacklist) $ do
           -- Check if there's any transformations that need to happen.
           case Map.lookup (extension entry) transformations of
             Nothing -> copyFile path outputPath
@@ -76,35 +75,36 @@ main = do
 
   transformMarkdown :: Transformation
   transformMarkdown = \path -> do
+    let transformedPath = (filename path) ++ "html"
+
     raw <- readFile path
-    let (parsed, injections) = Markdown.parseWithExtensions raw [Extensions.parseTOC, Extensions.parseFrontmatter, Extensions.parseFootnotes]
+    let (parsed, injections) = Md.parseWithExtensions raw [Extensions.desc, Extensions.parseFrontmatter, Extensions.parseTOC, Extensions.parseFootnotes]
 
     -- Reading the file is REALLY bad every time. TODO
     wrapperTemplate <- readFile $ assetsDirectory ++ "wrapper.html"
 
-    let injectionsToHtml = Map.map Markdown.documentToHtml injections
+    let injectionsToHtml = Map.map Md.documentToHtml injections
 
     -- Inject into HTML template.
-    let content = inject wrapperTemplate $ Map.union injectionsToHtml (Map.fromList $ [("content", Markdown.documentToHtml parsed)])
+    let content = inject wrapperTemplate $ Map.union injectionsToHtml $ Map.fromList [("content", Md.documentToHtml parsed), ("slug", transformedPath)]
 
-    return ((filename path) ++ "html", content)
+    return (transformedPath, content)
 
     where
     inject :: String -> Map String String -> String
     inject template args = maybe "" fst ((runParser $ replace args) template)
 
   -- This is really bad. TODO
-  replace :: Map String String -> Parser String
+  replace :: Map String String -> Parser String 
   replace args = Parser (\stream ->
     case stream of
       "" -> Just ([], stream)
       (x:xs) -> if (x == '{')
-        -- If we hit a brace, we should `manyUntil` the other brace, consume the 
-        -- content inside and the brace, check if it exists, and apply as needed.
         then
-          case (runParser $ manyUntil (match "}") (satisfy (\c -> c /= '}'))) xs of
-            -- This is an unreachable case.
-            Nothing -> Nothing
+          case (runParser $ manyUntil (match "}") (satisfy (\c -> c /= '}' && c /= '\n'))) xs of
+            Nothing -> case (runParser $ replace args) xs of
+              Nothing -> Nothing
+              Just (y, ys) -> Just (x:y, ys)
             Just (arg, ys) -> case Map.lookup arg args of
               Nothing -> Nothing
               Just new -> case (runParser $ match "}" *> replace args) ys of

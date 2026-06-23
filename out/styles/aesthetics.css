@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap");
 @font-face {
   font-family: "Roberte";
   src: url("/fonts/Roberte-Regular.ttf") format("truetype");
@@ -113,4 +114,49 @@ input {
 
 textarea {
   resize: none;
+}
+
+body, html {
+  background-image: radial-gradient(circle, var(--darker-border) 2px, transparent 2px);
+  background-size: 20px 20px;
+  overscroll-behavior-y: none;
+  padding-bottom: 2rem;
+}
+
+header {
+  padding-inline: 2rem;
+  padding-top: calc(20vh - 5rem);
+  text-align: right;
+}
+header h1 {
+  font-family: var(--heading);
+  font-size: 5rem;
+  margin: 0;
+}
+
+@media screen and (min-width: 992px) {
+  .grid-item {
+    max-width: 30vw !important;
+  }
+}
+.grid-item {
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.1);
+}
+@media screen and (min-width: 992px) {
+  .grid-item:has(blockquote, p) {
+    max-width: 50vw !important;
+  }
+}
+.grid-item:has(blockquote, p) {
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.3);
+  background-color: var(--theme);
+  color: color-mix(in srgb, var(--theme), white 70%);
+  padding-block: 0.5rem;
+  position: relative;
+  z-index: 99;
+}
+.grid-item:has(blockquote, p) blockquote, .grid-item:has(blockquote, p) p {
+  font-family: "Lato";
+  line-height: 1.6;
+  pointer-events: none;
 }

@@ -1,9 +1,65 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <link href="/styles/globals.css" rel="stylesheet" />
+    <meta charset="utf-8" />
+    <meta property="og:title" content="braindump.ing | Rewriting blog in Haskell (Haskell, parser combinators)" />
+    <meta property="og:site_name" content="braindump.ing" />
+
+    <meta name="description" content="I took the liberty of rewriting my blog in Haskell! Here I'm going to leave some notes about writing the blog for myself. First off, we have a Markdown parser; I find writing a Markdown parser to be a quick litmus test for reasoning about a new language. As such..." />
+    <meta name="og:description" content="I took the liberty of rewriting my blog in Haskell! Here I'm going to leave some notes about writing the blog for myself. First off, we have a Markdown parser; I find writing a Markdown parser to be a quick litmus test for reasoning about a new language. As such..." />
+
+    <meta property="og:url" content="https://braindump.ing/2026-01-16-blog.html" />
+    <link rel="canonical" href="https://braindump.ing/2026-01-16-blog.html" />
+
+    <meta property="og:image" content="" />
+    <meta property="og:image:width" content="" />
+    <meta property="og:image:height" content="" />
+
+    <meta name="robots" content="index,follow" />
+    <meta name="googlebot" content="index,follow" />
+    <!-- <meta name="twitter:card" content="summary_large_image" /> -->
+    <!-- <meta name="twitter:site" content="" /> -->
+    <!-- <meta name="twitter:creator" content="" /> -->
+    <meta property="og:type" content="article" />
+    <meta property="og:locale" content="en_US" />
+
+    <meta name="theme-color" content="#690" />
+
+    <link rel="icon" type="image/png" href="/images/dumpster.png" />
+
+    <meta property="article:author:first_name" content="JC" />
+    <meta property="article:author:username" content="JC" />
+    <meta property="article:author:gender" content="female" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": "Rewriting blog in Haskell (Haskell, parser combinators)",
+        "abstract": "I took the liberty of rewriting my blog in Haskell! Here I'm going to leave some notes about writing the blog for myself. First off, we have a Markdown parser; I find writing a Markdown parser to be a quick litmus test for reasoning about a new language. As such...",
+        "image": [
+          {
+            "contentUrl": "",
+            "width": "",
+            "height": ""
+          }
+        ],
+        "author": [
+          {
+            "@type": "Person",
+            "name": "JC",
+            "url": "https://braindump.ing"
+          }
+        ]
+      }
+    </script>
+
+    <title>braindump.ing | Rewriting blog in Haskell (Haskell, parser combinators)</title>
+    <link href="/styles/globals.css" rel="stylesheet"/>
+    <link href="/styles/main.css" rel="stylesheet" />
     <link href="/styles/prism.css" rel="stylesheet" />
     <link href="/styles/mjx.css" rel="stylesheet" />
+    <script src="/scripts/email.js"></script>
   </head>
   <body>
     <header>
@@ -26,8 +82,6 @@
       <aside>
       </aside>
       <article id="index">
-        <p id="date">2026-01-16</p>
-        <h1>Rewriting blog in Haskell (Haskell, parser combinators)</h1>
         <p>I took the liberty of rewriting my blog in Haskell! Here I'm going to leave some notes about writing the blog for myself.</p><p>First off, we have a Markdown parser; I find writing a Markdown parser to be a quick litmus test for reasoning about a new language. As such you may find this useful if you're learning Haskell. tl;dr:</p><ul><li><p>Order of operations </p></li><li><p><code>type</code>/<code>data</code>/<code>newtype</code></p></li><li><p>Parser combinators</p></li><li><p>Functors </p></li><li><p>Monads</p></li><li><p>I/O monad</p></li></ul><p>Start out by defining:</p><pre><code class="language-haskell">type Document = [Block]
 
 data Block
@@ -200,12 +254,12 @@ match (x:xs) = (:) <$> satisfy (\c -> c == x) <*> match xs</code></pre><p>In thi
         case (runParser $ many parser) xs of
           -- This is an unreachable case.
           Nothing -> Nothing
-          Just (y, ys) -> Just (x:y, ys))</code></pre><h3 id="monads">Monads</h3><blockquote><p>A monad is a monoid in the category of endofunctors.</p></blockquote><p><span class="aside">(1) Hm. This feels <b>too</b> easy. </span>It's nice that I can finally understand what this means<sup>1</sup>:</p><ul><li><p>Endofunctor: We know a functor is a type that wraps around a value to provide a context and can be mapped over while keeping that context. An endofunctor is that, but with the extra definition that it can map to itself, e.g. <code>Maybe a -> Maybe b</code>. Anyways all functors as defined in the Haskell prelude are endofunctors.</p></li><li><p>Monoid: A type class that enforces three properties:</p><ul><li><p>An identity context, a base value.</p></li><li><p>A binary function.</p></li><li><p>Associativity. If the binary function is chained, which pairs are evaluated first should not matter.</p></li><li><p>A list is a monoid, for example: identity context is <code>[]</code>, binary function can be <code>++</code>, and associativity of the binary is indeed a property.</p></li></ul></li></ul><p>Monoids instinctively reminded me of a mathematical group, and my intuition was on point. The type class is defined as so:</p><pre><code class="language-haskell">class Semigroup a where
+          Just (y, ys) -> Just (x:y, ys))</code></pre><h3 id="monads">Monads</h3><blockquote><p>A monad is a monoid in the category of endofunctors.</p></blockquote><p>It's nice that I can finally understand what this means<sup>1</sup><span class="aside">(1) Hm. This feels too easy. </span>:</p><ul><li><p>Endofunctor: We know a functor is a type that wraps around a value to provide a context and can be mapped over while keeping that context. An endofunctor is that, but with the extra definition that it can map to itself, e.g. <code>Maybe a -> Maybe b</code>. Anyways all functors as defined in the Haskell prelude are endofunctors.</p></li><li><p>Monoid: A type class that enforces three properties:</p><ul><li><p>An identity context, a base value.</p></li><li><p>A binary function.</p></li><li><p>Associativity. If the binary function is chained, which pairs are evaluated first should not matter.</p></li><li><p>A list is a monoid, for example: identity context is <code>[]</code>, binary function can be <code>++</code>, and associativity of the binary is indeed a property.</p></li></ul></li></ul><p>Monoids instinctively reminded me of a mathematical group, and my intuition was on point. The type class is defined as so:</p><pre><code class="language-haskell">class Semigroup a where
   (<>) :: a -> a -> a
 
 class Semigroup a => Monoid a where
   mempty  :: a
-  mappend :: a -> a -> a</code></pre><p> </p><p>So this sentence, "a monad is a monoid in the category of endofunctors", just means that a monad is a type that enforces all the constraints of a monoid that can map over itself. What is the binary function for a monad though? It's <code>join :: t (t a) -> t a</code>, which just merges the context. And you can see how that's an endofunctor, since we can map a monad over itself and use the binary function to get a third value. And that flattening should be associative.</p><p>Thus, a monad is a type that enforces all the constraints of the <code>Monoid</code> type class and can be mapped over; it's special power is that it can flatten nested instances associatively, which enables chaining. Haskell then provides two very useful constructs, <code>>>=</code> and then <code>do</code>, which is syntactical sugar on top of <code>>>=</code>. <code>do</code> makes a function seem almost imperative, when really what it is doing is chaining the functions together behind the scenes and flattening them.</p><p>Implementing the <code>Monad</code> type class looks like:</p><pre><code class="language-haskell">instance Monad Parser where
+  mappend :: a -> a -> a</code></pre><p> </p><p>So this sentence, "a monad is a monoid in the category of endofunctors", just means that a monad is a type that enforces all the constraints of a monoid that can map over itself. What is the binary function for a monad though? It's <code>join :: t (t a) -> t a</code>, which just merges the context.<sup>2</sup><span class="aside">(2) I've also seen this described as <a href="https://blog.ezyang.com/2011/05/unraveling-the-mystery-of-the-io-monad/#the-lazy-and-strict-state-monad">"threading state through various computations"</a>. </span> And you can see how that's an endofunctor, since we can map a monad over itself and use the binary function to get a third value. And that flattening should be associative.</p><p>Thus, a monad is a type that enforces all the constraints of the <code>Monoid</code> type class and can be mapped over; it's special power is that it can flatten nested instances associatively, which enables chaining. Haskell then provides two very useful constructs, <code>>>=</code> and then <code>do</code>, which is syntactical sugar on top of <code>>>=</code>. <code>do</code> makes a function seem almost imperative, when really what it is doing is chaining the functions together behind the scenes and flattening them.</p><p>Implementing the <code>Monad</code> type class looks like:</p><pre><code class="language-haskell">instance Monad Parser where
   return = pure
 
   (>>=) :: Parser a -> (a -> Parser b) -> Parser b
@@ -245,7 +299,9 @@ parseBlockquote = do
     content <- 
       (match " " *> manyUntil (match "\n") (satisfy $ \c -> c /= '\n') <* match "\n") 
       <|> (match "\n" *> pure "<br>")
-    return content</code></pre><p>With these building blocks we can basically write a parser</p><h3 id="combining-the-parsers">Combining the parsers</h3><h2 id="static-site-generation">Static site generation</h2><p>Onto static site generation. </p><p>I extended the parser to allow for extensions:</p><pre><code class="language-haskell">type Extension = Document -> (Document, Map String Document)
+    return content</code></pre><p>With these building blocks we can basically write a parser, as you can see with <code>parseBlock</code>. You can see the rest of the parsers in <a href=""><i>Markdown.hs</i></a>.</p><pre><code class="language-haskell">parse :: String -> Document 
+-- Either return `[]` or the `[Block]` part of the final `Just (blocks, stream)`.
+parse raw = maybe [] fst ((runParser $ many parseBlock) raw)</code></pre><h2 id="static-site-generation">Static site generation</h2><p>Onto static site generation. </p><p>I extended the parser to allow for extensions:</p><pre><code class="language-haskell">type Extension = Document -> (Document, Map String Document)
 
 parseWithExtensions :: String -> [Extension] -> (Document, Map String Document)
 parseWithExtensions raw [] = (parse raw, Map.empty)
@@ -275,16 +331,15 @@ parseFrontmatter doc = case doc of
       case break (== ':') (concatMap Md.inlineToText inline) of
         (key, ':' : value) -> [(trim key, [Md.Fragment [Md.Plain $ trim value]])]
         _ -> []
-    toEntry _ = []</code></pre><p>I wanted to point this out because this uses pattern matching</p><p>To actually interact with the real world and do Real World things, Haskell has the IO monad and some extra syntactical sugar to throw in your face. For example, to read from a file and pass it to the parser:</p><pre><code class="language-haskell">main :: IO ()
+    toEntry _ = []</code></pre><p>I wanted to point this out because this uses pattern matching in the form of <code>-></code> and <code><-</code>. </p><h3 id="io-monad">I/O monad</h3><p>To actually interact with the real world and do Real World things, like perform static site generation, Haskell has the IO monad. For example, to read from a file and pass it to the parser:</p><pre><code class="language-haskell">main :: IO ()
 main = do
   raw <- readFile "../routes/index.md"
   let 
     (parsed, _) = Markdown.parseWithExtensions raw []
-  putStrLn $ Markdown.documentToHtml parsed</code></pre><p>The code with side effects (in <a href=""><i>Main.hs</i></a>) is somewhat messy but it fundamentally does this:</p><p><code></code><code>haskell
-</code><code></code></p><p>Some things have been left to a extra <code>transform.js</code>. For example, code generation is done with Prism.js, and of course I would like to have that performed statically. Math equations like $f(x) = x^2$ are also rendered statically. For this boring stuff I had Claude write some code, which is run as a Husky precommit hook (might as well, this is hosted on GitHub Pages).</p><p>Some things are </p><h2 id="et-cetera">Et cetera</h2><p><span class="aside">(2) I have a spare laptop at home that I could use. </span>I also set up GoatCounter for personal use. Email signups use SES, they are stored in a Hetzner server.<sup>2</sup></p><p><span class="aside">(3) It seems like it's the hot rage for everyone to set up one of these nowadays. </span>The <a href="">aesthetics</a> page pulls from a Cloudflare CDN backed by R2.<sup>3</sup></p><p>I really like <i>Learn You A Haskell For Great Good</i>. I haven't finished reading it (as is the case with most things I'm reading nowadays) but yeah. I like the illustrations.</p><p>I need to get more used to reading <a href="https://hoogle.haskell.org/">Hoogle</a>.</p><p>Having some knowledge of abstract algebra would probably be useful, it seems a lot of the concepts here are abstract algebra concepts.</p><p>Other functional languages that are in the vein of Haskell are OCaml. </p>
+  putStrLn $ Markdown.documentToHtml parsed</code></pre><p>Since monads merge the context, this lets you thread I/O actions together.</p><p>I was curious what happens behind the scenes.</p><p><a href=""><i>Unraveling the mystery of the IO monad</i></a> is a good resource for this.</p><p>The code with side effects (in <a href=""><i>Main.hs</i></a>) is somewhat messy and I have yet to clean it up but it fundamentally does this:</p><p>Yeah it's very janky! For example we run the Sass compiler directly with <a href="https://hackage-content.haskell.org/package/process-1.6.30.0/docs/System-Process.html#v:readProcess"><code>readProcess</code></a>. At the end of the day a static site generator is just a bundler.</p><p>Some things have been left to a extra <code>transform.js</code>. For example, code generation is done with Prism.js, and of course I would like to have that performed statically. Math equations like $f(x) = x^2$ are also rendered statically. For this boring stuff I had Claude write some code, which is run as a Husky precommit hook (might as well, this is hosted on GitHub Pages).</p><p>Some things are </p><h2 id="et-cetera">Et cetera</h2><p>I also set up GoatCounter for personal use. Email signups use SES, they are stored in a Hetzner server.<sup>3</sup><span class="aside">(3) I have a spare laptop at home that I could use. </span></p><p>The <a href="">aesthetics</a> page pulls from Cloudflare R2, cached by Cloudflare. This site is proxied by Cloudflare, so other static assets are included directly.</p><p>I really like <i>Learn You A Haskell For Great Good</i>. I haven't finished reading it (as is the case with most things I'm reading nowadays) but yeah. I like the illustrations.</p><p>I need to get more used to reading <a href="https://hoogle.haskell.org/">Hoogle</a>.</p><p>If you pointed a gun to my head and asked me to do this I'd still probably struggle!</p><p>Having some knowledge of abstract algebra would probably be useful, it seems a lot of the concepts here are abstract algebra concepts.</p><p>Other functional languages that are in the vein of Haskell are OCaml. I haven't touched these very much, but it seems like Haskell just feels much cleaner? Like purer; less tradeoffs for practicality. Of course that means it's </p>
       </article>
       <aside>
-        <div id="toc"><h3><a href="#foldr">foldr</a></h3><h2><a href="#parser-combinators">Parser combinators</a></h2><h3><a href="#functors">Functors</a></h3><h3><a href="#applicative-functors">Applicative functors</a></h3><h3><a href="#alternative">Alternative </a></h3><h3><a href="#monads">Monads</a></h3><h3><a href="#combining-the-parsers">Combining the parsers</a></h3><h2><a href="#static-site-generation">Static site generation</a></h2><h2><a href="#et-cetera">Et cetera</a></h2></div>
+        <div id="toc"><h3><a href="#foldr">foldr</a></h3><h2><a href="#parser-combinators">Parser combinators</a></h2><h3><a href="#functors">Functors</a></h3><h3><a href="#applicative-functors">Applicative functors</a></h3><h3><a href="#alternative">Alternative </a></h3><h3><a href="#monads">Monads</a></h3><h2><a href="#static-site-generation">Static site generation</a></h2><h3><a href="#io-monad">I/O monad</a></h3><h2><a href="#et-cetera">Et cetera</a></h2></div>
       </aside>
     </div>
     <div id="footer">

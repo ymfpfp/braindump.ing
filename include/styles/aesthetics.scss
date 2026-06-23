@@ -1,0 +1,51 @@
+@use "globals" as *;
+
+@import url('https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap');
+
+body, html {
+  background-image: radial-gradient(circle, var(--darker-border) 2px, transparent 2px);
+  background-size: 20px 20px;
+  overscroll-behavior-y: none;
+  padding-bottom: 2rem;
+}
+
+header {
+  padding-inline: 2rem;
+  padding-top: calc(20vh - 5rem);
+  text-align: right;
+
+  h1 {
+    font-family: var(--heading);
+    font-size: 5rem;
+    margin: 0;
+  }
+}
+
+.grid-item {
+  @media screen and (min-width: $lg) {
+    max-width: 30vw !important;
+  }
+
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.1);
+  
+  &:has(blockquote, p) {
+    @media screen and (min-width: $lg) {
+      max-width: 50vw !important;
+    }
+
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.3);
+    background-color: var(--theme);
+    color: color-mix(in srgb, var(--theme), white 70%);
+    padding-block: 0.5rem;
+    position: relative;
+    z-index: 99;
+
+    blockquote, p {
+      font-family: "Lato";
+      line-height: 1.6;
+      pointer-events: none;
+    }
+  }
+}
+
+

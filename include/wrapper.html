@@ -1,9 +1,65 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <link href="/styles/globals.css" rel="stylesheet" />
+    <meta charset="utf-8" />
+    <meta property="og:title" content="braindump.ing | {title}" />
+    <meta property="og:site_name" content="braindump.ing" />
+
+    <meta name="description" content="{description}" />
+    <meta name="og:description" content="{description}" />
+
+    <meta property="og:url" content="https://braindump.ing/{slug}" />
+    <link rel="canonical" href="https://braindump.ing/{slug}" />
+
+    <meta property="og:image" content="" />
+    <meta property="og:image:width" content="" />
+    <meta property="og:image:height" content="" />
+
+    <meta name="robots" content="index,follow" />
+    <meta name="googlebot" content="index,follow" />
+    <!-- <meta name="twitter:card" content="summary_large_image" /> -->
+    <!-- <meta name="twitter:site" content="" /> -->
+    <!-- <meta name="twitter:creator" content="" /> -->
+    <meta property="og:type" content="article" />
+    <meta property="og:locale" content="en_US" />
+
+    <meta name="theme-color" content="#690" />
+
+    <link rel="icon" type="image/png" href="/images/dumpster.png" />
+
+    <meta property="article:author:first_name" content="JC" />
+    <meta property="article:author:username" content="JC" />
+    <meta property="article:author:gender" content="female" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": "{title}",
+        "abstract": "{description}",
+        "image": [
+          {
+            "contentUrl": "",
+            "width": "",
+            "height": ""
+          }
+        ],
+        "author": [
+          {
+            "@type": "Person",
+            "name": "JC",
+            "url": "https://braindump.ing"
+          }
+        ]
+      }
+    </script>
+
+    <title>braindump.ing | {title}</title>
+    <link href="/styles/globals.css" rel="stylesheet"/>
+    <link href="/styles/main.css" rel="stylesheet" />
     <link href="/styles/prism.css" rel="stylesheet" />
     <link href="/styles/mjx.css" rel="stylesheet" />
+    <script src="/scripts/email.js"></script>
   </head>
   <body>
     <header>
@@ -26,8 +82,6 @@
       <aside>
       </aside>
       <article id="index">
-        <p id="date">{date}</p>
-        <h1>{title}</h1>
         {content}
       </article>
       <aside>

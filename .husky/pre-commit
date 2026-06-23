@@ -1,2 +1,9 @@
-bun src/transform.js
-git add out
+#!/usr/bin/env sh
+rm -rf out
+
+cd src
+cabal run notes
+cabal run ssg
+
+git add .
+

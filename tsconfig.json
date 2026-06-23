@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+
+    "rootDir": "include",
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+
+    "skipLibCheck": true,
+
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+
+    "verbatimModuleSyntax": true
+  },
+  "include": ["include/**/*.ts"]
+}

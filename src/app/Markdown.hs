@@ -35,7 +35,7 @@ documentToHtml :: Document -> String
 documentToHtml = foldr (\block html -> blockToHtml block ++ html) ""
 
 documentToText :: Document -> String
-documentToText = foldr (\block text -> blockToText block ++ text) ""
+documentToText = foldr (\block text -> blockToText block ++ "\n" ++ text) ""
 
 wrap :: String -> String -> String
 wrap tag content = "<" ++ tag ++ ">" ++ content ++ "</" ++ tag ++ ">"

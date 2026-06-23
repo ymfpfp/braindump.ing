@@ -29,6 +29,19 @@ executable ssg
     default-language: GHC2021
     ghc-options: -dynamic
 
+-- Extra executable to manually pull notes from Obsidian.
+executable notes
+    import:           warnings
+    main-is:          Notes.hs
+    -- other-extensions:
+    build-depends:    base >=4.18.3.0,
+                      containers ^>=0.6.7,
+                      directory >= 1.3.0,
+                      process >= 1.6.0
+    hs-source-dirs:   app
+    default-language: GHC2021
+    ghc-options: -dynamic
+
 executable email
     import:           warnings
     main-is:          Email.hs

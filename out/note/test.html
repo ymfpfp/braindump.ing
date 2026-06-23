@@ -1,9 +1,65 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <link href="/styles/globals.css" rel="stylesheet" />
+    <meta charset="utf-8" />
+    <meta property="og:title" content="braindump.ing | Test" />
+    <meta property="og:site_name" content="braindump.ing" />
+
+    <meta name="description" content="broadly, divide into primitives and frameworks that use these primitives to build actual security enciphering/deciphering vs encoding/decoding history ceasar viginere monoalphabetic/polyalphabetic one time pad/xor pem (privacy-enhanced mail) is format for storing and sharing keys. literally just BEGIN <type> followed by base64 encoded key and END <type> pgp/gpg password hashing algorithms..." />
+    <meta name="og:description" content="broadly, divide into primitives and frameworks that use these primitives to build actual security enciphering/deciphering vs encoding/decoding history ceasar viginere monoalphabetic/polyalphabetic one time pad/xor pem (privacy-enhanced mail) is format for storing and sharing keys. literally just BEGIN <type> followed by base64 encoded key and END <type> pgp/gpg password hashing algorithms..." />
+
+    <meta property="og:url" content="https://braindump.ing/test.html" />
+    <link rel="canonical" href="https://braindump.ing/test.html" />
+
+    <meta property="og:image" content="" />
+    <meta property="og:image:width" content="" />
+    <meta property="og:image:height" content="" />
+
+    <meta name="robots" content="index,follow" />
+    <meta name="googlebot" content="index,follow" />
+    <!-- <meta name="twitter:card" content="summary_large_image" /> -->
+    <!-- <meta name="twitter:site" content="" /> -->
+    <!-- <meta name="twitter:creator" content="" /> -->
+    <meta property="og:type" content="article" />
+    <meta property="og:locale" content="en_US" />
+
+    <meta name="theme-color" content="#690" />
+
+    <link rel="icon" type="image/png" href="/images/dumpster.png" />
+
+    <meta property="article:author:first_name" content="JC" />
+    <meta property="article:author:username" content="JC" />
+    <meta property="article:author:gender" content="female" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": "Test",
+        "abstract": "broadly, divide into primitives and frameworks that use these primitives to build actual security enciphering/deciphering vs encoding/decoding history ceasar viginere monoalphabetic/polyalphabetic one time pad/xor pem (privacy-enhanced mail) is format for storing and sharing keys. literally just BEGIN <type> followed by base64 encoded key and END <type> pgp/gpg password hashing algorithms...",
+        "image": [
+          {
+            "contentUrl": "",
+            "width": "",
+            "height": ""
+          }
+        ],
+        "author": [
+          {
+            "@type": "Person",
+            "name": "JC",
+            "url": "https://braindump.ing"
+          }
+        ]
+      }
+    </script>
+
+    <title>braindump.ing | Test</title>
+    <link href="/styles/globals.css" rel="stylesheet"/>
+    <link href="/styles/main.css" rel="stylesheet" />
     <link href="/styles/prism.css" rel="stylesheet" />
     <link href="/styles/mjx.css" rel="stylesheet" />
+    <script src="/scripts/email.js"></script>
   </head>
   <body>
     <header>
@@ -26,8 +82,6 @@
       <aside>
       </aside>
       <article id="index">
-        <p id="date">2026-06-19</p>
-        <h1>Test</h1>
         <p>broadly, divide into primitives and frameworks that use these primitives to build actual security</p><ul><li><p>enciphering/deciphering vs encoding/decoding</p></li><li><p>history</p><ul><li><p>ceasar</p></li><li><p>viginere</p></li><li><p>monoalphabetic/polyalphabetic</p></li></ul></li><li><p>one time pad/xor</p></li><li><p>pem (privacy-enhanced mail) is format for storing and sharing keys. literally just <code>BEGIN <type></code> followed by base64 encoded key and <code>END <type></code></p></li><li><p>pgp/gpg</p></li><li><p>password hashing algorithms</p><ul><li><p>bcrypt</p></li><li><p>scrypt</p></li><li><p>argon2</p></li></ul></li><li><p>constant time comparison</p></li><li><p>hash functions - $f(x): y$ where y is typically a shorter value</p><ul><li><p>preimage resistance: given hash value h, is computationally infeasible to find an input x such that <code>hash_function(x) = h</code>.</p></li><li><p>second-preimage resistance: given an input x1, it's hard to find another input x2 such that <code>hash_function(x1) = hash_function(x2)</code></p></li><li><p>collision resistance: it is computationally infeasible to find two inputs that map to the same output. this is different from second-preimage resistance, where you have a provided x1</p></li><li><p>types of hash functions:</p><ul><li><p>crc32, other crc functions are not designed with security in mind, just useful for checksumming</p></li><li><p>sha-1, sha-2, md5  </p></li></ul></li><li><p>most cryptographic hash functions use merkle-damgard construction</p></li></ul></li><li><p>macs: message authentication codes. used for authentication - if two peers have symmetric key you can prove whether or not a message that has been hashed has been intercepted, thus proving authentication</p><ul><li><p>hmac = hash-based message authentication, hash with secret key and use that</p></li></ul></li><li><p>why should tokens have at least 112 bits of entropy?</p></li><li><p>laws/gen principles</p><ul><li><p>kerckhoff's law: your cipher algorithm is only as safe as the keys are!  </p></li></ul></li><li><p>symmetric encryption: $f^{-1}(\text{key}, f(\text{key}, \text{plaintext})) = \text{plaintext}$</p><ul><li><p>functions for symmetric encryption generally fall into two categories, block ciphers, which encrypt fixed size blocks, and</p></li><li><p>block ciphers share:</p><ul><li><p>padding, mode of operation for encrypting messages longer than the block of bits the cipher supports</p></li><li><p>electronic codebook (ecb) mode of operation is naive: divide into blocks, pad last block if needed, and encrypt each block. the result? if you coincidentally have two same blocks, the output is the same, and this can be obvious depending on the kind of data you're sending (e.g. an image, which can have many similar repeating pixels, i.e. "ecb penguin")</p></li><li><p>therefore we have cipher block chaining (cbc). take an random initialization vector (<b>iv</b>) to randomize encryption, xor with the first block of plaintext, and for every block afterwards, use the output of the previous block as the iv. this means that the function produces $(\text{plaintext}, \text{iv})$</p></li></ul></li><li><p>des/3des</p></li><li><p>lucifer</p></li><li><p>aes = advanced encryption standard.</p><ul><li><p>aes-128, aes-192, aes-256, i.e. 128-bit key because $2^{128}$ sized key is hard to brute force</p></li><li><p>aes is pretty widely implemented in hardware nowadays</p></li><li><p>plaintext and ciphertext are both fixed 128 bits (16 bytes)</p></li><li><p>shift 16 bytes to 4x4 matrix -> round function (multiple rounds, each round using a different round key derived from the passed-in key, i.e. <b>key schedule</b>, allowing for slightest change to give different ciphertext, i.e. <b>diffusion</b>, ) made of sub functions (SubBytes, ShiftRows, MixColumns, $\text{AddRoundKey}(\text{RoundKey})$). the rounds are fixed</p></li></ul></li><li><p>we also need to be able to prove that a message actually came from the person we were expecting it to come from, so we can attach a mac of some sort. aead function = authenticated encryption with associated data. means that instead of producing $(\text{plaintext}, \text{iv})$ we now produce $(\text{plaintext}, \text{iv}, \text{authentication tag})$</p><ul><li><p>aes-cbc-hmac </p></li><li><p>aes-gcm = aes with galois/counter mode</p></li></ul></li><li><p>chacha20-poly1205 = designed to be fast when used in software</p></li></ul></li><li><p>diffie-hellman is protocol for asymmetric key exchange. basically it defines how to derive a shared key between two peers given properties of a mathematical group</p><ul><li><p>need to know some discrete math</p><ul><li><p>a group is a set of elements + a binary operation. this automatically reminded me of <code>Semigroup</code> in haskell</p></li><li><p>groups should have closure as a property: $\text{binop<T>}(x: T, y: T): T$. basically needs to output value into </p></li><li><p>associativity, e.g. swapping order of binary op produces same output</p></li><li><p>identity, e.g. any  <code>x <binary_op> base element = x</code></p></li><li><p>inverse, e.g. every value $x$ has an inverse element $x^{-1}$ that produces 1</p></li><li><p>groups can have subgroups. a cyclic subgroup is a subgroup that repeats when the binary is repeatedly performed</p></li><li><p>a generator is an element (generators = set of elements) that when repeated with the binary op, can produce a subgroup. if the generator generates a set of the entire space, then it's called a generator of the group. the size of the subgroup is called the order of the subgroup.</p></li></ul></li><li><p>for key exchange:</p><ul><li><p>usually each peer has a public/private key pair, and some shared public state between the 2. the public/private key pair is generated by inverse of</p></li><li><p>they both present their public key</p></li><li><p>by combining the other peer's public key with their private key -> create shared key</p></li></ul></li></ul></li><li><p>ffdh = finite field diffie-hellman</p><ul><li><p>ffdh uses the group of positive integers up to a prime number, a number that can only be divided by 1 and itself. for its binary op it uses modular multiplication</p></li><li><p>some extra properties of this group, ffdh:</p><ul><li><p>commutative, which makes ffdh part of galois group</p></li></ul></li><li><p> $6 = 1 \bmod 5$</p><ul><li><p>1 is the inverse of 6</p></li><li><p>mod 5 is the modulus</p></li></ul></li><li><p>here the generator 4:</p><ul><li><p>$4 \bmod 5 = 4$</p></li><li><p>$4 <i> 4 \bmod 5 = 1$
 		</i> $4 <i> 4 </i> 4 \bmod 5 = 4$</p></li><li><p>$4 <i> 4 </i> 4 <i> 4 \bmod 5 = 1$ = order 2
 		</i> $2 \bmod 5 = 2$</p></li><li><p>$2 <i> 2 \bmod 5 = 4$

@@ -1,12 +1,17 @@
 module Extensions where
 
 import Data.Char (isAlphaNum, toLower, isSpace)
-import Data.List (dropWhileEnd)
+import Data.List (dropWhileEnd, intercalate, partition)
 import qualified Data.Map as Map
 import qualified Markdown as Md
 
 trim :: String -> String
 trim = dropWhileEnd isSpace . dropWhile isSpace
+
+desc :: Md.Extension
+desc doc = (doc, Map.singleton "description" [Md.Fragment [Md.Plain $ summary ++ "..."]])
+  where 
+    summary = trim (intercalate " " (take 50 (words (Md.documentToText doc))))
 
 parseFrontmatter :: Md.Extension
 parseFrontmatter doc = case doc of
@@ -65,42 +70,37 @@ parseTOC doc = (map anchor doc, Map.singleton "toc" toc)
 --     optional), e.g. `[^1]: I have a spare laptop at home.`
 --
 -- Rather than collecting footnotes into a separate section, we attach each one
--- directly to the block that references it: the `[^id]` marker becomes a `<sup>`,
--- and the definition is dropped in at the front of the block as an `aside` span.
--- So `hi[^1]` followed by `[^1]: this is a test` renders as
--- `<p><span class="aside">(1) this is a test</span>hi<sup>^1</sup></p>`.
+-- right where it's referenced: the `[^id]` marker becomes a `<sup>`, and the
+-- definition is dropped in immediately after it as an `aside` span. So `hi[^1]`
+-- with a `[^1]: this is a test` definition renders as
+-- `<p>hi<sup>1</sup><span class="aside">(1) this is a test</span></p>`.
 --
--- Definitions are matched to references *positionally* — a definition belongs to
--- the block it immediately follows — because the same label (`[^1]`) gets reused
--- for different notes throughout a post.
+-- References are matched to definitions *by label*: we lift every definition out
+-- of the document into a label->aside map, then rewrite references by lookup. A
+-- definition can therefore sit anywhere — often at the end of the post, far from
+-- the reference it belongs to.
 --
 -- The inline parser shreds `[^1]` into two adjacent `Plain` fragments: a `"[^1"`
 -- (since `[` always begins a fresh `Plain`) followed by a `"]..."`. So rather than
 -- stitching fragments back together, we just match that pair directly.
 parseFootnotes :: Md.Extension
-parseFootnotes doc = (attach doc, Map.empty)
+parseFootnotes doc = (map (mapInlines (convertRefs notes)) body, Map.empty)
   where
-    -- Walk blocks left to right, attaching each block's footnotes (the run of
-    -- definition paragraphs that immediately follow it) and dropping the now
-    -- consumed definitions.
-    attach :: Md.Document -> Md.Document
-    attach [] = []
-    attach (block : rest)
-      | Just _ <- asDefinition block = attach rest -- orphan definition, drop it
-      | otherwise =
-        let (defs, rest') = span isDefinition rest
-        in withFootnotes (map definition defs) block : attach rest'
+    -- Lift definitions (top-level paragraphs opening with `[^id]`) out of the
+    -- document, leaving the rest as the body and keying their asides by label.
+    (defs, body) = partition isDefinition doc
+
+    notes :: Map.Map String Md.Inline
+    notes = Map.fromList
+      [ (label, aside label content)
+      | def <- defs
+      , Just (label, content) <- [asDefinition def]
+      ]
 
     isDefinition :: Md.Block -> Bool
     isDefinition block = case asDefinition block of
       Just _ -> True
       Nothing -> False
-
-    definition :: Md.Block -> (String, [Md.Inline])
-    definition block = case asDefinition block of
-      Just def -> def
-      -- Unreachable: `attach` only feeds `definition` blocks it already matched.
-      Nothing -> ("", [])
 
     -- A definition is a paragraph opening with the `[^id]` marker — a `"[^id"`
     -- fragment, then a `"]..."` one — yielding the label and the note's content.
@@ -111,36 +111,27 @@ parseFootnotes doc = (attach doc, Map.empty)
         in Just (label, [Md.Plain content | not (null content)] ++ rest)
     asDefinition _ = Nothing
 
-    -- Turn `[^id]` markers into superscripts, then prepend each note as an aside.
-    withFootnotes :: [(String, [Md.Inline])] -> Md.Block -> Md.Block
-    withFootnotes notes = prepend (map aside notes) . mapInlines convertRefs
-
-    aside :: (String, [Md.Inline]) -> Md.Inline
-    aside (label, content) =
+    aside :: String -> [Md.Inline] -> Md.Inline
+    aside label content =
       Md.Span (Md.Plain ("(" ++ label ++ ") ") : content, [("class", "aside")])
 
--- Prepend inlines to a block's own content (paragraphs and headings carry refs).
-prepend :: [Md.Inline] -> Md.Block -> Md.Block
-prepend [] block = block
-prepend asides block = case block of
-  Md.Paragraph inlines -> Md.Paragraph (asides ++ inlines)
-  Md.Heading (depth, inlines, props) -> Md.Heading (depth, asides ++ inlines, props)
-  other -> other
-
--- Replace each `[^id]` marker — a `"[^id"` fragment followed by a `"]..."` one —
--- with a `<sup>id</sup>` superscript, recursing through nested inlines.
-convertRefs :: [Md.Inline] -> [Md.Inline]
-convertRefs inlines = case inlines of
+-- Replace each `[^id]` reference — a `"[^id"` fragment followed by a `"]..."` one —
+-- with a `<sup>id</sup>`, dropping the matching note's aside in right after it (if
+-- the label has a definition). Recurses through nested inlines.
+convertRefs :: Map.Map String Md.Inline -> [Md.Inline] -> [Md.Inline]
+convertRefs notes inlines = case inlines of
   (Md.Plain ('[' : '^' : label) : Md.Plain (']' : after) : rest)
     | not (null label), all isAlphaNum label ->
-      Md.Plain ("<sup>" ++ label ++ "</sup>") : convertRefs (Md.Plain after : rest)
-  (x : rest) -> recurse x : convertRefs rest
+      let sup = Md.Plain ("<sup>" ++ label ++ "</sup>")
+          here = maybe [] (: []) (Map.lookup label notes)
+      in sup : here ++ convertRefs notes (Md.Plain after : rest)
+  (x : rest) -> recurse x : convertRefs notes rest
   [] -> []
   where
-    recurse (Md.Italic nested) = Md.Italic (convertRefs nested)
-    recurse (Md.Bold nested) = Md.Bold (convertRefs nested)
-    recurse (Md.Link (href, nested)) = Md.Link (href, convertRefs nested)
-    recurse (Md.Span (nested, props)) = Md.Span (convertRefs nested, props)
+    recurse (Md.Italic nested) = Md.Italic (convertRefs notes nested)
+    recurse (Md.Bold nested) = Md.Bold (convertRefs notes nested)
+    recurse (Md.Link (href, nested)) = Md.Link (href, convertRefs notes nested)
+    recurse (Md.Span (nested, props)) = Md.Span (convertRefs notes nested, props)
     recurse other = other
 
 -- Apply an inline transformation everywhere inlines appear within a block.
