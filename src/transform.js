@@ -19,10 +19,7 @@ mjAPI.start();
 // it), so when we can't highlight we still have to escape it ourselves to keep
 // the output valid HTML.
 function escapeHtml(s) {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 // Lazily register a grammar, remembering failures so we don't retry an unknown
@@ -44,7 +41,8 @@ function grammarFor(language) {
 
 // Match the exact shape emitted by `Markdown.blockToHtml` for a `CodeBlock`:
 // `<pre><code class="language-LANG">RAW_CODE</code></pre>`.
-const CODE_BLOCK = /<pre><code class="language-([^"]*)">([\s\S]*?)<\/code><\/pre>/g;
+const CODE_BLOCK =
+  /<pre><code class="language-([^"]*)">([\s\S]*?)<\/code><\/pre>/g;
 
 function highlightCode(html) {
   return html.replace(CODE_BLOCK, (_match, language, code) => {
@@ -66,7 +64,11 @@ const INLINE_MATH = /(^|[^\\])\$([^$\n]+?)\$/g;
 // a typo degrades to plain text rather than crashing the build.
 async function renderInline(tex) {
   try {
-    const data = await mjAPI.typeset({ math: tex, format: "inline-TeX", html: true });
+    const data = await mjAPI.typeset({
+      math: tex,
+      format: "inline-TeX",
+      html: true,
+    });
     return data.html ?? `$${tex}$`;
   } catch {
     return `$${tex}$`;
@@ -92,14 +94,19 @@ async function transform(html) {
     if (!inside) collect(text);
   });
   await Promise.all(
-    [...rendered.keys()].map(async (tex) => rendered.set(tex, await renderInline(tex)))
+    [...rendered.keys()].map(async (tex) =>
+      rendered.set(tex, await renderInline(tex)),
+    ),
   );
 
   return splitOutsidePre(highlighted, PRE)
     .map(({ inside, text }) =>
       inside
         ? text
-        : text.replace(INLINE_MATH, (_match, lead, tex) => `${lead}${rendered.get(tex)}`)
+        : text.replace(
+            INLINE_MATH,
+            (_match, lead, tex) => `${lead}${rendered.get(tex)}`,
+          ),
     )
     .join("");
 }
@@ -112,11 +119,13 @@ function splitOutsidePre(html, preRegex) {
   let m;
   preRegex.lastIndex = 0;
   while ((m = preRegex.exec(html))) {
-    if (m.index > last) segments.push({ inside: false, text: html.slice(last, m.index) });
+    if (m.index > last)
+      segments.push({ inside: false, text: html.slice(last, m.index) });
     segments.push({ inside: true, text: m[0] });
     last = m.index + m[0].length;
   }
-  if (last < html.length) segments.push({ inside: false, text: html.slice(last) });
+  if (last < html.length)
+    segments.push({ inside: false, text: html.slice(last) });
   return segments;
 }
 

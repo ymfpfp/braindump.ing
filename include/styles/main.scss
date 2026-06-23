@@ -1,6 +1,7 @@
 @use "globals" as *;
 
-body, html {
+body,
+html {
   background-color: var(--theme);
 }
 
@@ -45,10 +46,6 @@ header {
       @media screen and (max-width: $sm) {
         font-size: 4rem;
       }
-
-      // &:hover {
-      //   transform: rotate(-5deg);
-      // }
     }
   }
 
@@ -90,7 +87,9 @@ header {
 
   @media screen and (min-width: $lg) {
     display: grid;
-    grid-template-columns: var(--lg-aside-width) var(--lg-main-width) var(--lg-aside-width);
+    grid-template-columns: var(--lg-aside-width) var(--lg-main-width) var(
+        --lg-aside-width
+      );
   }
 
   footer {
@@ -160,7 +159,9 @@ header {
 
   @media screen and (min-width: $lg) {
     display: grid;
-    grid-template-columns: var(--lg-aside-width) var(--lg-main-width) var(--lg-aside-width);
+    grid-template-columns: var(--lg-aside-width) var(--lg-main-width) var(
+        --lg-aside-width
+      );
   }
 
   article,
@@ -208,7 +209,7 @@ header {
       &::before {
         font-family: "Crimson Text", cursive;
         font-size: 5rem;
-        content: '“';
+        content: "“";
         position: absolute;
         top: -14px;
         left: -8px;
@@ -223,7 +224,7 @@ header {
       font-weight: 600;
     }
 
-    code, 
+    code,
     pre {
       font-family: var(--monospace) !important;
       overflow-x: auto;
@@ -268,6 +269,13 @@ header {
       font-size: 1.1rem;
     }
 
+    sup {
+      font-size: 0.7em;
+      position: relative;
+      top: -0.5em;
+      vertical-align: baseline;
+    }
+
     #date {
       font-family: var(--sans-serif);
       font-style: italic;
@@ -282,7 +290,8 @@ header {
       padding-right: 1rem;
     }
 
-    h2, h3 {
+    h2,
+    h3 {
       display: flex;
       align-items: center;
       gap: 4px;
@@ -309,7 +318,6 @@ header {
       }
     }
 
-
     p {
       position: relative;
       text-wrap: pretty;
@@ -321,7 +329,9 @@ header {
         font-style: italic;
         position: absolute;
         left: calc(50% - 50vw) !important;
-        max-width: calc((100vw - (100% + var(--article-inline-padding) * 2)) / 2);
+        max-width: calc(
+          (100vw - (100% + var(--article-inline-padding) * 2)) / 2
+        );
         z-index: 99;
         padding-inline: var(--aside-inline-padding);
         text-align: right;
@@ -383,7 +393,11 @@ header {
     // margin-bottom: 0.5rem;
   }
 
-  h2, h3, h4, h5, h6 {
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     // font-style: italic;
     font-size: var(--aside-font-size);
     font-weight: normal !important;
@@ -399,3 +413,23 @@ header {
   }
 }
 
+@keyframes shake {
+  0% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-10px);
+  }
+  40% {
+    transform: translateX(10px);
+  }
+  60% {
+    transform: translateX(-10px);
+  }
+  80% {
+    transform: translateX(10px);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}

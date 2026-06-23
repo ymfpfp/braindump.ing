@@ -35,7 +35,9 @@ const loadHtml = async (url: string): Promise<HTMLElement> => {
 const loadResource = async (subpath: string): Promise<GridItem | null> => {
   try {
     const url = new URL(`${CDN_PATH}/${subpath}`).href;
-    return /\.(png|jpe?g|gif|webp|svg|avif)$/i.test(subpath) ? await loadImage(url) : await loadHtml(url);
+    return /\.(png|jpe?g|gif|webp|svg|avif)$/i.test(subpath)
+      ? await loadImage(url)
+      : await loadHtml(url);
   } catch (err) {
     // A missing or broken resource shouldn't take down the rest of the grid.
     console.warn(`Skipping resource: ${subpath}`, err);
@@ -60,7 +62,10 @@ window.onload = async () => {
   // Column count derived purely from the available width: ~1 on phones, 2 on tablets,
   // 3 on laptops. Recomputed on every (re)layout so rotation/resize adapts.
   const columnCount = (width: number): number =>
-    Math.min(MAX_COLS, Math.max(1, Math.floor((width + GUTTER) / (TARGET_COL + GUTTER))));
+    Math.min(
+      MAX_COLS,
+      Math.max(1, Math.floor((width + GUTTER) / (TARGET_COL + GUTTER))),
+    );
 
   let cols = 1;
   let colW = 0;
@@ -83,7 +88,10 @@ window.onload = async () => {
     stage.appendChild(el);
 
     // Images: derive height from the intrinsic ratio (no reflow). HTML: measure it.
-    const h = el instanceof HTMLImageElement ? itemW * (el.naturalHeight / el.naturalWidth) : el.offsetHeight;
+    const h =
+      el instanceof HTMLImageElement
+        ? itemW * (el.naturalHeight / el.naturalWidth)
+        : el.offsetHeight;
     colHeights[c] = colHeights[c]! + h + GUTTER;
     stage.style.height = `${Math.max(...colHeights)}px`;
   };
@@ -98,24 +106,6 @@ window.onload = async () => {
     for (const el of placed) place(el);
   };
 
-  // Load everything in parallel, but place in shuffle order so the on-screen order is
-  // the shuffle — not whatever finished downloading first (which clustered text last).
-  // We commit a contiguous prefix: an item is placed only once all earlier ones settled,
-  // so the layout still streams from the front as fast as the slowest leading item allows.
-  const items = new Array<GridItem | null>(resources.length);
-  const settled = new Array<boolean>(resources.length).fill(false);
-  let next = 0;
-  const flushReady = () => {
-    while (next < resources.length && settled[next]!) {
-      const el = items[next]!;
-      if (el) {
-        placed.push(el);
-        place(el);
-      }
-      next++;
-    }
-  };
-
   layout();
 
   // Re-flow when the viewport changes (window resize, phone rotation). Debounced so a
@@ -126,11 +116,16 @@ window.onload = async () => {
     resizeTimer = window.setTimeout(layout, 150);
   });
 
+  // Load everything in parallel and place each item the instant it arrives, so the grid
+  // visibly fills in. `resources` is already shuffled, so completion order is random
+  // enough — and no slow leading item can stall the rest from appearing.
   await Promise.all(
-    resources.map(async (subpath, i) => {
-      items[i] = await loadResource(subpath);
-      settled[i] = true;
-      flushReady();
+    resources.map(async (subpath) => {
+      const el = await loadResource(subpath);
+      if (el) {
+        placed.push(el);
+        place(el);
+      }
     }),
   );
 };

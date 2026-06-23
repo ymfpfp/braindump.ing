@@ -5,5 +5,8 @@ cd src
 cabal run notes
 cabal run ssg
 
-git add .
+bun run transform.js
+bun run format
+
+git add ..
 

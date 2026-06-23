@@ -11,7 +11,7 @@ trim = dropWhileEnd isSpace . dropWhile isSpace
 desc :: Md.Extension
 desc doc = (doc, Map.singleton "description" [Md.Fragment [Md.Plain $ summary ++ "..."]])
   where 
-    summary = trim (intercalate " " (take 50 (words (Md.documentToText doc))))
+    summary = trim $ intercalate " " (take 50 $ words $ Md.documentToText doc)
 
 parseFrontmatter :: Md.Extension
 parseFrontmatter doc = case doc of

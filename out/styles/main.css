@@ -39,10 +39,10 @@
   src: url("/fonts/SourceSerif4-ItalicVariable.ttf") format("truetype");
 }
 :root {
-  --sans-serif: 'Source Sans 3';
-  --serif: 'Source Serif 4';
-  --heading: 'Roberte';
-  --monospace: 'JetBrains Mono';
+  --sans-serif: "Source Sans 3";
+  --serif: "Source Serif 4";
+  --heading: "Roberte";
+  --monospace: "JetBrains Mono";
   --line-height: 1.6;
   --border: #efefef;
   --darker-border: #dedede;
@@ -99,6 +99,9 @@ button[type=submit] {
   box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.1);
   transform: transform 0.1s ease-in;
 }
+button[type=submit]:disabled {
+  cursor: not-allowed;
+}
 button[type=submit]:hover, button[type=submit]:focus {
   transform: scale(103%);
 }
@@ -116,7 +119,8 @@ textarea {
   resize: none;
 }
 
-body, html {
+body,
+html {
   background-color: var(--theme);
 }
 
@@ -352,6 +356,12 @@ header #recent p {
 #post article code {
   font-size: 1.1rem;
 }
+#post article sup {
+  font-size: 0.7em;
+  position: relative;
+  top: -0.5em;
+  vertical-align: baseline;
+}
 #post article #date {
   font-family: var(--sans-serif);
   font-style: italic;
@@ -364,23 +374,27 @@ header #recent p {
   text-wrap: balance;
   padding-right: 1rem;
 }
-#post article h2, #post article h3 {
+#post article h2,
+#post article h3 {
   display: flex;
   align-items: center;
   gap: 4px;
   margin-bottom: 0;
 }
-#post article h2 .link, #post article h3 .link {
+#post article h2 .link,
+#post article h3 .link {
   color: black;
   cursor: pointer;
   font-size: 1.2rem;
   opacity: 0;
   transition: color 0.1s ease-in-out, opacity 0.1s ease-in-out;
 }
-#post article h2 .link:hover, #post article h3 .link:hover {
+#post article h2 .link:hover,
+#post article h3 .link:hover {
   color: var(--theme);
 }
-#post article h2:hover .link, #post article h3:hover .link {
+#post article h2:hover .link,
+#post article h3:hover .link {
   opacity: 1;
 }
 #post article p {
@@ -436,7 +450,11 @@ header #recent p {
   color: var(--foreground);
   text-decoration: none;
 }
-#toc h2, #toc h3, #toc h4, #toc h5, #toc h6 {
+#toc h2,
+#toc h3,
+#toc h4,
+#toc h5,
+#toc h6 {
   font-size: var(--aside-font-size);
   font-weight: normal !important;
   margin: 0;
@@ -446,4 +464,25 @@ header #recent p {
 }
 #toc h3 {
   padding-left: 8px;
+}
+
+@keyframes shake {
+  0% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-10px);
+  }
+  40% {
+    transform: translateX(10px);
+  }
+  60% {
+    transform: translateX(-10px);
+  }
+  80% {
+    transform: translateX(10px);
+  }
+  100% {
+    transform: translateX(0);
+  }
 }

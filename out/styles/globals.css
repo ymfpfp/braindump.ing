@@ -38,10 +38,10 @@
   src: url("/fonts/SourceSerif4-ItalicVariable.ttf") format("truetype");
 }
 :root {
-  --sans-serif: 'Source Sans 3';
-  --serif: 'Source Serif 4';
-  --heading: 'Roberte';
-  --monospace: 'JetBrains Mono';
+  --sans-serif: "Source Sans 3";
+  --serif: "Source Serif 4";
+  --heading: "Roberte";
+  --monospace: "JetBrains Mono";
   --line-height: 1.6;
   --border: #efefef;
   --darker-border: #dedede;
@@ -97,6 +97,9 @@ button[type=submit] {
   padding: 7px 14px;
   box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.1);
   transform: transform 0.1s ease-in;
+}
+button[type=submit]:disabled {
+  cursor: not-allowed;
 }
 button[type=submit]:hover, button[type=submit]:focus {
   transform: scale(103%);

@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta property="og:title" content="braindump.ing | Rewriting blog in Haskell (Haskell, parser combinators)" />
+    <meta property="og:title" content="braindump.ing | Rewriting blog in Haskell (functional programming, parser combinators)" />
     <meta property="og:site_name" content="braindump.ing" />
 
     <meta name="description" content="I took the liberty of rewriting my blog in Haskell! Here I'm going to leave some notes about writing the blog for myself. First off, we have a Markdown parser; I find writing a Markdown parser to be a quick litmus test for reasoning about a new language. As such..." />
@@ -35,7 +35,7 @@
       {
         "@context": "https://schema.org",
         "@type": "Article",
-        "headline": "Rewriting blog in Haskell (Haskell, parser combinators)",
+        "headline": "Rewriting blog in Haskell (functional programming, parser combinators)",
         "abstract": "I took the liberty of rewriting my blog in Haskell! Here I'm going to leave some notes about writing the blog for myself. First off, we have a Markdown parser; I find writing a Markdown parser to be a quick litmus test for reasoning about a new language. As such...",
         "image": [
           {
@@ -54,8 +54,8 @@
       }
     </script>
 
-    <title>braindump.ing | Rewriting blog in Haskell (Haskell, parser combinators)</title>
-    <link href="/styles/globals.css" rel="stylesheet"/>
+    <title>braindump.ing | Rewriting blog in Haskell (functional programming, parser combinators)</title>
+    <link href="/styles/globals.css" rel="stylesheet" />
     <link href="/styles/main.css" rel="stylesheet" />
     <link href="/styles/prism.css" rel="stylesheet" />
     <link href="/styles/mjx.css" rel="stylesheet" />
@@ -73,289 +73,355 @@
             <p><a href="/writing.html">Writing</a></p>
             <p><a href="/notes.html">Notes</a></p>
             <p><a href="/aesthetics.html">Aesthetics</a></p>
-            <p><i>When will I be ready to just enjoy sunburning with you?</i></p>
+            <p>
+              <i>When will I be ready to just enjoy sunburning with you?</i>
+            </p>
           </div>
         </div>
-      </aside>
+      </div>
     </header>
     <div id="post">
+      <aside></aside>
+      <article id="index"><p>I took the liberty of rewriting my blog in Haskell! Here I'm going to leave some notes about writing the blog for myself.</p><p>First off, we have a Markdown parser; I find writing a Markdown parser to be a quick litmus test for reasoning about a new language. As such you may find this useful if you're learning Haskell. tl;dr:</p><ul><li><p>Order of operations/currying</p></li><li><p><code>type</code>/<code>data</code>/<code>newtype</code></p></li><li><p>Parser combinators</p></li><li><p>Functors</p></li><li><p>Monads</p></li><li><p>I/O monad</p></li></ul><p>Pregaming info:</p><p>Everything in Haskell is a function, specifically a curried function, that is, a function that takes exactly one parameter. For example:</p><pre class="language-haskell"><code class="language-haskell"><span class="token builtin">max</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token constant">Ord</span> <span class="token hvariable">a</span><span class="token punctuation">)</span> <span class="token operator">=></span> <span class="token hvariable">a</span> <span class="token operator">-></span> <span class="token hvariable">a</span> <span class="token operator">-></span> <span class="token hvariable">a</span>
+<span class="token builtin">max</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token constant">Ord</span> <span class="token hvariable">a</span><span class="token punctuation">)</span> <span class="token operator">=></span> <span class="token hvariable">a</span> <span class="token operator">-></span> <span class="token punctuation">(</span><span class="token hvariable">a</span> <span class="token operator">-></span> <span class="token hvariable">a</span><span class="token punctuation">)</span>
+
+<span class="token builtin">max</span> <span class="token number">4</span> <span class="token number">5</span>
+<span class="token punctuation">(</span><span class="token builtin">max</span> <span class="token number">4</span><span class="token punctuation">)</span> <span class="token number">5</span></code></pre><p>(Here, <code>Ord</code> is a type class, representing that <code>a</code> is a type that has operations for ordering. It reminds me of interfaces in other languages.)</p><p>As you can see, <code>max</code> takes a value of <code>a</code>, returning a function that takes a value of <code>a</code> and returns a value of <code>a</code>.</p><p>Curried functions are useful because they let you partially apply functions, making a stronger case for first-class functions if you will. The root of this is lambda calculus; see <a href="https://learnxinyminutes.com/lambda-calculus">_Learn Lambda Calculus in Y Minutes_</a>.</p><p>There is extra syntax to facilitate order of operations, e.g.:</p><pre class="language-haskell"><code class="language-haskell"><span class="token hvariable">slug</span> <span class="token operator">::</span> <span class="token constant">String</span> <span class="token operator">-></span> <span class="token constant">String</span>
+<span class="token hvariable">slug</span> <span class="token operator">=</span>
+  <span class="token builtin">map</span> <span class="token punctuation">(</span><span class="token operator">\</span><span class="token hvariable">c</span> <span class="token operator">-></span> <span class="token keyword">if</span> <span class="token hvariable">c</span> <span class="token operator">==</span> <span class="token char string">' '</span> <span class="token keyword">then</span> <span class="token char string">'-'</span> <span class="token keyword">else</span> <span class="token hvariable">c</span><span class="token punctuation">)</span>
+    <span class="token operator">.</span> <span class="token builtin">filter</span> <span class="token punctuation">(</span><span class="token operator">\</span><span class="token hvariable">c</span> <span class="token operator">-></span> <span class="token builtin">isAlphaNum</span> <span class="token hvariable">c</span> <span class="token operator">||</span> <span class="token hvariable">c</span> <span class="token operator">==</span> <span class="token char string">' '</span><span class="token punctuation">)</span>
+    <span class="token operator">.</span> <span class="token builtin">map</span> <span class="token builtin">toLower</span>
+    <span class="token operator">.</span> <span class="token hvariable">trim</span>
+
+<span class="token hvariable">summary</span> <span class="token operator">=</span> <span class="token hvariable">trim</span> <span class="token operator">$</span> <span class="token hvariable">intercalate</span> <span class="token string">" "</span> <span class="token punctuation">(</span><span class="token builtin">take</span> <span class="token number">50</span> <span class="token operator">$</span> <span class="token builtin">words</span> <span class="token operator">$</span> <span class="token hvariable">Md<span class="token punctuation">.</span>documentToText</span> <span class="token hvariable">doc</span><span class="token punctuation">)</span></code></pre><p>The first one is obvious, it resolves to nested functions, i.e. <code>map . filter . map . trim</code> resolves to <code>map(filter(map(trim)))</code>, returning a composed function.</p><p>The second one is just the function application operator, i.e. <code>trim <span class="mjx-chtml"><span class="mjx-math" aria-label=" intercalate &quot; &quot; (take 50 "><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.446em; padding-bottom: 0.298em;">i</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.225em; padding-bottom: 0.298em;">n</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.372em; padding-bottom: 0.298em;">t</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.225em; padding-bottom: 0.298em;">e</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.225em; padding-bottom: 0.298em;">r</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.225em; padding-bottom: 0.298em;">c</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.225em; padding-bottom: 0.298em;">a</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.446em; padding-bottom: 0.298em;">l</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.225em; padding-bottom: 0.298em;">a</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.372em; padding-bottom: 0.298em;">t</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.225em; padding-bottom: 0.298em;">e</span></span><span class="mjx-mo MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.372em; padding-bottom: 0.298em;">"<span class="mjx-charbox MJXc-TeX-main-R" style="padding-bottom: 0.314em;">"</span></span></span><span class="mjx-mo MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.446em; padding-bottom: 0.593em;">(</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.372em; padding-bottom: 0.298em;">t</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.225em; padding-bottom: 0.298em;">a</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.446em; padding-bottom: 0.298em;">k</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.225em; padding-bottom: 0.298em;">e</span></span><span class="mjx-mn"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.372em; padding-bottom: 0.372em;">50</span></span></span></span></span> words $ Md.documentToText doc)</code> resolves to <code>trim (intercalate " " (take 50 (words (Md.documentToText doc))))</code> which can be annoying. In other words, you can use it to replace parentheses that would otherwise be there to notate order of operations.</p><p>The example above also makes use of lambdas, anonymous curried functions.</p><p>You may have heard of <b>thunks</b>. Haskell is a lazily-evaluated language (compared to something like Lisp). A thunk is just a deferred computation. For example, lists are just syntactical sugar for pairs:</p><pre class="language-haskell"><code class="language-haskell"><span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">,</span> <span class="token number">3</span><span class="token punctuation">,</span> <span class="token number">4</span><span class="token punctuation">]</span>
+<span class="token number">1</span><span class="token operator">:</span><span class="token number">2</span><span class="token operator">:</span><span class="token number">3</span><span class="token operator">:</span><span class="token number">4</span><span class="token operator">:</span><span class="token punctuation">[</span><span class="token punctuation">]</span></code></pre><p>See <a href="https://loup-vaillant.fr/tutorials/from-imperative-to-functional?curius=3118">_From Imperative To Functional: How to make the leap_</a> for more info.</p><h2 id="parsing-markdown">Parsing Markdown</h2><p>Start out by defining:</p><pre class="language-haskell"><code class="language-haskell"><span class="token keyword">type</span> <span class="token constant">Document</span> <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token constant">Block</span><span class="token punctuation">]</span>
+
+<span class="token keyword">data</span> <span class="token constant">Block</span>
+  <span class="token operator">=</span> <span class="token constant">Paragraph</span> <span class="token punctuation">[</span><span class="token constant">Inline</span><span class="token punctuation">]</span>
+  <span class="token operator">|</span> <span class="token constant">Heading</span> <span class="token punctuation">(</span><span class="token constant">Int</span><span class="token punctuation">,</span> <span class="token punctuation">[</span><span class="token constant">Inline</span><span class="token punctuation">]</span><span class="token punctuation">,</span> <span class="token constant">Props</span><span class="token punctuation">)</span>
+  <span class="token operator">|</span> <span class="token constant">Blockquote</span> <span class="token punctuation">[</span><span class="token constant">Block</span><span class="token punctuation">]</span>
+  <span class="token operator">|</span> <span class="token constant">OrderedList</span> <span class="token punctuation">[</span><span class="token punctuation">[</span><span class="token constant">Block</span><span class="token punctuation">]</span><span class="token punctuation">]</span>
+  <span class="token operator">|</span> <span class="token constant">UnorderedList</span> <span class="token punctuation">[</span><span class="token punctuation">[</span><span class="token constant">Block</span><span class="token punctuation">]</span><span class="token punctuation">]</span>
+  <span class="token operator">|</span> <span class="token constant">Image</span> <span class="token punctuation">(</span><span class="token constant">String</span><span class="token punctuation">,</span> <span class="token constant">String</span><span class="token punctuation">)</span>
+  <span class="token operator">|</span> <span class="token constant">HorizontalBreak</span>
+  <span class="token operator">|</span> <span class="token constant">CodeBlock</span> <span class="token punctuation">(</span><span class="token constant">String</span><span class="token punctuation">,</span> <span class="token constant">String</span><span class="token punctuation">)</span>
+  <span class="token operator">|</span> <span class="token constant">Fragment</span> <span class="token punctuation">[</span><span class="token constant">Inline</span><span class="token punctuation">]</span>
+  <span class="token keyword">deriving</span> <span class="token constant">Show</span>
+
+<span class="token keyword">data</span> <span class="token constant">Inline</span>
+  <span class="token operator">=</span> <span class="token constant">Plain</span> <span class="token constant">String</span>
+  <span class="token operator">|</span> <span class="token constant">Italic</span> <span class="token punctuation">[</span><span class="token constant">Inline</span><span class="token punctuation">]</span>
+  <span class="token operator">|</span> <span class="token constant">Bold</span> <span class="token punctuation">[</span><span class="token constant">Inline</span><span class="token punctuation">]</span>
+  <span class="token operator">|</span> <span class="token constant">Code</span> <span class="token constant">String</span>
+  <span class="token operator">|</span> <span class="token constant">Link</span> <span class="token punctuation">(</span><span class="token constant">String</span><span class="token punctuation">,</span> <span class="token punctuation">[</span><span class="token constant">Inline</span><span class="token punctuation">]</span><span class="token punctuation">)</span>
+  <span class="token keyword">deriving</span> <span class="token constant">Show</span></code></pre><p>Using <code>type</code> is basically type aliasing. <code>data</code> actually introduces new types, made of multiple constructors. <code>deriving</code> lets us automatically derive instances of type classes for custom types. In this case we want to be able to show (log) these types.</p><pre class="language-haskell"><code class="language-haskell"><span class="token hvariable">parse</span> <span class="token operator">::</span> <span class="token constant">String</span> <span class="token operator">-></span> <span class="token constant">Document</span>
+<span class="token comment">-- Either return `[]` or the `[Block]` part of the final `Just (blocks, stream)`.</span>
+<span class="token hvariable">parse</span> <span class="token hvariable">raw</span> <span class="token operator">=</span> <span class="token builtin">maybe</span> <span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token builtin">fst</span> <span class="token punctuation">(</span><span class="token hvariable">runParser</span> <span class="token hvariable">raw</span><span class="token punctuation">)</span></code></pre><p><code>maybe</code> is a built-in function:</p><pre class="language-haskell"><code class="language-haskell"><span class="token keyword">data</span> <span class="token constant">Maybe</span> <span class="token hvariable">a</span>
+  <span class="token operator">=</span> <span class="token constant">Nothing</span>
+  <span class="token operator">|</span> <span class="token constant">Just</span> <span class="token hvariable">a</span>
+<span class="token builtin">maybe</span> <span class="token operator">::</span> <span class="token hvariable">b</span> <span class="token operator">-></span> <span class="token punctuation">(</span><span class="token hvariable">a</span> <span class="token operator">-></span> <span class="token hvariable">b</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token constant">Maybe</span> <span class="token hvariable">a</span> <span class="token operator">-></span> <span class="token hvariable">b</span></code></pre><p>It takes a value of type <code>b</code>, a function that takes a value of type <code>a</code> and returns a value of type <code>b</code>, and a value that is wrapped in a <code>Maybe</code>. If this last value is wrapped in a <code>Just</code> constructor rather than <code>Nothing</code>, it gets passed to the function. In other words, <code>a ? f(a) : b</code>.</p><p><code>fst</code> is another function in the prelude; its type signature is <code>fst :: (a, b) -> a</code>. It takes a pair and returns the first item in that pair. This is useful because <code>runParser</code> has the following type signature:</p><pre class="language-haskell"><code class="language-haskell"><span class="token comment">-- Take a string, maybe return a value and the rest of the string.</span>
+<span class="token hvariable">runParser</span> <span class="token operator">::</span> <span class="token constant">String</span> <span class="token operator">-></span> <span class="token constant">Maybe</span> <span class="token punctuation">(</span><span class="token hvariable">t</span><span class="token punctuation">,</span> <span class="token constant">String</span><span class="token punctuation">)</span></code></pre><p>Once we have this list of blocks, we want to convert them to HTML or text. This is pretty straightforward:</p><pre class="language-haskell"><code class="language-haskell"><span class="token hvariable">documentToHtml</span> <span class="token operator">::</span> <span class="token constant">Document</span> <span class="token operator">-></span> <span class="token constant">String</span>
+<span class="token comment">-- `foldr` is basically `reduce`, folding the given list from the right.</span>
+<span class="token hvariable">documentToHtml</span> <span class="token operator">=</span> <span class="token builtin">foldr</span> <span class="token punctuation">(</span><span class="token operator">\</span><span class="token hvariable">block</span> <span class="token hvariable">html</span> <span class="token operator">-></span> <span class="token hvariable">blockToHtml</span> <span class="token hvariable">block</span> <span class="token operator">++</span> <span class="token hvariable">html</span><span class="token punctuation">)</span> <span class="token string">""</span>
+
+<span class="token hvariable">documentToText</span> <span class="token operator">::</span> <span class="token constant">Document</span> <span class="token operator">-></span> <span class="token constant">String</span>
+<span class="token hvariable">documentToText</span> <span class="token operator">=</span> <span class="token builtin">foldr</span> <span class="token punctuation">(</span><span class="token operator">\</span><span class="token hvariable">block</span> <span class="token hvariable">text</span> <span class="token operator">-></span> <span class="token hvariable">blockToText</span> <span class="token hvariable">block</span> <span class="token operator">++</span> <span class="token hvariable">text</span><span class="token punctuation">)</span> <span class="token string">""</span>
+
+<span class="token hvariable">wrap</span> <span class="token operator">::</span> <span class="token constant">String</span> <span class="token operator">-></span> <span class="token constant">String</span> <span class="token operator">-></span> <span class="token constant">String</span>
+<span class="token hvariable">wrap</span> <span class="token hvariable">tag</span> <span class="token hvariable">content</span> <span class="token operator">=</span> <span class="token string">"&lt;"</span> <span class="token operator">++</span> <span class="token hvariable">tag</span> <span class="token operator">++</span> <span class="token string">">"</span> <span class="token operator">++</span> <span class="token hvariable">content</span> <span class="token operator">++</span> <span class="token string">"&lt;/"</span> <span class="token operator">++</span> <span class="token hvariable">tag</span> <span class="token operator">++</span> <span class="token string">">"</span>
+
+<span class="token hvariable">wrapWithProps</span> <span class="token operator">::</span> <span class="token constant">String</span> <span class="token operator">-></span> <span class="token punctuation">[</span><span class="token punctuation">(</span><span class="token constant">String</span><span class="token punctuation">,</span> <span class="token constant">String</span><span class="token punctuation">)</span><span class="token punctuation">]</span> <span class="token operator">-></span> <span class="token constant">String</span> <span class="token operator">-></span> <span class="token constant">String</span>
+<span class="token hvariable">wrapWithProps</span> <span class="token hvariable">tag</span> <span class="token hvariable">props</span> <span class="token hvariable">content</span> <span class="token operator">=</span>
+  <span class="token string">"&lt;"</span> <span class="token operator">++</span> <span class="token hvariable">tag</span> <span class="token operator">++</span> <span class="token builtin">concatMap</span> <span class="token hvariable">format</span> <span class="token hvariable">props</span> <span class="token operator">++</span> <span class="token string">">"</span> <span class="token operator">++</span> <span class="token hvariable">content</span> <span class="token operator">++</span> <span class="token string">"&lt;/"</span> <span class="token operator">++</span> <span class="token hvariable">tag</span> <span class="token operator">++</span> <span class="token string">">"</span>
+  <span class="token keyword">where</span>
+    <span class="token hvariable">format</span> <span class="token punctuation">(</span><span class="token hvariable">k</span><span class="token punctuation">,</span> <span class="token hvariable">v</span><span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token string">" "</span> <span class="token operator">++</span> <span class="token hvariable">k</span> <span class="token operator">++</span> <span class="token string">"=\""</span> <span class="token operator">++</span> <span class="token hvariable">v</span> <span class="token operator">++</span> <span class="token string">"\""</span>
+
+<span class="token hvariable">blockToHtml</span> <span class="token operator">::</span> <span class="token constant">Block</span> <span class="token operator">-></span> <span class="token constant">String</span>
+<span class="token hvariable">blockToHtml</span> <span class="token hvariable">block</span> <span class="token operator">=</span> <span class="token keyword">case</span> <span class="token hvariable">block</span> <span class="token keyword">of</span>
+  <span class="token constant">Paragraph</span> <span class="token hvariable">inline</span> <span class="token operator">-></span> <span class="token hvariable">wrap</span> <span class="token string">"p"</span> <span class="token operator">$</span> <span class="token builtin">concatMap</span> <span class="token hvariable">inlineToHtml</span> <span class="token hvariable">inline</span>
+  <span class="token constant">Heading</span> <span class="token punctuation">(</span><span class="token hvariable">depth</span><span class="token punctuation">,</span> <span class="token hvariable">inline</span><span class="token punctuation">,</span> <span class="token hvariable">props</span><span class="token punctuation">)</span> <span class="token operator">-></span>
+    <span class="token hvariable">wrapWithProps</span> <span class="token punctuation">(</span><span class="token string">"h"</span> <span class="token operator">++</span> <span class="token builtin">show</span> <span class="token hvariable">depth</span><span class="token punctuation">)</span> <span class="token hvariable">props</span> <span class="token punctuation">(</span><span class="token builtin">concatMap</span> <span class="token hvariable">inlineToHtml</span> <span class="token hvariable">inline</span><span class="token punctuation">)</span>
+  <span class="token constant">Blockquote</span> <span class="token hvariable">blocks</span> <span class="token operator">-></span> <span class="token hvariable">wrap</span> <span class="token string">"blockquote"</span> <span class="token operator">$</span> <span class="token builtin">concatMap</span> <span class="token hvariable">blockToHtml</span> <span class="token hvariable">blocks</span>
+  <span class="token constant">OrderedList</span> <span class="token hvariable">items</span> <span class="token operator">-></span> <span class="token hvariable">wrap</span> <span class="token string">"ol"</span> <span class="token operator">$</span> <span class="token builtin">concatMap</span> <span class="token punctuation">(</span><span class="token hvariable">wrap</span> <span class="token string">"li"</span> <span class="token operator">.</span> <span class="token hvariable">documentToHtml</span><span class="token punctuation">)</span> <span class="token hvariable">items</span>
+  <span class="token constant">UnorderedList</span> <span class="token hvariable">items</span> <span class="token operator">-></span> <span class="token hvariable">wrap</span> <span class="token string">"ul"</span> <span class="token operator">$</span> <span class="token builtin">concatMap</span> <span class="token punctuation">(</span><span class="token hvariable">wrap</span> <span class="token string">"li"</span> <span class="token operator">.</span> <span class="token hvariable">documentToHtml</span><span class="token punctuation">)</span> <span class="token hvariable">items</span>
+  <span class="token constant">Image</span> <span class="token punctuation">(</span><span class="token hvariable">alt</span><span class="token punctuation">,</span> <span class="token hvariable">src</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token hvariable">wrapWithProps</span> <span class="token string">"img"</span> <span class="token punctuation">[</span><span class="token punctuation">(</span><span class="token string">"alt"</span><span class="token punctuation">,</span> <span class="token hvariable">alt</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">(</span><span class="token string">"src"</span><span class="token punctuation">,</span> <span class="token hvariable">src</span><span class="token punctuation">)</span><span class="token punctuation">]</span> <span class="token string">""</span>
+  <span class="token constant">HorizontalBreak</span> <span class="token operator">-></span> <span class="token string">"&lt;hr>"</span>
+  <span class="token constant">CodeBlock</span> <span class="token punctuation">(</span><span class="token hvariable">language</span><span class="token punctuation">,</span> <span class="token hvariable">code</span><span class="token punctuation">)</span> <span class="token operator">-></span>
+    <span class="token hvariable">wrap</span> <span class="token string">"pre"</span> <span class="token operator">$</span> <span class="token hvariable">wrapWithProps</span> <span class="token string">"code"</span> <span class="token punctuation">[</span><span class="token punctuation">(</span><span class="token string">"class"</span><span class="token punctuation">,</span> <span class="token string">"language-"</span> <span class="token operator">++</span> <span class="token hvariable">language</span><span class="token punctuation">)</span><span class="token punctuation">]</span> <span class="token hvariable">code</span>
+  <span class="token constant">Fragment</span> <span class="token hvariable">inline</span> <span class="token operator">-></span> <span class="token builtin">concatMap</span> <span class="token hvariable">inlineToHtml</span> <span class="token hvariable">inline</span>
+
+<span class="token hvariable">blockToText</span> <span class="token operator">::</span> <span class="token constant">Block</span> <span class="token operator">-></span> <span class="token constant">String</span>
+<span class="token hvariable">blockToText</span> <span class="token hvariable">block</span> <span class="token operator">=</span> <span class="token keyword">case</span> <span class="token hvariable">block</span> <span class="token keyword">of</span>
+  <span class="token constant">Paragraph</span> <span class="token hvariable">inline</span> <span class="token operator">-></span> <span class="token builtin">concatMap</span> <span class="token hvariable">inlineToText</span> <span class="token hvariable">inline</span>
+  <span class="token constant">Heading</span> <span class="token punctuation">(</span><span class="token hvariable">_</span><span class="token punctuation">,</span> <span class="token hvariable">inline</span><span class="token punctuation">,</span> <span class="token hvariable">_</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin">concatMap</span> <span class="token hvariable">inlineToText</span> <span class="token hvariable">inline</span>
+  <span class="token constant">Blockquote</span> <span class="token hvariable">blocks</span> <span class="token operator">-></span> <span class="token builtin">concatMap</span> <span class="token hvariable">blockToText</span> <span class="token hvariable">blocks</span>
+  <span class="token constant">OrderedList</span> <span class="token hvariable">items</span> <span class="token operator">-></span> <span class="token builtin">concatMap</span> <span class="token hvariable">documentToText</span> <span class="token hvariable">items</span>
+  <span class="token constant">UnorderedList</span> <span class="token hvariable">items</span> <span class="token operator">-></span> <span class="token builtin">concatMap</span> <span class="token hvariable">documentToText</span> <span class="token hvariable">items</span>
+  <span class="token constant">Image</span> <span class="token punctuation">(</span><span class="token hvariable">alt</span><span class="token punctuation">,</span> <span class="token hvariable">_</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token hvariable">alt</span>
+  <span class="token constant">HorizontalBreak</span> <span class="token operator">-></span> <span class="token string">""</span>
+  <span class="token constant">CodeBlock</span> <span class="token punctuation">(</span><span class="token hvariable">_</span><span class="token punctuation">,</span> <span class="token hvariable">code</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token hvariable">code</span>
+  <span class="token constant">Fragment</span> <span class="token hvariable">inline</span> <span class="token operator">-></span> <span class="token builtin">concatMap</span> <span class="token hvariable">inlineToText</span> <span class="token hvariable">inline</span>
+
+<span class="token hvariable">inlineToHtml</span> <span class="token operator">::</span> <span class="token constant">Inline</span> <span class="token operator">-></span> <span class="token constant">String</span>
+<span class="token hvariable">inlineToHtml</span> <span class="token hvariable">inline</span> <span class="token operator">=</span> <span class="token keyword">case</span> <span class="token hvariable">inline</span> <span class="token keyword">of</span>
+  <span class="token constant">Plain</span> <span class="token hvariable">s</span> <span class="token operator">-></span> <span class="token hvariable">s</span>
+  <span class="token constant">Italic</span> <span class="token hvariable">nested</span> <span class="token operator">-></span> <span class="token hvariable">wrap</span> <span class="token string">"i"</span> <span class="token operator">$</span> <span class="token builtin">concatMap</span> <span class="token hvariable">inlineToHtml</span> <span class="token hvariable">nested</span>
+  <span class="token constant">Bold</span> <span class="token hvariable">nested</span> <span class="token operator">-></span> <span class="token hvariable">wrap</span> <span class="token string">"b"</span> <span class="token operator">$</span> <span class="token builtin">concatMap</span> <span class="token hvariable">inlineToHtml</span> <span class="token hvariable">nested</span>
+  <span class="token constant">Code</span> <span class="token hvariable">code</span> <span class="token operator">-></span> <span class="token hvariable">wrap</span> <span class="token string">"code"</span> <span class="token hvariable">code</span>
+  <span class="token constant">Link</span> <span class="token punctuation">(</span><span class="token hvariable">link</span><span class="token punctuation">,</span> <span class="token hvariable">nested</span><span class="token punctuation">)</span> <span class="token operator">-></span>
+    <span class="token hvariable">wrapWithProps</span> <span class="token string">"a"</span> <span class="token punctuation">[</span><span class="token punctuation">(</span><span class="token string">"href"</span><span class="token punctuation">,</span> <span class="token hvariable">link</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">(</span><span class="token string">"target"</span><span class="token punctuation">,</span> <span class="token string">"_blank"</span><span class="token punctuation">)</span><span class="token punctuation">]</span> <span class="token operator">$</span>
+      <span class="token builtin">concatMap</span> <span class="token hvariable">inlineToHtml</span> <span class="token hvariable">nested</span></code></pre><h3 id="folds">Folds</h3><p><code>documentToHtml</code> and <code>documentToText</code> both make use of a built-in function called <code>foldr</code>. Like the comment attests, <b>folds</b> let you reduce a data structure to a single value. There is <code>foldl</code>, which folds from the left:</p><pre class="language-haskell"><code class="language-haskell"><span class="token comment">-- `Num a` requires that type `a` is a instance of typeclass `Num`.</span>
+<span class="token builtin">sum</span>' <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token constant">Num</span> <span class="token hvariable">a</span><span class="token punctuation">)</span> <span class="token operator">=></span> <span class="token punctuation">[</span><span class="token hvariable">a</span><span class="token punctuation">]</span> <span class="token operator">-></span> <span class="token hvariable">a</span>
+<span class="token builtin">sum</span>' <span class="token hvariable">xs</span> <span class="token operator">=</span> <span class="token builtin">foldl</span> <span class="token punctuation">(</span><span class="token operator">\</span><span class="token hvariable">acc</span> <span class="token hvariable">x</span> <span class="token operator">-></span> <span class="token hvariable">acc</span> <span class="token operator">+</span> <span class="token hvariable">x</span><span class="token punctuation">)</span> <span class="token number">0</span> <span class="token hvariable">xs</span></code></pre><p>The special thing about <code>foldr</code> is that it works on infinite lists.</p><p><code>foldl1</code> and <code>foldr1</code> are functions that set the starting accumulator to the first item in the iterator.</p><p>Other higher-order built-in functions and useful tricks used here:</p><ul><li><p><code>concatMap</code></p></li><li><p>We use <code>case</code>-based pattern matching here.</p></li></ul><p>Let's take a look at the parser in more detail.</p><h2 id="parser-combinators">Parser combinators</h2><p>As it turns out, one functional way of writing parsers is <b>parser combinators</b>. You combine parsers, which at the end of the day are just functions over a stream, to generate The Ultimate Parser, and then you run it. <a href="https://theorangeduck.com/page/you-could-have-invented-parser-combinators">_You could have invented parser combinators_</a> has a really good example:</p><pre class="language-javascript"><code class="language-javascript"><span class="token keyword">function</span> <span class="token function">lit</span><span class="token punctuation">(</span><span class="token parameter">c</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token keyword">return</span> <span class="token keyword">function</span> <span class="token punctuation">(</span><span class="token parameter">input</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">var</span> r <span class="token operator">=</span> <span class="token function">inputRead</span><span class="token punctuation">(</span>input<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>r <span class="token operator">==</span> c<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      <span class="token function">inputAdvance</span><span class="token punctuation">(</span>input<span class="token punctuation">,</span> <span class="token number">1</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+      <span class="token keyword">return</span> c<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+      <span class="token keyword">return</span> failure<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">function</span> <span class="token function">or</span><span class="token punctuation">(</span><span class="token parameter">parser0<span class="token punctuation">,</span> parser1</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token keyword">return</span> <span class="token keyword">function</span> <span class="token punctuation">(</span><span class="token parameter">input</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    <span class="token keyword">var</span> result0 <span class="token operator">=</span> <span class="token function">parser0</span><span class="token punctuation">(</span>input<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>result0 <span class="token operator">!=</span> failure<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      <span class="token keyword">return</span> result0<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">var</span> result1 <span class="token operator">=</span> <span class="token function">parser1</span><span class="token punctuation">(</span>input<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">if</span> <span class="token punctuation">(</span>result1 <span class="token operator">!=</span> failure<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+      <span class="token keyword">return</span> result1<span class="token punctuation">;</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">return</span> failure<span class="token punctuation">;</span>
+  <span class="token punctuation">}</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">var</span> parser <span class="token operator">=</span> <span class="token function">or</span><span class="token punctuation">(</span><span class="token function">lit</span><span class="token punctuation">(</span><span class="token string">"a"</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token function">lit</span><span class="token punctuation">(</span><span class="token string">"b"</span><span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">var</span> result <span class="token operator">=</span> <span class="token function">parser</span><span class="token punctuation">(</span>input<span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre><p>Haskell has some parser combinator libraries you can use, notably <a href="https://hackage.haskell.org/package/parsec">Parsec</a>, by using a package manager like <a href="https://www.haskell.org/cabal/">Cabal</a>. For educational purposes I wrote my own.</p><p>A parser looks something like this:</p><pre class="language-haskell"><code class="language-haskell"><span class="token keyword">newtype</span> <span class="token constant">Parser</span> <span class="token hvariable">t</span> <span class="token operator">=</span> <span class="token constant">Parser</span> <span class="token punctuation">{</span> <span class="token hvariable">runParser</span> <span class="token operator">::</span> <span class="token constant">String</span> <span class="token operator">-></span> <span class="token constant">Maybe</span> <span class="token punctuation">(</span><span class="token hvariable">t</span><span class="token punctuation">,</span> <span class="token constant">String</span><span class="token punctuation">)</span> <span class="token punctuation">}</span></code></pre><p><code>newtype</code> is very similar to <code>data</code>, except that you're passing in exactly one constructor. In this case, it's</p><p>We have <code>runParser</code> return the result wrapped in a <code>Maybe</code> in the case that there's any parsing error.</p><p>We can take advantage of some type classes that come in the prelude to construct some fundamental parser combinators:</p><h3 id="functors">Functors</h3><p>Functors are types that serve as a context around values, allowing functions to be mapped over the value inside. For example, <code>Maybe</code> is one, where you can run a function on the value it's wrapping, e.g. <code>fmap (* 2) (Just 200)</code> results in <code>Just 400</code>.</p><p>This is exactly what we want, we want to be able to wrap a parser in another parser.</p><p>The <code>Functor</code> type class in Haskell asks you to define this function <code>fmap</code>:</p><pre class="language-haskell"><code class="language-haskell"><span class="token keyword">class</span> <span class="token constant">Functor</span> <span class="token hvariable">f</span> <span class="token keyword">where</span>
+  <span class="token builtin">fmap</span> <span class="token operator">::</span> <span class="token punctuation">(</span><span class="token hvariable">a</span> <span class="token operator">-></span> <span class="token hvariable">b</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token hvariable">f</span> <span class="token hvariable">a</span> <span class="token operator">-></span> <span class="token hvariable">f</span> <span class="token hvariable">b</span>
+
+<span class="token keyword">instance</span> <span class="token constant">Functor</span> <span class="token constant">Parser</span> <span class="token keyword">where</span>
+  <span class="token builtin">fmap</span> <span class="token operator">::</span> <span class="token constant">Functor</span> <span class="token hvariable">f</span> <span class="token operator">=></span> <span class="token punctuation">(</span><span class="token hvariable">a</span> <span class="token operator">-></span> <span class="token hvariable">b</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token hvariable">f</span> <span class="token hvariable">a</span> <span class="token operator">-></span> <span class="token hvariable">f</span> <span class="token hvariable">b</span>
+  <span class="token builtin">fmap</span> <span class="token hvariable">apply</span> <span class="token hvariable">parser</span> <span class="token operator">=</span> <span class="token constant">Parser</span> <span class="token punctuation">(</span><span class="token operator">\</span><span class="token hvariable">s</span> <span class="token operator">-></span>
+    <span class="token keyword">case</span> <span class="token punctuation">(</span><span class="token hvariable">runParser</span> <span class="token hvariable">parser</span><span class="token punctuation">)</span> <span class="token hvariable">s</span> <span class="token keyword">of</span>
+      <span class="token constant">Nothing</span> <span class="token operator">-></span> <span class="token constant">Nothing</span>
+      <span class="token constant">Just</span> <span class="token punctuation">(</span><span class="token hvariable">inside</span><span class="token punctuation">,</span> <span class="token hvariable">stream</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token constant">Just</span> <span class="token punctuation">(</span><span class="token hvariable">apply</span> <span class="token hvariable">inside</span><span class="token punctuation">,</span> <span class="token hvariable">stream</span><span class="token punctuation">)</span><span class="token punctuation">)</span></code></pre><p>Take a function, take another instance of a <code>Functor</code> (in this case, another parser), and return a functor. The actual code returns a parser that runs the internal parser, and it</p><p>The infix operator for <code>fmap</code> is <code><$></code>.</p><h3 id="applicative-functors">Applicative functors</h3><p>Applicative functors are functors that wrap around functions. This means you can map the function inside one functor to another functor, thus why it's called "applicative". It's like chaining two values together by applying the function in one to another. Implement</p><pre class="language-haskell"><code class="language-haskell"><span class="token keyword">instance</span> <span class="token constant">Applicative</span> <span class="token constant">Parser</span> <span class="token keyword">where</span>
+  <span class="token comment">-- A parser that takes a value and returns it, but wrapped in the `Parser` context.</span>
+  <span class="token hvariable">pure</span> <span class="token hvariable">x</span> <span class="token operator">=</span> <span class="token constant">Parser</span> <span class="token punctuation">(</span><span class="token operator">\</span><span class="token hvariable">stream</span> <span class="token operator">-></span> <span class="token constant">Just</span> <span class="token punctuation">(</span><span class="token hvariable">x</span><span class="token punctuation">,</span> <span class="token hvariable">stream</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+
+  <span class="token comment">-- Apply, e.g. `Just (+3) &lt;*> Just 4` will apply the function inside `Just` on lhs</span>
+  <span class="token comment">-- to the inner value inside `Just` on rhs.</span>
+  <span class="token comment">--</span>
+  <span class="token comment">-- `*>` and `&lt;*` will be implemented from this, and these are implemented</span>
+  <span class="token comment">-- automatically with `&lt;$>` and `&lt;*>` for primitive chaining that ignores the</span>
+  <span class="token comment">-- context outside, e.g.</span>
+  <span class="token comment">--</span>
+  <span class="token comment">-- `Just 3 &lt;* Just 5` becomes</span>
+  <span class="token comment">-- `(\a _ -> a) &lt;$> (Just 3) &lt;*> (Just 5)`, as Haskell implements `*>` as</span>
+  <span class="token comment">-- `(\a _ -> a) &lt;$> a &lt;*> b`.</span>
+  <span class="token comment">--</span>
+  <span class="token comment">-- Thus we are able to execute both functions and return the result of the first</span>
+  <span class="token comment">-- which is pretty cool.</span>
+  <span class="token comment">--</span>
+  <span class="token comment">-- The difference between `*>` and `&lt;*` and monadic chaining is that applicative</span>
+  <span class="token comment">-- chaining means you have no way to change the "shape" of the result.</span>
+  <span class="token comment">--</span>
+  <span class="token comment">-- This is based off monad chaining for `Maybe` type, that is, we are able</span>
+  <span class="token hvariable">pf</span> <span class="token operator">&lt;*></span> <span class="token hvariable">px</span> <span class="token operator">=</span> <span class="token constant">Parser</span> <span class="token punctuation">(</span><span class="token operator">\</span><span class="token hvariable">stream</span> <span class="token operator">-></span> <span class="token keyword">do</span>
+    <span class="token comment">-- `pf` is a parser that returns a function.</span>
+    <span class="token punctuation">(</span><span class="token hvariable">f</span><span class="token punctuation">,</span> <span class="token hvariable">fs</span><span class="token punctuation">)</span> <span class="token operator">&lt;-</span> <span class="token punctuation">(</span><span class="token hvariable">runParser</span> <span class="token hvariable">pf</span><span class="token punctuation">)</span> <span class="token hvariable">stream</span>
+    <span class="token punctuation">(</span><span class="token hvariable">x</span><span class="token punctuation">,</span> <span class="token hvariable">xs</span><span class="token punctuation">)</span> <span class="token operator">&lt;-</span> <span class="token punctuation">(</span><span class="token hvariable">runParser</span> <span class="token hvariable">px</span><span class="token punctuation">)</span> <span class="token hvariable">fs</span>
+    <span class="token constant">Just</span> <span class="token punctuation">(</span><span class="token hvariable">f</span> <span class="token hvariable">x</span><span class="token punctuation">,</span> <span class="token hvariable">xs</span><span class="token punctuation">)</span><span class="token punctuation">)</span></code></pre><p>Along with implementing the functor typeclass, this lets us write a parser like <code>lit</code> in the JS example:</p><pre class="language-haskell"><code class="language-haskell"><span class="token hvariable">match</span> <span class="token operator">::</span> <span class="token constant">String</span> <span class="token operator">-></span> <span class="token constant">Parser</span> <span class="token constant">String</span>
+<span class="token hvariable">match</span> <span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token hvariable">pure</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>
+<span class="token comment">-- We want to `fmap (:)` over the match so we can prepend it to `match`, which means</span>
+<span class="token comment">-- this is recursive.</span>
+<span class="token comment">--</span>
+<span class="token comment">-- As for `&lt;*>`, we take the function in the context on the lhs, and apply it to the</span>
+<span class="token comment">-- value in the context on the rhs.</span>
+<span class="token hvariable">match</span> <span class="token punctuation">(</span><span class="token hvariable">x</span><span class="token operator">:</span><span class="token hvariable">xs</span><span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token operator">:</span><span class="token punctuation">)</span> <span class="token operator">&lt;$></span> <span class="token hvariable">satisfy</span> <span class="token punctuation">(</span><span class="token operator">\</span><span class="token hvariable">c</span> <span class="token operator">-></span> <span class="token hvariable">c</span> <span class="token operator">==</span> <span class="token hvariable">x</span><span class="token punctuation">)</span> <span class="token operator">&lt;*></span> <span class="token hvariable">match</span> <span class="token hvariable">xs</span></code></pre><p>In this case, if we get an empty string we should return an empty match. Otherwise, we should</p><h3 id="alternative">Alternative</h3><p>This is a type class in the prelude that represent computations that can fail. Notably, it provides <code><|></code>, which is basically <code>or</code> in the JS example above.</p><pre class="language-haskell"><code class="language-haskell"><span class="token keyword">instance</span> <span class="token constant">Alternative</span> <span class="token constant">Parser</span> <span class="token keyword">where</span>
+  <span class="token comment">-- A parser that takes a value and returns `Nothing`.</span>
+  <span class="token hvariable">empty</span> <span class="token operator">=</span> <span class="token constant">Parser</span> <span class="token punctuation">(</span><span class="token operator">\</span><span class="token hvariable">_</span> <span class="token operator">-></span> <span class="token constant">Nothing</span><span class="token punctuation">)</span>
+
+  <span class="token comment">-- A parser combinator that performs || on the results of two parsers.</span>
+  <span class="token hvariable">px</span> <span class="token operator">&lt;|></span> <span class="token hvariable">py</span> <span class="token operator">=</span> <span class="token constant">Parser</span> <span class="token punctuation">(</span><span class="token operator">\</span><span class="token hvariable">stream</span> <span class="token operator">-></span>
+    <span class="token keyword">case</span> <span class="token punctuation">(</span><span class="token hvariable">runParser</span> <span class="token hvariable">px</span><span class="token punctuation">)</span> <span class="token hvariable">stream</span> <span class="token keyword">of</span>
+      <span class="token constant">Nothing</span> <span class="token operator">-></span> <span class="token punctuation">(</span><span class="token hvariable">runParser</span> <span class="token hvariable">py</span><span class="token punctuation">)</span> <span class="token hvariable">stream</span>
+      <span class="token constant">Just</span> <span class="token hvariable">pz</span> <span class="token operator">-></span> <span class="token constant">Just</span> <span class="token hvariable">pz</span><span class="token punctuation">)</span>
+
+  <span class="token comment">-- A parser combinator that turns a parser that parses 1 thing into one that</span>
+  <span class="token comment">-- parses 0+, always returning a list.</span>
+  <span class="token hvariable">many</span> <span class="token operator">::</span> <span class="token constant">Parser</span> <span class="token hvariable">t</span> <span class="token operator">-></span> <span class="token constant">Parser</span> <span class="token punctuation">[</span><span class="token hvariable">t</span><span class="token punctuation">]</span>
+  <span class="token hvariable">many</span> <span class="token hvariable">parser</span> <span class="token operator">=</span> <span class="token constant">Parser</span> <span class="token punctuation">(</span><span class="token operator">\</span><span class="token hvariable">stream</span> <span class="token operator">-></span>
+    <span class="token keyword">case</span> <span class="token punctuation">(</span><span class="token hvariable">runParser</span> <span class="token hvariable">parser</span><span class="token punctuation">)</span> <span class="token hvariable">stream</span> <span class="token keyword">of</span>
+      <span class="token constant">Nothing</span> <span class="token operator">-></span> <span class="token constant">Just</span> <span class="token punctuation">(</span><span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">,</span> <span class="token hvariable">stream</span><span class="token punctuation">)</span>
+      <span class="token constant">Just</span> <span class="token punctuation">(</span><span class="token hvariable">x</span><span class="token punctuation">,</span> <span class="token hvariable">xs</span><span class="token punctuation">)</span> <span class="token operator">-></span>
+        <span class="token keyword">case</span> <span class="token punctuation">(</span><span class="token hvariable">runParser</span> <span class="token operator">$</span> <span class="token hvariable">many</span> <span class="token hvariable">parser</span><span class="token punctuation">)</span> <span class="token hvariable">xs</span> <span class="token keyword">of</span>
+          <span class="token comment">-- This is an unreachable case.</span>
+          <span class="token constant">Nothing</span> <span class="token operator">-></span> <span class="token constant">Nothing</span>
+          <span class="token constant">Just</span> <span class="token punctuation">(</span><span class="token hvariable">y</span><span class="token punctuation">,</span> <span class="token hvariable">ys</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token constant">Just</span> <span class="token punctuation">(</span><span class="token hvariable">x</span><span class="token operator">:</span><span class="token hvariable">y</span><span class="token punctuation">,</span> <span class="token hvariable">ys</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+
+  <span class="token comment">-- 1+.</span>
+  <span class="token hvariable">some</span> <span class="token hvariable">parser</span> <span class="token operator">=</span> <span class="token constant">Parser</span> <span class="token punctuation">(</span><span class="token operator">\</span><span class="token hvariable">stream</span> <span class="token operator">-></span>
+    <span class="token keyword">case</span> <span class="token punctuation">(</span><span class="token hvariable">runParser</span> <span class="token hvariable">parser</span><span class="token punctuation">)</span> <span class="token hvariable">stream</span> <span class="token keyword">of</span>
+      <span class="token constant">Nothing</span> <span class="token operator">-></span> <span class="token constant">Nothing</span>
+      <span class="token constant">Just</span> <span class="token punctuation">(</span><span class="token hvariable">x</span><span class="token punctuation">,</span> <span class="token hvariable">xs</span><span class="token punctuation">)</span> <span class="token operator">-></span>
+        <span class="token keyword">case</span> <span class="token punctuation">(</span><span class="token hvariable">runParser</span> <span class="token operator">$</span> <span class="token hvariable">many</span> <span class="token hvariable">parser</span><span class="token punctuation">)</span> <span class="token hvariable">xs</span> <span class="token keyword">of</span>
+          <span class="token comment">-- This is an unreachable case.</span>
+          <span class="token constant">Nothing</span> <span class="token operator">-></span> <span class="token constant">Nothing</span>
+          <span class="token constant">Just</span> <span class="token punctuation">(</span><span class="token hvariable">y</span><span class="token punctuation">,</span> <span class="token hvariable">ys</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token constant">Just</span> <span class="token punctuation">(</span><span class="token hvariable">x</span><span class="token operator">:</span><span class="token hvariable">y</span><span class="token punctuation">,</span> <span class="token hvariable">ys</span><span class="token punctuation">)</span><span class="token punctuation">)</span></code></pre><h3 id="monads">Monads</h3><blockquote><p>A monad is a monoid in the category of endofunctors.</p></blockquote><p>It's nice that I can finally understand what this means<sup>2</sup><span class="aside">(2) Hm. This feels too easy.</span>:</p><ul><li><p>Endofunctor: We know a functor is a type that wraps around a value to provide a context and can be mapped over while keeping that context. An endofunctor is that, but with the extra definition that it can map to itself, e.g. <code>Maybe a -> Maybe b</code>. Anyways all functors as defined in the Haskell prelude are endofunctors.</p></li><li><p>Monoid: A type class that enforces three properties:</p><ul><li><p>An identity context, a base value.</p></li><li><p>A binary function.</p></li><li><p>Associativity. If the binary function is chained, which pairs are evaluated first should not matter.</p></li><li><p>A list is a monoid, for example: identity context is <code>[]</code>, binary function can be <code>++</code>, and associativity of the binary is indeed a property.</p></li></ul></li></ul><p>Monoids instinctively reminded me of a mathematical group, and my intuition was on point. The type class is defined as so:</p><pre class="language-haskell"><code class="language-haskell"><span class="token keyword">class</span> <span class="token constant">Semigroup</span> <span class="token hvariable">a</span> <span class="token keyword">where</span>
+  <span class="token punctuation">(</span><span class="token operator">&lt;></span><span class="token punctuation">)</span> <span class="token operator">::</span> <span class="token hvariable">a</span> <span class="token operator">-></span> <span class="token hvariable">a</span> <span class="token operator">-></span> <span class="token hvariable">a</span>
+
+<span class="token keyword">class</span> <span class="token constant">Semigroup</span> <span class="token hvariable">a</span> <span class="token operator">=></span> <span class="token constant">Monoid</span> <span class="token hvariable">a</span> <span class="token keyword">where</span>
+  <span class="token hvariable">mempty</span>  <span class="token operator">::</span> <span class="token hvariable">a</span>
+  <span class="token hvariable">mappend</span> <span class="token operator">::</span> <span class="token hvariable">a</span> <span class="token operator">-></span> <span class="token hvariable">a</span> <span class="token operator">-></span> <span class="token hvariable">a</span></code></pre><p>So this sentence, "a monad is a monoid in the category of endofunctors", just means that a monad is a type that enforces all the constraints of a monoid that can map over itself. What is the binary function for a monad though? It's <code>join :: t (t a) -> t a</code>, which just merges the context.<sup>3</sup><span class="aside">(3) I've also seen this described as <a href="https://blog.ezyang.com/2011/05/unraveling-the-mystery-of-the-io-monad/#the-lazy-and-strict-state-monad">"threading state through various computations"</a>.</span> And you can see how that's an endofunctor, since we can map a monad over itself and use the binary function to get a third value. And that flattening should be associative.</p><p>Thus, a monad is a type that enforces all the constraints of the <code>Monoid</code> type class and can be mapped over; it's special power is that it can flatten nested instances associatively, which enables chaining. Haskell then provides two very useful constructs, <code>>>=</code> and then <code>do</code>, which is syntactical sugar on top of <code>>>=</code>. <code>do</code> makes a function seem almost imperative, when really what it is doing is chaining the functions together behind the scenes and flattening them.</p><p>Implementing the <code>Monad</code> type class looks like:</p><pre class="language-haskell"><code class="language-haskell"><span class="token keyword">instance</span> <span class="token constant">Monad</span> <span class="token constant">Parser</span> <span class="token keyword">where</span>
+  <span class="token builtin">return</span> <span class="token operator">=</span> <span class="token hvariable">pure</span>
+
+  <span class="token punctuation">(</span><span class="token operator">>>=</span><span class="token punctuation">)</span> <span class="token operator">::</span> <span class="token constant">Parser</span> <span class="token hvariable">a</span> <span class="token operator">-></span> <span class="token punctuation">(</span><span class="token hvariable">a</span> <span class="token operator">-></span> <span class="token constant">Parser</span> <span class="token hvariable">b</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token constant">Parser</span> <span class="token hvariable">b</span>
+  <span class="token hvariable">parser</span> <span class="token operator">>>=</span> <span class="token hvariable">f</span> <span class="token operator">=</span> <span class="token constant">Parser</span> <span class="token punctuation">(</span><span class="token operator">\</span><span class="token hvariable">stream</span> <span class="token operator">-></span>
+    <span class="token keyword">case</span> <span class="token punctuation">(</span><span class="token hvariable">runParser</span> <span class="token hvariable">parser</span><span class="token punctuation">)</span> <span class="token hvariable">stream</span> <span class="token keyword">of</span>
+      <span class="token constant">Nothing</span> <span class="token operator">-></span> <span class="token constant">Nothing</span>
+      <span class="token constant">Just</span> <span class="token punctuation">(</span><span class="token hvariable">x</span><span class="token punctuation">,</span> <span class="token hvariable">xs</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token punctuation">(</span><span class="token hvariable">runParser</span> <span class="token operator">$</span> <span class="token hvariable">f</span> <span class="token hvariable">x</span><span class="token punctuation">)</span> <span class="token hvariable">xs</span><span class="token punctuation">)</span></code></pre><p>What is special about this is that behind the scenes, I can use</p><p>With monads, we can now write parsers that semantically look more iterative. A pretty good chunk of the parsers I wrote in fact make liberal use of the <code>do</code> syntax.</p><pre class="language-haskell"><code class="language-haskell"><span class="token hvariable">parseBlock</span> <span class="token operator">::</span> <span class="token constant">Parser</span> <span class="token constant">Block</span>
+<span class="token hvariable">parseBlock</span> <span class="token operator">=</span> <span class="token keyword">do</span>
+  <span class="token comment">-- Parse as many newlines first.</span>
+  <span class="token hvariable">_</span> <span class="token operator">&lt;-</span> <span class="token hvariable">many</span> <span class="token operator">$</span> <span class="token hvariable">satisfy</span> <span class="token punctuation">(</span><span class="token operator">\</span><span class="token hvariable">c</span> <span class="token operator">-></span> <span class="token hvariable">c</span> <span class="token operator">==</span> <span class="token char string">'\n'</span><span class="token punctuation">)</span>
+  <span class="token hvariable">parseOrderedList</span> <span class="token operator">&lt;|></span> <span class="token hvariable">parseUnorderedList</span> <span class="token operator">&lt;|></span> <span class="token hvariable">parseCodeBlock</span> <span class="token operator">&lt;|></span>
+   <span class="token hvariable">parseHorizontalBreak</span> <span class="token operator">&lt;|></span> <span class="token hvariable">parseImage</span> <span class="token operator">&lt;|></span> <span class="token hvariable">parseBlockquote</span> <span class="token operator">&lt;|></span>
+    <span class="token hvariable">parseHeading</span> <span class="token operator">&lt;|></span> <span class="token hvariable">parseParagraph</span>
+
+<span class="token hvariable">parseHeading</span> <span class="token operator">::</span> <span class="token constant">Parser</span> <span class="token constant">Block</span>
+<span class="token hvariable">parseHeading</span> <span class="token operator">=</span> <span class="token keyword">do</span>
+  <span class="token hvariable">depth</span> <span class="token operator">&lt;-</span> <span class="token builtin">length</span> <span class="token operator">&lt;$></span> <span class="token hvariable">some</span> <span class="token punctuation">(</span><span class="token hvariable">match</span> <span class="token string">"#"</span><span class="token punctuation">)</span>
+  <span class="token hvariable">_</span> <span class="token operator">&lt;-</span> <span class="token hvariable">match</span> <span class="token string">" "</span>
+  <span class="token hvariable">nested</span> <span class="token operator">&lt;-</span> <span class="token hvariable">manyUntil</span> <span class="token punctuation">(</span><span class="token hvariable">match</span> <span class="token string">"\n"</span><span class="token punctuation">)</span> <span class="token hvariable">parseInline</span>
+
+  <span class="token builtin">return</span> <span class="token operator">$</span> <span class="token constant">Heading</span> <span class="token punctuation">(</span><span class="token hvariable">depth</span><span class="token punctuation">,</span> <span class="token hvariable">nested</span><span class="token punctuation">)</span>
+
+<span class="token hvariable">parseBlockquote</span> <span class="token operator">::</span> <span class="token constant">Parser</span> <span class="token constant">Block</span>
+<span class="token hvariable">parseBlockquote</span> <span class="token operator">=</span> <span class="token keyword">do</span>
+  <span class="token comment">-- We can start by parsing each line starting with "> " from this point onward,</span>
+  <span class="token comment">-- and then joining them together to use that as the nested stream.</span>
+  <span class="token hvariable">content</span> <span class="token operator">&lt;-</span> <span class="token builtin">unlines</span> <span class="token operator">&lt;$></span> <span class="token hvariable">some</span> <span class="token hvariable">parseLines</span>
+  <span class="token keyword">case</span> <span class="token punctuation">(</span><span class="token hvariable">runParser</span> <span class="token operator">$</span> <span class="token hvariable">many</span> <span class="token hvariable">parseBlock</span><span class="token punctuation">)</span> <span class="token hvariable">content</span> <span class="token keyword">of</span>
+    <span class="token constant">Nothing</span> <span class="token operator">-></span> <span class="token hvariable">empty</span>
+    <span class="token constant">Just</span> <span class="token punctuation">(</span><span class="token hvariable">blocks</span><span class="token punctuation">,</span> <span class="token hvariable">_</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token builtin">return</span> <span class="token operator">$</span> <span class="token constant">Blockquote</span> <span class="token hvariable">blocks</span>
+
+  <span class="token keyword">where</span>
+  <span class="token hvariable">parseLines</span> <span class="token operator">::</span> <span class="token constant">Parser</span> <span class="token constant">String</span>
+  <span class="token hvariable">parseLines</span> <span class="token operator">=</span> <span class="token keyword">do</span>
+    <span class="token hvariable">_</span> <span class="token operator">&lt;-</span> <span class="token hvariable">many</span> <span class="token operator">$</span> <span class="token hvariable">match</span> <span class="token string">" "</span>
+    <span class="token hvariable">_</span> <span class="token operator">&lt;-</span> <span class="token hvariable">match</span> <span class="token string">">"</span>
+    <span class="token hvariable">content</span> <span class="token operator">&lt;-</span>
+      <span class="token punctuation">(</span><span class="token hvariable">match</span> <span class="token string">" "</span> <span class="token operator">*></span> <span class="token hvariable">manyUntil</span> <span class="token punctuation">(</span><span class="token hvariable">match</span> <span class="token string">"\n"</span><span class="token punctuation">)</span> <span class="token punctuation">(</span><span class="token hvariable">satisfy</span> <span class="token operator">$</span> <span class="token operator">\</span><span class="token hvariable">c</span> <span class="token operator">-></span> <span class="token hvariable">c</span> <span class="token operator">/=</span> <span class="token char string">'\n'</span><span class="token punctuation">)</span> <span class="token operator">&lt;*</span> <span class="token hvariable">match</span> <span class="token string">"\n"</span><span class="token punctuation">)</span>
+      <span class="token operator">&lt;|></span> <span class="token punctuation">(</span><span class="token hvariable">match</span> <span class="token string">"\n"</span> <span class="token operator">*></span> <span class="token hvariable">pure</span> <span class="token string">"&lt;br>"</span><span class="token punctuation">)</span>
+    <span class="token builtin">return</span> <span class="token hvariable">content</span></code></pre><p>With these building blocks we can basically write a parser, as you can see with <code>parseBlock</code>. You can see the rest of the parsers in <a href="">_Markdown.hs_</a>.</p><pre class="language-haskell"><code class="language-haskell"><span class="token hvariable">parse</span> <span class="token operator">::</span> <span class="token constant">String</span> <span class="token operator">-></span> <span class="token constant">Document</span>
+<span class="token comment">-- Either return `[]` or the `[Block]` part of the final `Just (blocks, stream)`.</span>
+<span class="token hvariable">parse</span> <span class="token hvariable">raw</span> <span class="token operator">=</span> <span class="token builtin">maybe</span> <span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token builtin">fst</span> <span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token hvariable">runParser</span> <span class="token operator">$</span> <span class="token hvariable">many</span> <span class="token hvariable">parseBlock</span><span class="token punctuation">)</span> <span class="token hvariable">raw</span><span class="token punctuation">)</span></code></pre><h2 id="static-site-generation">Static site generation</h2><p>Onto static site generation.</p><p>I extended the parser to allow for extensions:</p><pre class="language-haskell"><code class="language-haskell"><span class="token keyword">type</span> <span class="token constant">Extension</span> <span class="token operator">=</span> <span class="token constant">Document</span> <span class="token operator">-></span> <span class="token punctuation">(</span><span class="token constant">Document</span><span class="token punctuation">,</span> <span class="token constant">Map</span> <span class="token constant">String</span> <span class="token constant">Document</span><span class="token punctuation">)</span>
+
+<span class="token hvariable">parseWithExtensions</span> <span class="token operator">::</span> <span class="token constant">String</span> <span class="token operator">-></span> <span class="token punctuation">[</span><span class="token constant">Extension</span><span class="token punctuation">]</span> <span class="token operator">-></span> <span class="token punctuation">(</span><span class="token constant">Document</span><span class="token punctuation">,</span> <span class="token constant">Map</span> <span class="token constant">String</span> <span class="token constant">Document</span><span class="token punctuation">)</span>
+<span class="token hvariable">parseWithExtensions</span> <span class="token hvariable">raw</span> <span class="token punctuation">[</span><span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token hvariable">parse</span> <span class="token hvariable">raw</span><span class="token punctuation">,</span> <span class="token hvariable">Map<span class="token punctuation">.</span>empty</span><span class="token punctuation">)</span>
+<span class="token hvariable">parseWithExtensions</span> <span class="token hvariable">raw</span> <span class="token hvariable">extensions</span> <span class="token operator">=</span>
+  <span class="token builtin">foldr</span> <span class="token punctuation">(</span><span class="token operator">\</span><span class="token hvariable">extension</span> <span class="token punctuation">(</span><span class="token hvariable">doc</span><span class="token punctuation">,</span> <span class="token hvariable">extras</span><span class="token punctuation">)</span> <span class="token operator">-></span>
+    <span class="token keyword">let</span> <span class="token punctuation">(</span><span class="token hvariable">out</span><span class="token punctuation">,</span> <span class="token hvariable">extra</span><span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token hvariable">extension</span> <span class="token hvariable">doc</span> <span class="token keyword">in</span> <span class="token punctuation">(</span><span class="token hvariable">out</span><span class="token punctuation">,</span> <span class="token hvariable">Map<span class="token punctuation">.</span>union</span> <span class="token hvariable">extras</span> <span class="token hvariable">extra</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+    <span class="token punctuation">(</span><span class="token hvariable">parse</span> <span class="token hvariable">raw</span><span class="token punctuation">,</span> <span class="token hvariable">Map<span class="token punctuation">.</span>empty</span><span class="token punctuation">)</span> <span class="token hvariable">extensions</span></code></pre><p>The <code>let in</code> syntax is similar to <code>where</code>, just scoped to an expression.</p><p>This is useful for table of contents, frontmatter, footnotes, etc. E.g. frontmatter:</p><pre class="language-haskell"><code class="language-haskell"><span class="token import-statement"><span class="token keyword">import</span> Data<span class="token punctuation">.</span>List</span> <span class="token punctuation">(</span><span class="token hvariable">dropWhileEnd</span><span class="token punctuation">)</span>
+<span class="token import-statement"><span class="token keyword">import</span> <span class="token keyword">qualified</span> Markdown <span class="token keyword">as</span> Md</span>
+
+<span class="token hvariable">trim</span> <span class="token operator">::</span> <span class="token constant">String</span> <span class="token operator">-></span> <span class="token constant">String</span>
+<span class="token hvariable">trim</span> <span class="token operator">=</span> <span class="token hvariable">dropWhileEnd</span> <span class="token builtin">isSpace</span> <span class="token operator">.</span> <span class="token builtin">dropWhile</span> <span class="token builtin">isSpace</span>
+
+<span class="token hvariable">parseFrontmatter</span> <span class="token operator">::</span> <span class="token constant">Md<span class="token punctuation">.</span>Extension</span>
+<span class="token hvariable">parseFrontmatter</span> <span class="token hvariable">doc</span> <span class="token operator">=</span> <span class="token keyword">case</span> <span class="token hvariable">doc</span> <span class="token keyword">of</span>
+  <span class="token constant">Md<span class="token punctuation">.</span>HorizontalBreak</span> <span class="token operator">:</span> <span class="token hvariable">rest</span>
+    <span class="token operator">|</span> <span class="token punctuation">(</span><span class="token hvariable">fields</span><span class="token punctuation">,</span> <span class="token constant">Md<span class="token punctuation">.</span>HorizontalBreak</span> <span class="token operator">:</span> <span class="token hvariable">body</span><span class="token punctuation">)</span> <span class="token operator">&lt;-</span> <span class="token builtin">break</span> <span class="token hvariable">isBreak</span> <span class="token hvariable">rest</span> <span class="token operator">-></span>
+      <span class="token punctuation">(</span><span class="token hvariable">body</span><span class="token punctuation">,</span> <span class="token hvariable">Map<span class="token punctuation">.</span>fromList</span> <span class="token punctuation">(</span><span class="token builtin">concatMap</span> <span class="token hvariable">toEntry</span> <span class="token hvariable">fields</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+  <span class="token hvariable">_</span> <span class="token operator">-></span> <span class="token punctuation">(</span><span class="token hvariable">doc</span><span class="token punctuation">,</span> <span class="token hvariable">Map<span class="token punctuation">.</span>empty</span><span class="token punctuation">)</span>
+
+  <span class="token keyword">where</span>
+    <span class="token hvariable">isBreak</span> <span class="token operator">::</span> <span class="token constant">Md<span class="token punctuation">.</span>Block</span> <span class="token operator">-></span> <span class="token constant">Bool</span>
+    <span class="token hvariable">isBreak</span> <span class="token constant">Md<span class="token punctuation">.</span>HorizontalBreak</span> <span class="token operator">=</span> <span class="token constant">True</span>
+    <span class="token hvariable">isBreak</span> <span class="token hvariable">_</span> <span class="token operator">=</span> <span class="token constant">False</span>
+
+    <span class="token hvariable">toEntry</span> <span class="token operator">::</span> <span class="token constant">Md<span class="token punctuation">.</span>Block</span> <span class="token operator">-></span> <span class="token punctuation">[</span><span class="token punctuation">(</span><span class="token constant">String</span><span class="token punctuation">,</span> <span class="token constant">Md<span class="token punctuation">.</span>Document</span><span class="token punctuation">)</span><span class="token punctuation">]</span>
+    <span class="token hvariable">toEntry</span> <span class="token punctuation">(</span><span class="token constant">Md<span class="token punctuation">.</span>Paragraph</span> <span class="token hvariable">inline</span><span class="token punctuation">)</span> <span class="token operator">=</span>
+      <span class="token keyword">case</span> <span class="token builtin">break</span> <span class="token punctuation">(</span><span class="token operator">==</span> <span class="token char string">':'</span><span class="token punctuation">)</span> <span class="token punctuation">(</span><span class="token builtin">concatMap</span> <span class="token hvariable">Md<span class="token punctuation">.</span>inlineToText</span> <span class="token hvariable">inline</span><span class="token punctuation">)</span> <span class="token keyword">of</span>
+        <span class="token punctuation">(</span><span class="token hvariable">key</span><span class="token punctuation">,</span> <span class="token char string">':'</span> <span class="token operator">:</span> <span class="token hvariable">value</span><span class="token punctuation">)</span> <span class="token operator">-></span> <span class="token punctuation">[</span><span class="token punctuation">(</span><span class="token hvariable">trim</span> <span class="token hvariable">key</span><span class="token punctuation">,</span> <span class="token punctuation">[</span><span class="token constant">Md<span class="token punctuation">.</span>Fragment</span> <span class="token punctuation">[</span><span class="token constant">Md<span class="token punctuation">.</span>Plain</span> <span class="token operator">$</span> <span class="token hvariable">trim</span> <span class="token hvariable">value</span><span class="token punctuation">]</span><span class="token punctuation">]</span><span class="token punctuation">)</span><span class="token punctuation">]</span>
+        <span class="token hvariable">_</span> <span class="token operator">-></span> <span class="token punctuation">[</span><span class="token punctuation">]</span>
+    <span class="token hvariable">toEntry</span> <span class="token hvariable">_</span> <span class="token operator">=</span> <span class="token punctuation">[</span><span class="token punctuation">]</span></code></pre><p>I wanted to point this out because this uses pattern matching in the form of <code>-></code> and <code><-</code>.</p><h3 id="io-monad">I/O monad</h3><p>To actually interact with the real world and do Real World things, like perform static site generation, Haskell has the IO monad. For example, to read from a file and pass it to the parser:</p><pre class="language-haskell"><code class="language-haskell"><span class="token hvariable">main</span> <span class="token operator">::</span> <span class="token constant">IO</span> <span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token hvariable">main</span> <span class="token operator">=</span> <span class="token keyword">do</span>
+  <span class="token hvariable">raw</span> <span class="token operator">&lt;-</span> <span class="token builtin">readFile</span> <span class="token string">"../routes/index.md"</span>
+  <span class="token keyword">let</span>
+    <span class="token punctuation">(</span><span class="token hvariable">parsed</span><span class="token punctuation">,</span> <span class="token hvariable">_</span><span class="token punctuation">)</span> <span class="token operator">=</span> <span class="token hvariable">Markdown<span class="token punctuation">.</span>parseWithExtensions</span> <span class="token hvariable">raw</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>
+  <span class="token builtin">putStrLn</span> <span class="token operator">$</span> <span class="token hvariable">Markdown<span class="token punctuation">.</span>documentToHtml</span> <span class="token hvariable">parsed</span></code></pre><p>Since monads merge the context, this lets you thread I/O actions together.</p><p>I was curious what happens behind the scenes.</p><p><a href="">_Unraveling the mystery of the IO monad_</a> is a good resource for this.</p><p>The code with side effects (in <a href="">_Main.hs_</a>) is somewhat messy and I have yet to clean it up but it fundamentally does this:</p><pre class="language-haskell"><code class="language-haskell"><span class="token import-statement"><span class="token keyword">import</span> Data<span class="token punctuation">.</span>List</span> <span class="token punctuation">(</span><span class="token hvariable">isSuffixOf</span><span class="token punctuation">)</span>
+
+<span class="token import-statement"><span class="token keyword">import</span> <span class="token keyword">qualified</span> Markdown <span class="token keyword">as</span> Md</span>
+<span class="token import-statement"><span class="token keyword">import</span> <span class="token keyword">qualified</span> Extensions <span class="token keyword">as</span> Extensions</span>
+
+<span class="token hvariable">main</span> <span class="token operator">::</span> <span class="token constant">IO</span> <span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token hvariable">main</span> <span class="token operator">=</span> <span class="token keyword">do</span>
+  <span class="token hvariable">createDirectoryIfMissing</span> <span class="token constant">True</span> <span class="token hvariable">outputDirectory</span>
+
+  <span class="token comment">-- Output all assets.</span>
+  <span class="token hvariable">outputDirectoryTo</span> <span class="token hvariable">assetsDirectory</span> <span class="token hvariable">outputDirectory</span> <span class="token punctuation">[</span><span class="token string">".html"</span><span class="token punctuation">,</span> <span class="token string">".ts"</span><span class="token punctuation">]</span>
+
+  <span class="token comment">-- Now begin to process the actual Markdown content.</span>
+  <span class="token hvariable">outputDirectoryTo</span> <span class="token hvariable">inputDirectory</span> <span class="token hvariable">outputDirectory</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>
+
+  <span class="token keyword">where</span>
+  <span class="token hvariable">outputDirectoryTo</span> <span class="token operator">::</span> <span class="token constant">String</span> <span class="token operator">-></span> <span class="token constant">String</span> <span class="token operator">-></span> <span class="token punctuation">[</span><span class="token constant">String</span><span class="token punctuation">]</span> <span class="token operator">-></span> <span class="token constant">IO</span> <span class="token punctuation">(</span><span class="token punctuation">)</span>
+  <span class="token hvariable">outputDirectoryTo</span> <span class="token hvariable">input</span> <span class="token hvariable">output</span> <span class="token hvariable">blacklist</span> <span class="token operator">=</span> <span class="token keyword">do</span>
+    <span class="token hvariable">entries</span> <span class="token operator">&lt;-</span> <span class="token hvariable">listDirectory</span> <span class="token hvariable">input</span>
+    <span class="token comment">-- mapM_ :: Monad m -> (a -> m ()) -> [a] -> m ()</span>
+    <span class="token comment">-- mapM_ :: Monad IO -> (String -> IO ()) -> [String] -> IO ()</span>
+    <span class="token builtin">mapM_</span> <span class="token punctuation">(</span><span class="token operator">\</span><span class="token hvariable">entry</span> <span class="token operator">-></span> <span class="token keyword">do</span>
+      <span class="token keyword">let</span> <span class="token hvariable">path</span> <span class="token operator">=</span> <span class="token hvariable">input</span> <span class="token operator">++</span> <span class="token hvariable">entry</span>
+      <span class="token keyword">let</span> <span class="token hvariable">outputPath</span> <span class="token operator">=</span> <span class="token hvariable">output</span> <span class="token operator">++</span> <span class="token hvariable">entry</span>
+      <span class="token hvariable">isDir</span> <span class="token operator">&lt;-</span> <span class="token hvariable">doesDirectoryExist</span> <span class="token hvariable">path</span>
+      <span class="token keyword">case</span> <span class="token hvariable">isDir</span> <span class="token keyword">of</span>
+        <span class="token constant">True</span> <span class="token operator">-></span> <span class="token keyword">do</span>
+          <span class="token hvariable">createDirectoryIfMissing</span> <span class="token constant">True</span> <span class="token hvariable">outputPath</span>
+          <span class="token hvariable">outputDirectoryTo</span> <span class="token punctuation">(</span><span class="token hvariable">path</span> <span class="token operator">++</span> <span class="token string">"/"</span><span class="token punctuation">)</span> <span class="token punctuation">(</span><span class="token hvariable">outputPath</span> <span class="token operator">++</span> <span class="token string">"/"</span><span class="token punctuation">)</span> <span class="token hvariable">blacklist</span>
+        <span class="token constant">False</span> <span class="token operator">-></span> <span class="token hvariable">when</span> <span class="token punctuation">(</span><span class="token builtin">not</span> <span class="token operator">$</span> <span class="token builtin">any</span> <span class="token punctuation">(</span><span class="token operator">\</span><span class="token hvariable">suffix</span> <span class="token operator">-></span> <span class="token hvariable">suffix</span> <span class="token operator">`isSuffixOf`</span> <span class="token hvariable">entry</span><span class="token punctuation">)</span> <span class="token hvariable">blacklist</span><span class="token punctuation">)</span> <span class="token operator">$</span> <span class="token keyword">do</span>
+          <span class="token comment">-- Check if there's any transformations that need to happen.</span>
+          <span class="token keyword">case</span> <span class="token constant">Map</span><span class="token punctuation">.</span><span class="token builtin">lookup</span> <span class="token punctuation">(</span><span class="token hvariable">extension</span> <span class="token hvariable">entry</span><span class="token punctuation">)</span> <span class="token hvariable">transformations</span> <span class="token keyword">of</span>
+            <span class="token constant">Nothing</span> <span class="token operator">-></span> <span class="token hvariable">copyFile</span> <span class="token hvariable">path</span> <span class="token hvariable">outputPath</span>
+            <span class="token constant">Just</span> <span class="token hvariable">f</span> <span class="token operator">-></span> <span class="token keyword">do</span>
+              <span class="token punctuation">(</span><span class="token hvariable">transformedPath</span><span class="token punctuation">,</span> <span class="token hvariable">transformed</span><span class="token punctuation">)</span> <span class="token operator">&lt;-</span> <span class="token hvariable">f</span> <span class="token hvariable">path</span>
+              <span class="token builtin">writeFile</span> <span class="token punctuation">(</span><span class="token hvariable">output</span> <span class="token operator">++</span> <span class="token hvariable">transformedPath</span><span class="token punctuation">)</span> <span class="token hvariable">transformed</span><span class="token punctuation">)</span> <span class="token hvariable">entries</span></code></pre><p>Yeah it's very janky! For example we run the Sass compiler directly with <a href="https://hackage-content.haskell.org/package/process-1.6.30.0/docs/System-Process.html#v:readProcess"><code>readProcess</code></a>. At the end of the day a static site generator is just a bundler.</p><p>Some things have been left to a extra <code>transform.js</code>. For example, code generation is done with Prism.js, and of course I would like to have that performed statically. Math equations like <span class="mjx-chtml"><span class="mjx-math" aria-label="f(x) = x^2"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.519em; padding-bottom: 0.519em; padding-right: 0.06em;">f</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.446em; padding-bottom: 0.593em;">(</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.225em; padding-bottom: 0.298em;">x</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.446em; padding-bottom: 0.593em;">)</span></span><span class="mjx-mo MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.077em; padding-bottom: 0.298em;">=</span></span><span class="mjx-msubsup MJXc-space3"><span class="mjx-base"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.225em; padding-bottom: 0.298em;">x</span></span></span><span class="mjx-sup" style="font-size: 70.7%; vertical-align: 0.513em; padding-left: 0px; padding-right: 0.071em;"><span class="mjx-mn" style=""><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.372em; padding-bottom: 0.372em;">2</span></span></span></span></span></span></span> are also rendered statically. For this boring stuff I had Claude write some code, which is run as a Husky precommit hook (might as well, this is hosted on GitHub Pages).</p><p>Some things are</p><h2 id="et-cetera">Et cetera</h2><p>I also set up GoatCounter for personal use. Email signups use SES, they are stored in a Hetzner server.<sup>4</sup><span class="aside">(4) I have a spare laptop at home that I could use.</span></p><p>The <a href="">aesthetics</a> page pulls from Cloudflare R2, cached by Cloudflare. This site is proxied by Cloudflare, so other static assets are included directly.</p><p>I really like _Learn You A Haskell For Great Good_. I haven't finished reading it (as is the case with most things I'm reading nowadays) but yeah. I like the illustrations. Other good reads <a href="https://curius.app/jianmin-chen/l">here</a>.</p><p>I need to get more used to reading <a href="https://hoogle.haskell.org/">Hoogle</a>.</p><p>If you pointed a gun to my head and asked me to do this I'd still probably struggle, as someone who hasn't really written any functional code. To be fair - other functional languages that are in the vein of Haskell are OCaml. I haven't touched these very much, but it seems like Haskell just feels much purer in terms of FP ideology and most other languages make tradeoffs in terms of practicality.</p><p>Having some knowledge of abstract algebra would probably be useful, it seems a lot of the concepts here are abstract algebra concepts.</p></article>
       <aside>
-      </aside>
-      <article id="index">
-        <p>I took the liberty of rewriting my blog in Haskell! Here I'm going to leave some notes about writing the blog for myself.</p><p>First off, we have a Markdown parser; I find writing a Markdown parser to be a quick litmus test for reasoning about a new language. As such you may find this useful if you're learning Haskell. tl;dr:</p><ul><li><p>Order of operations </p></li><li><p><code>type</code>/<code>data</code>/<code>newtype</code></p></li><li><p>Parser combinators</p></li><li><p>Functors </p></li><li><p>Monads</p></li><li><p>I/O monad</p></li></ul><p>Start out by defining:</p><pre><code class="language-haskell">type Document = [Block]
-
-data Block
-  = Paragraph [Inline]
-  | Heading (Int, [Inline], Props)
-  | Blockquote [Block]
-  | OrderedList [[Block]]
-  | UnorderedList [[Block]]
-  | Image (String, String)
-  | HorizontalBreak 
-  | CodeBlock (String, String)
-  | Fragment [Inline]
-  deriving Show
-
-data Inline
-  = Plain String
-  | Italic [Inline]
-  | Bold [Inline]
-  | Code String
-  | Link (String, [Inline])
-  deriving Show</code></pre><p>Using <code>type</code> is basically type aliasing. <code>data</code> actually introduces new types, made of multiple constructors. <code>deriving</code> lets us automatically derive instances of type classes for custom types. In this case we want to be able to show (log) these types. Type classes remind me of interfaces in other languages.</p><p>Ideally we have a function that look like this:</p><pre><code class="language-haskell">parse :: String -> Document 
--- Either return `[]` or the `[Block]` part of the final `Just (blocks, stream)`.
-parse raw = maybe [] fst (runParser raw)</code></pre><p><code>maybe</code> is a built-in function:</p><pre><code class="language-haskell">data Maybe a
-  = Nothing
-  | Just a
-maybe :: b -> (a -> b) -> Maybe a -> b</code></pre><p>It takes a value of type <code>b</code>, a function that takes a value of type <code>a</code> and returns a value of type <code>b</code>, and a value that is wrapped in a <code>Maybe</code>. If this last value is wrapped in a <code>Just</code> constructor rather than <code>Nothing</code>, it gets passed to the function. In other words, <code>a ? f(a) : b</code>. </p><p><code>fst</code> is another function in the prelude; its type signature is <code>fst :: (a, b) -> a</code>. It takes a pair and returns the first item in that pair. This is useful because <code>runParser</code> has the following type signature: </p><pre><code class="language-haskell">-- Take a string, maybe return a value and the rest of the string. 
-runParser :: String -> Maybe (t, String)</code></pre><p>Once we have this list of blocks, we want to convert them to HTML or text. This is pretty straightforward:</p><pre><code class="language-haskell">documentToHtml :: Document -> String
--- `foldr` is basically `reduce`, folding the given list from the right.
-documentToHtml = foldr (\block html -> blockToHtml block ++ html) ""
-
-documentToText :: Document -> String
-documentToText = foldr (\block text -> blockToText block ++ text) ""
-
-wrap :: String -> String -> String
-wrap tag content = "<" ++ tag ++ ">" ++ content ++ "</" ++ tag ++ ">"
-
-wrapWithProps :: String -> [(String, String)] -> String -> String
-wrapWithProps tag props content = 
-  "<" ++ tag ++ concatMap format props ++ ">" ++ content ++ "</" ++ tag ++ ">"
-  where 
-    format (k, v) = " " ++ k ++ "=\"" ++ v ++ "\""
-
-blockToHtml :: Block -> String
-blockToHtml block = case block of
-  Paragraph inline -> wrap "p" $ concatMap inlineToHtml inline
-  Heading (depth, inline, props) -> 
-    wrapWithProps ("h" ++ show depth) props (concatMap inlineToHtml inline)
-  Blockquote blocks -> wrap "blockquote" $ concatMap blockToHtml blocks
-  OrderedList items -> wrap "ol" $ concatMap (wrap "li" . documentToHtml) items
-  UnorderedList items -> wrap "ul" $ concatMap (wrap "li" . documentToHtml) items
-  Image (alt, src) -> wrapWithProps "img" [("alt", alt), ("src", src)] ""
-  HorizontalBreak -> "<hr>"
-  CodeBlock (language, code) -> 
-    wrap "pre" $ wrapWithProps "code" [("class", "language-" ++ language)] code
-  Fragment inline -> concatMap inlineToHtml inline
-
-blockToText :: Block -> String
-blockToText block = case block of
-  Paragraph inline -> concatMap inlineToText inline
-  Heading (_, inline, _) -> concatMap inlineToText inline
-  Blockquote blocks -> concatMap blockToText blocks
-  OrderedList items -> concatMap documentToText items
-  UnorderedList items -> concatMap documentToText items
-  Image (alt, _) -> alt
-  HorizontalBreak -> ""
-  CodeBlock (_, code) -> code
-  Fragment inline -> concatMap inlineToText inline
-
-inlineToHtml :: Inline -> String
-inlineToHtml inline = case inline of
-  Plain s -> s
-  Italic nested -> wrap "i" $ concatMap inlineToHtml nested
-  Bold nested -> wrap "b" $ concatMap inlineToHtml nested
-  Code code -> wrap "code" code
-  Link (link, nested) -> 
-    wrapWithProps "a" [("href", link), ("target", "_blank")] $ 
-      concatMap inlineToHtml nested</code></pre><h3 id="foldr">foldr</h3><p><code>documentToHtml</code> and <code>documentToText</code> both make use of a built-in function called <code>foldr</code>. Like the comment attests, <b>folds</b> let you reduce a data structure to a single value. There is <code>foldl</code>, which folds from the left:</p><pre><code class="language-haskell">-- `Num a` requires that type `a` is a instance of typeclass `Num`.
-sum' :: (Num a) => [a] -> a
-sum' xs = foldl (\acc x -> acc + x) 0 xs</code></pre><p>The special thing about <code>foldr</code> is that it works on infinite lists.</p><p><code>foldl1</code> and <code>foldr1</code> are functions that set the starting accumulator to the first item in the iterator. </p><p>Other higher-order built-in functions and useful tricks used here:</p><ul><li><p><code>concatMap</code></p></li><li><p>We use <code>case</code>-based pattern matching here.</p></li></ul><p>Let's take a look at the parser in more detail.</p><h2 id="parser-combinators">Parser combinators</h2><p>As it turns out, one functional way of writing parsers is <b>parser combinators</b>. You combine parsers, which at the end of the day are just functions over a stream, to generate The Ultimate Parser, and then you run it. <a href="https://theorangeduck.com/page/you-could-have-invented-parser-combinators"><i>You could have invented parser combinators</i></a> has a really good example:</p><pre><code class="language-javascript">function lit(c) {
-  return (function(input) {
-    var r = inputRead(input);
-    if (r == c) {
-      inputAdvance(input, 1);
-      return c;
-    } else {
-      return failure;
-    }
-  });
-}
-
-function or(parser0, parser1) {
-  return (function (input) {
-    var result0 = parser0(input);
-    if (result0 != failure) { return result0; }
-    var result1 = parser1(input);
-    if (result1 != failure) { return result1; }
-    return failure;
-  });
-}
-
-var parser = or(lit('a'), lit('b'));
-var result = parser(input);</code></pre><p>Haskell has some parser combinator libraries you can use, notably <a href="https://hackage.haskell.org/package/parsec">Parsec</a>, by using a package manager like <a href="https://www.haskell.org/cabal/">Cabal</a>. For educational purposes I wrote my own.</p><p>A parser looks something like this:</p><pre><code class="language-haskell">newtype Parser t = Parser { runParser :: String -> Maybe (t, String) }</code></pre><p><code>newtype</code> is very similar to <code>data</code>, except that you're passing in exactly one constructor. In this case, it's</p><p>We have <code>runParser</code> return the result wrapped in a <code>Maybe</code> in the case that there's any parsing error.</p><p>We can take advantage of some type classes that come in the prelude to construct some fundamental parser combinators:</p><h3 id="functors">Functors</h3><p>Functors are types that serve as a context around values, allowing functions to be mapped over the value inside. For example, <code>Maybe</code> is one, where you can run a function on the value it's wrapping, e.g. <code>fmap (* 2) (Just 200)</code> results in <code>Just 400</code>. </p><p>This is exactly what we want, we want to be able to wrap a parser in another parser.</p><p>The <code>Functor</code> type class in Haskell asks you to define this function <code>fmap</code>:</p><pre><code class="language-haskell">class Functor f where
-  fmap :: (a -> b) -> f a -> f b
-
-instance Functor Parser where
-  fmap :: Functor f => (a -> b) -> f a -> f b
-  fmap apply parser = Parser (\s ->
-    case (runParser parser) s of
-      Nothing -> Nothing
-      Just (inside, stream) -> Just (apply inside, stream))</code></pre><p>Take a function, take another instance of a <code>Functor</code> (in this case, another parser), and return a functor. The actual code returns a parser that runs the internal parser, and it </p><p>The infix operator for <code>fmap</code> is <code><$></code>. </p><h3 id="applicative-functors">Applicative functors</h3><p>Applicative functors are functors that wrap around functions. This means you can map the function inside one functor to another functor, thus why it's called "applicative". It's like chaining two values together by applying the function in one to another. Implement</p><pre><code class="language-haskell">instance Applicative Parser where
-  -- A parser that takes a value and returns it, but wrapped in the `Parser` context.
-  pure x = Parser (\stream -> Just (x, stream))
-
-  -- Apply, e.g. `Just (+3) <*> Just 4` will apply the function inside `Just` on lhs
-  -- to the inner value inside `Just` on rhs.
-  --
-  -- `*>` and `<*` will be implemented from this, and these are implemented
-  -- automatically with `<$>` and `<*>` for primitive chaining that ignores the 
-  -- context outside, e.g.
-  --
-  -- `Just 3 <* Just 5` becomes
-  -- `(\a _ -> a) <$> (Just 3) <*> (Just 5)`, as Haskell implements `*>` as
-  -- `(\a _ -> a) <$> a <*> b`. 
-  --
-  -- Thus we are able to execute both functions and return the result of the first 
-  -- which is pretty cool.
-  --
-  -- The difference between `*>` and `<*` and monadic chaining is that applicative
-  -- chaining means you have no way to change the "shape" of the result.
-  -- 
-  -- This is based off monad chaining for `Maybe` type, that is, we are able
-  pf <*> px = Parser (\stream -> do
-    -- `pf` is a parser that returns a function.
-    (f, fs) <- (runParser pf) stream
-    (x, xs) <- (runParser px) fs
-    Just (f x, xs))</code></pre><p>Along with implementing the functor typeclass, this lets us write a parser like <code>lit</code> in the JS example:</p><pre><code class="language-haskell">match :: String -> Parser String
-match [] = pure []
--- We want to `fmap (:)` over the match so we can prepend it to `match`, which means
--- this is recursive.
---
--- As for `<*>`, we take the function in the context on the lhs, and apply it to the
--- value in the context on the rhs.
-match (x:xs) = (:) <$> satisfy (\c -> c == x) <*> match xs</code></pre><p>In this case, if we get an empty string we should return an empty match. Otherwise, we should</p><h3 id="alternative">Alternative </h3><p>This is a type class in the prelude that represent computations that can fail. Notably, it provides <code><|></code>, which is basically <code>or</code> in the JS example above. </p><pre><code class="language-haskell">instance Alternative Parser where
-  -- A parser that takes a value and returns `Nothing`.
-  empty = Parser (\_ -> Nothing)
-
-  -- A parser combinator that performs || on the results of two parsers.
-  px <|> py = Parser (\stream ->
-    case (runParser px) stream of
-      Nothing -> (runParser py) stream
-      Just pz -> Just pz)
-
-  -- A parser combinator that turns a parser that parses 1 thing into one that 
-  -- parses 0+, always returning a list.
-  many :: Parser t -> Parser [t]
-  many parser = Parser (\stream ->
-    case (runParser parser) stream of
-      Nothing -> Just ([], stream)
-      Just (x, xs) ->
-        case (runParser $ many parser) xs of
-          -- This is an unreachable case.
-          Nothing -> Nothing
-          Just (y, ys) -> Just (x:y, ys))
-
-  -- 1+.
-  some parser = Parser (\stream ->
-    case (runParser parser) stream of
-      Nothing -> Nothing
-      Just (x, xs) ->
-        case (runParser $ many parser) xs of
-          -- This is an unreachable case.
-          Nothing -> Nothing
-          Just (y, ys) -> Just (x:y, ys))</code></pre><h3 id="monads">Monads</h3><blockquote><p>A monad is a monoid in the category of endofunctors.</p></blockquote><p>It's nice that I can finally understand what this means<sup>1</sup><span class="aside">(1) Hm. This feels too easy. </span>:</p><ul><li><p>Endofunctor: We know a functor is a type that wraps around a value to provide a context and can be mapped over while keeping that context. An endofunctor is that, but with the extra definition that it can map to itself, e.g. <code>Maybe a -> Maybe b</code>. Anyways all functors as defined in the Haskell prelude are endofunctors.</p></li><li><p>Monoid: A type class that enforces three properties:</p><ul><li><p>An identity context, a base value.</p></li><li><p>A binary function.</p></li><li><p>Associativity. If the binary function is chained, which pairs are evaluated first should not matter.</p></li><li><p>A list is a monoid, for example: identity context is <code>[]</code>, binary function can be <code>++</code>, and associativity of the binary is indeed a property.</p></li></ul></li></ul><p>Monoids instinctively reminded me of a mathematical group, and my intuition was on point. The type class is defined as so:</p><pre><code class="language-haskell">class Semigroup a where
-  (<>) :: a -> a -> a
-
-class Semigroup a => Monoid a where
-  mempty  :: a
-  mappend :: a -> a -> a</code></pre><p> </p><p>So this sentence, "a monad is a monoid in the category of endofunctors", just means that a monad is a type that enforces all the constraints of a monoid that can map over itself. What is the binary function for a monad though? It's <code>join :: t (t a) -> t a</code>, which just merges the context.<sup>2</sup><span class="aside">(2) I've also seen this described as <a href="https://blog.ezyang.com/2011/05/unraveling-the-mystery-of-the-io-monad/#the-lazy-and-strict-state-monad">"threading state through various computations"</a>. </span> And you can see how that's an endofunctor, since we can map a monad over itself and use the binary function to get a third value. And that flattening should be associative.</p><p>Thus, a monad is a type that enforces all the constraints of the <code>Monoid</code> type class and can be mapped over; it's special power is that it can flatten nested instances associatively, which enables chaining. Haskell then provides two very useful constructs, <code>>>=</code> and then <code>do</code>, which is syntactical sugar on top of <code>>>=</code>. <code>do</code> makes a function seem almost imperative, when really what it is doing is chaining the functions together behind the scenes and flattening them.</p><p>Implementing the <code>Monad</code> type class looks like:</p><pre><code class="language-haskell">instance Monad Parser where
-  return = pure
-
-  (>>=) :: Parser a -> (a -> Parser b) -> Parser b
-  parser >>= f = Parser (\stream ->
-    case (runParser parser) stream of
-      Nothing -> Nothing
-      Just (x, xs) -> (runParser $ f x) xs)</code></pre><p>What is special about this is that behind the scenes, I can use</p><p>With monads, we can now write parsers that semantically look more iterative. A pretty good chunk of the parsers I wrote in fact make liberal use of the <code>do</code> syntax.</p><pre><code class="language-haskell">parseBlock :: Parser Block
-parseBlock = do
-  -- Parse as many newlines first.
-  _ <- many $ satisfy (\c -> c == '\n')
-  parseOrderedList <|> parseUnorderedList <|> parseCodeBlock <|> 
-   parseHorizontalBreak <|> parseImage <|> parseBlockquote <|> 
-    parseHeading <|> parseParagraph
-
-parseHeading :: Parser Block
-parseHeading = do
-  depth <- length <$> some (match "#")
-  _ <- match " " 
-  nested <- manyUntil (match "\n") parseInline
-
-  return $ Heading (depth, nested)
-
-parseBlockquote :: Parser Block
-parseBlockquote = do
-  -- We can start by parsing each line starting with "> " from this point onward,
-  -- and then joining them together to use that as the nested stream.
-  content <- unlines <$> some parseLines
-  case (runParser $ many parseBlock) content of
-    Nothing -> empty
-    Just (blocks, _) -> return $ Blockquote blocks
-
-  where 
-  parseLines :: Parser String
-  parseLines = do
-    _ <- many $ match " "
-    _ <- match ">"
-    content <- 
-      (match " " *> manyUntil (match "\n") (satisfy $ \c -> c /= '\n') <* match "\n") 
-      <|> (match "\n" *> pure "<br>")
-    return content</code></pre><p>With these building blocks we can basically write a parser, as you can see with <code>parseBlock</code>. You can see the rest of the parsers in <a href=""><i>Markdown.hs</i></a>.</p><pre><code class="language-haskell">parse :: String -> Document 
--- Either return `[]` or the `[Block]` part of the final `Just (blocks, stream)`.
-parse raw = maybe [] fst ((runParser $ many parseBlock) raw)</code></pre><h2 id="static-site-generation">Static site generation</h2><p>Onto static site generation. </p><p>I extended the parser to allow for extensions:</p><pre><code class="language-haskell">type Extension = Document -> (Document, Map String Document)
-
-parseWithExtensions :: String -> [Extension] -> (Document, Map String Document)
-parseWithExtensions raw [] = (parse raw, Map.empty)
-parseWithExtensions raw extensions =
-  foldr (\extension (doc, extras) -> 
-    let (out, extra) = extension doc in (out, Map.union extras extra))
-    (parse raw, Map.empty) extensions</code></pre><p>The <code>let in</code> syntax is similar to <code>where</code>, just scoped to an expression.</p><p>This is useful for table of contents, frontmatter, footnotes, etc. E.g. frontmatter:</p><pre><code class="language-haskell">import Data.List (dropWhileEnd)
-import qualified Markdown as Md
-
-trim :: String -> String
-trim = dropWhileEnd isSpace . dropWhile isSpace
-
-parseFrontmatter :: Md.Extension
-parseFrontmatter doc = case doc of
-  Md.HorizontalBreak : rest
-    | (fields, Md.HorizontalBreak : body) <- break isBreak rest ->
-      (body, Map.fromList (concatMap toEntry fields))
-  _ -> (doc, Map.empty)
-
-  where 
-    isBreak :: Md.Block -> Bool
-    isBreak Md.HorizontalBreak = True
-    isBreak _ = False
-
-    toEntry :: Md.Block -> [(String, Md.Document)]
-    toEntry (Md.Paragraph inline) = 
-      case break (== ':') (concatMap Md.inlineToText inline) of
-        (key, ':' : value) -> [(trim key, [Md.Fragment [Md.Plain $ trim value]])]
-        _ -> []
-    toEntry _ = []</code></pre><p>I wanted to point this out because this uses pattern matching in the form of <code>-></code> and <code><-</code>. </p><h3 id="io-monad">I/O monad</h3><p>To actually interact with the real world and do Real World things, like perform static site generation, Haskell has the IO monad. For example, to read from a file and pass it to the parser:</p><pre><code class="language-haskell">main :: IO ()
-main = do
-  raw <- readFile "../routes/index.md"
-  let 
-    (parsed, _) = Markdown.parseWithExtensions raw []
-  putStrLn $ Markdown.documentToHtml parsed</code></pre><p>Since monads merge the context, this lets you thread I/O actions together.</p><p>I was curious what happens behind the scenes.</p><p><a href=""><i>Unraveling the mystery of the IO monad</i></a> is a good resource for this.</p><p>The code with side effects (in <a href=""><i>Main.hs</i></a>) is somewhat messy and I have yet to clean it up but it fundamentally does this:</p><p>Yeah it's very janky! For example we run the Sass compiler directly with <a href="https://hackage-content.haskell.org/package/process-1.6.30.0/docs/System-Process.html#v:readProcess"><code>readProcess</code></a>. At the end of the day a static site generator is just a bundler.</p><p>Some things have been left to a extra <code>transform.js</code>. For example, code generation is done with Prism.js, and of course I would like to have that performed statically. Math equations like $f(x) = x^2$ are also rendered statically. For this boring stuff I had Claude write some code, which is run as a Husky precommit hook (might as well, this is hosted on GitHub Pages).</p><p>Some things are </p><h2 id="et-cetera">Et cetera</h2><p>I also set up GoatCounter for personal use. Email signups use SES, they are stored in a Hetzner server.<sup>3</sup><span class="aside">(3) I have a spare laptop at home that I could use. </span></p><p>The <a href="">aesthetics</a> page pulls from Cloudflare R2, cached by Cloudflare. This site is proxied by Cloudflare, so other static assets are included directly.</p><p>I really like <i>Learn You A Haskell For Great Good</i>. I haven't finished reading it (as is the case with most things I'm reading nowadays) but yeah. I like the illustrations.</p><p>I need to get more used to reading <a href="https://hoogle.haskell.org/">Hoogle</a>.</p><p>If you pointed a gun to my head and asked me to do this I'd still probably struggle!</p><p>Having some knowledge of abstract algebra would probably be useful, it seems a lot of the concepts here are abstract algebra concepts.</p><p>Other functional languages that are in the vein of Haskell are OCaml. I haven't touched these very much, but it seems like Haskell just feels much cleaner? Like purer; less tradeoffs for practicality. Of course that means it's </p>
-      </article>
-      <aside>
-        <div id="toc"><h3><a href="#foldr">foldr</a></h3><h2><a href="#parser-combinators">Parser combinators</a></h2><h3><a href="#functors">Functors</a></h3><h3><a href="#applicative-functors">Applicative functors</a></h3><h3><a href="#alternative">Alternative </a></h3><h3><a href="#monads">Monads</a></h3><h2><a href="#static-site-generation">Static site generation</a></h2><h3><a href="#io-monad">I/O monad</a></h3><h2><a href="#et-cetera">Et cetera</a></h2></div>
+        <div id="toc"><h2><a href="#parsing-markdown">Parsing Markdown</a></h2><h3><a href="#folds">Folds</a></h3><h2><a href="#parser-combinators">Parser combinators</a></h2><h3><a href="#functors">Functors</a></h3><h3><a href="#applicative-functors">Applicative functors</a></h3><h3><a href="#alternative">Alternative</a></h3><h3><a href="#monads">Monads</a></h3><h2><a href="#static-site-generation">Static site generation</a></h2><h3><a href="#io-monad">I/O monad</a></h3><h2><a href="#et-cetera">Et cetera</a></h2></div>
       </aside>
     </div>
     <div id="footer">
       <aside></aside>
       <footer>
         <div class="subscribe">
-          <p>Sometimes I write posts! This happens at infrequent intervals so if you like what I write you can subscribe to get notified when I do.</p>
+          <p>
+            Sometimes I write posts! This happens at infrequent intervals so if
+            you like what I write you can subscribe to get notified when I do.
+          </p>
           <p>No spam.</p>
           <form>
-            <input type="email" placeholder="sven.wonders@braindump.ing" />
+            <input
+              required="true"
+              autocomplete="off"
+              name="email"
+              type="email"
+              placeholder="sven.wonders@braindump.ing"
+            />
             <button type="submit">Subscribe</button>
           </form>
         </div>
         <div>
-          <p>Hi, I'm JC! This is my blog where I like to braindump. You can find the Haskell source <a href="https://github.com/ymfpfp/braindump.ing">here</a>.</p>
-          <p>Questions? Something wrong? Want someone to talk to? Feel free to email at <i>jc[at]website</i>.</p>
+          <p>
+            Everything here is written by me, occasionally reviewed by an LLM,
+            and then rewritten by me if needed! You can find the Haskell source
+            <a href="https://github.com/ymfpfp/braindump.ing">here</a>.
+          </p>
+          <p>
+            Questions? Something wrong? Want someone to talk to? Feel free to
+            email at <i>jc[at]website</i>.
+          </p>
         </div>
       </footer>
       <aside></aside>
