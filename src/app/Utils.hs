@@ -1,11 +1,20 @@
 module Utils where
 
-import Data.Char (isAlphaNum, isSpace, toLower)
+import Data.Char (isAlphaNum, isSpace, toLower, toUpper)
 import Data.List (dropWhileEnd)
+
+capitalize :: String -> String
+capitalize = unwords . map upperFirst . words . map dashToSpace
+  where
+  upperFirst [] = []
+  upperFirst (c:cs) = toUpper c : cs
+
+dashToSpace :: Char -> Char
+dashToSpace c = if c == ' ' then '-' else c
 
 slug :: String -> String
 slug =
-  map (\c -> if c == ' ' then '-' else c)
+  map dashToSpace
     . filter (\c -> isAlphaNum c || c == ' ')
     . map toLower
     . trimSpaces

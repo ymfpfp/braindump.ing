@@ -87,10 +87,9 @@ header {
 
   @media screen and (min-width: $lg) {
     display: grid;
-    grid-template-columns: minmax(0, var(--lg-aside-width)) minmax(
-        0,
-        var(--lg-main-width)
-      ) minmax(0, var(--lg-aside-width));
+    grid-template-columns:
+      minmax(0, var(--lg-aside-width)) minmax(0, var(--lg-main-width))
+      minmax(0, var(--lg-aside-width));
   }
 
   footer {
@@ -160,10 +159,9 @@ header {
 
   @media screen and (min-width: $lg) {
     display: grid;
-    grid-template-columns: minmax(0, var(--lg-aside-width)) minmax(
-        0,
-        var(--lg-main-width)
-      ) minmax(0, var(--lg-aside-width));
+    grid-template-columns:
+      minmax(0, var(--lg-aside-width)) minmax(0, var(--lg-main-width))
+      minmax(0, var(--lg-aside-width));
   }
 
   article,
@@ -198,6 +196,7 @@ header {
     line-height: var(--line-height);
     font-family: var(--serif);
     padding: var(--article-block-padding) var(--article-inline-padding);
+    padding-bottom: calc(var(--article-block-padding) + 1rem);
     // overflow-x: hidden;
 
     a {

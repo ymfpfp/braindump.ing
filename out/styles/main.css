@@ -289,6 +289,7 @@ header #recent p {
   line-height: var(--line-height);
   font-family: var(--serif);
   padding: var(--article-block-padding) var(--article-inline-padding);
+  padding-bottom: calc(var(--article-block-padding) + 1rem);
 }
 #post article a {
   color: var(--theme);

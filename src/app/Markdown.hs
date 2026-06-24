@@ -340,7 +340,7 @@ parseLink = do
   _ <- match "]"
 
   _ <- match "("
-  link <- manyUntil (match ")") (satisfy isPlain)
+  link <- manyUntil (match ")") (satisfy (\c -> c /= ')' && c /= '\n'))
   _ <- match ")"
 
   return $ Link (link, nested)
