@@ -311,9 +311,9 @@ parsePlain = do
 
 parseItalic :: Parser Inline
 parseItalic = do
-  _ <- match "*"
-  nested <- manyUntil (match "*") parseInline
-  _ <- match "*"
+  token <- match "*" <|> match "_"
+  nested <- manyUntil (match token) parseInline
+  _ <- match token
 
   return $ Italic nested
 
@@ -351,6 +351,7 @@ isPlain c =
   c /= ']' &&
   c /= '>' &&
   c /= '*' &&
+  c /= '_' &&
   c /= '`' &&
   c /= '\n'
 

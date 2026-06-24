@@ -12,15 +12,6 @@
   src: url("/fonts/JetBrainsMono-Variable.ttf") format("truetype");
 }
 @font-face {
-  font-family: "Nunito";
-  src: url("/fonts/Nunito-Variable.ttf") format("truetype");
-}
-@font-face {
-  font-family: "Nunito";
-  font-style: italic;
-  src: url("/fonts/Nunito-ItalicVariable.ttf") format("truetype");
-}
-@font-face {
   font-family: "Source Sans 3";
   src: url("/fonts/SourceSans3-Variable.ttf") format("truetype");
 }
@@ -202,7 +193,7 @@ header #recent p {
 @media screen and (min-width: 992px) {
   #footer {
     display: grid;
-    grid-template-columns: var(--lg-aside-width) var(--lg-main-width) var(--lg-aside-width);
+    grid-template-columns: minmax(0, var(--lg-aside-width)) minmax(0, var(--lg-main-width)) minmax(0, var(--lg-aside-width));
   }
 }
 @media screen and (max-width: 768px) {
@@ -263,7 +254,7 @@ header #recent p {
 @media screen and (min-width: 992px) {
   #post {
     display: grid;
-    grid-template-columns: var(--lg-aside-width) var(--lg-main-width) var(--lg-aside-width);
+    grid-template-columns: minmax(0, var(--lg-aside-width)) minmax(0, var(--lg-main-width)) minmax(0, var(--lg-aside-width));
   }
 }
 #post article,
@@ -362,7 +353,10 @@ header #recent p {
   top: -0.5em;
   vertical-align: baseline;
 }
-#post article #date {
+#post article #date h1 {
+  margin-top: 0;
+}
+#post article #date p {
   font-family: var(--sans-serif);
   font-style: italic;
   margin-bottom: 0;
@@ -370,7 +364,6 @@ header #recent p {
 #post article h1 {
   font-size: 2.4rem;
   line-height: 1.3;
-  margin-top: 0;
   text-wrap: balance;
   padding-right: 1rem;
 }

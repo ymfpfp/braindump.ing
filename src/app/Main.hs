@@ -4,6 +4,7 @@ import Control.Monad (when)
 import Data.List (isSuffixOf)
 import qualified Data.Map as Map
 import Data.Map (Map)
+import Data.Maybe (fromMaybe)
 import Parser 
 import System.Directory (
   copyFile, 
@@ -14,6 +15,7 @@ import System.Process (readProcess)
 
 import qualified Markdown as Md
 import qualified Extensions as Extensions
+import Utils (trim)
 
 type Transformation = String -> IO (String, String)
 type Transformations = Map String Transformation
@@ -23,14 +25,14 @@ main = do
   createDirectoryIfMissing True outputDirectory
 
   -- Output all assets.
-  outputDirectoryTo assetsDirectory outputDirectory [".html", ".ts"]
+  outputDirectoryTo assetsDirectory outputDirectory [".html", ".ts"] False
 
   -- Now begin to process the actual Markdown content.
-  outputDirectoryTo inputDirectory outputDirectory []
+  outputDirectoryTo inputDirectory outputDirectory [] True
 
   where
-  outputDirectoryTo :: String -> String -> [String] -> IO ()
-  outputDirectoryTo input output blacklist = do
+  outputDirectoryTo :: String -> String -> [String] -> Bool -> IO ()
+  outputDirectoryTo input output blacklist list = do
     entries <- listDirectory input
     -- mapM_ :: Monad m -> (a -> m ()) -> [a] -> m ()
     -- mapM_ :: Monad IO -> (String -> IO ()) -> [String] -> IO ()
@@ -41,7 +43,8 @@ main = do
       case isDir of
         True -> do
           createDirectoryIfMissing True outputPath
-          outputDirectoryTo (path ++ "/") (outputPath ++ "/") blacklist
+          outputDirectoryTo (path ++ "/") (outputPath ++ "/") blacklist list
+          when list (generateList path outputPath)
         False -> when (not $ any (\suffix -> suffix `isSuffixOf` entry) blacklist) $ do
           -- Check if there's any transformations that need to happen.
           case Map.lookup (extension entry) transformations of
@@ -62,8 +65,14 @@ main = do
   extension s = snd $ breakFromEnd (== '.') s
 
   assetsDirectory = "../include/"
+  layoutDirectory = "../layout/"
   inputDirectory = "../routes/"
   outputDirectory = "../out/"
+
+  generateList :: String -> String -> IO ()
+  generateList directory output = do
+    entries <- listDirectory directory
+    print $ entries
 
   -- We wrap both the transformed path and the transformed output in an IO monad!
   transformations :: Transformations 
@@ -79,16 +88,19 @@ main = do
 
     raw <- readFile path
     let (parsed, injections) = Md.parseWithExtensions raw [Extensions.desc, Extensions.parseFrontmatter, Extensions.parseTOC, Extensions.parseFootnotes]
+    let layoutPath = trim (== '\n') <$> (Md.documentToText <$> Map.lookup "layout" injections)
 
     -- Reading the file is REALLY bad every time. TODO
-    wrapperTemplate <- readFile $ assetsDirectory ++ "wrapper.html"
+    wrapperTemplate <- readFile $ layoutDirectory ++ "wrapper.html"
+    layoutTemplate <- readFile $ layoutDirectory ++ (fromMaybe "default" layoutPath) ++ ".html"
 
     let injectionsToHtml = Map.map Md.documentToHtml injections
+    let args = Map.union injectionsToHtml $ Map.fromList [("content", Md.documentToHtml parsed), ("slug", transformedPath)] 
 
     -- Inject into HTML template.
-    let content = inject wrapperTemplate $ Map.union injectionsToHtml $ Map.fromList [("content", Md.documentToHtml parsed), ("slug", transformedPath)]
+    let content = inject layoutTemplate args 
 
-    return (transformedPath, content)
+    return (transformedPath, inject wrapperTemplate $ Map.union (Map.fromList [("content", content)]) args)
 
     where
     inject :: String -> Map String String -> String

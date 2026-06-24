@@ -1,36 +1,41 @@
 module Extensions where
 
-import Data.Char (isAlphaNum, toLower, isSpace)
+import Data.Char (isAlphaNum, isSpace)
 import Data.List (dropWhileEnd, intercalate, partition)
+
 import qualified Data.Map as Map
 import qualified Markdown as Md
-
-trim :: String -> String
-trim = dropWhileEnd isSpace . dropWhile isSpace
+import Utils (slug, trim, trimSpaces)
 
 desc :: Md.Extension
 desc doc = (doc, Map.singleton "description" [Md.Fragment [Md.Plain $ summary ++ "..."]])
   where 
-    summary = trim $ intercalate " " (take 50 $ words $ Md.documentToText doc)
+    summary = trimSpaces $ intercalate " " (take 50 $ words $ Md.documentToText doc)
 
-parseFrontmatter :: Md.Extension
-parseFrontmatter doc = case doc of
+-- Maybe this will be useful in the future.
+frontmatter :: Md.Document -> (Md.Document, Map.Map String String) 
+frontmatter doc = case doc of
   Md.HorizontalBreak : rest
     | (fields, Md.HorizontalBreak : body) <- break isBreak rest ->
-      (body, Map.fromList (concatMap toEntry fields))
+      (body, Map.unions $ map toEntry fields)
   _ -> (doc, Map.empty)
 
-  where 
-    isBreak :: Md.Block -> Bool
-    isBreak Md.HorizontalBreak = True
-    isBreak _ = False
+  where
+  isBreak :: Md.Block -> Bool
+  isBreak Md.HorizontalBreak = True
+  isBreak _ = False
 
-    toEntry :: Md.Block -> [(String, Md.Document)]
-    toEntry (Md.Paragraph inline) = 
-      case break (== ':') (concatMap Md.inlineToText inline) of
-        (key, ':' : value) -> [(trim key, [Md.Fragment [Md.Plain $ trim value]])]
-        _ -> []
-    toEntry _ = []
+  toEntry :: Md.Block -> Map.Map String String
+  toEntry (Md.Paragraph inline) =
+    case break (== ':') (concatMap Md.inlineToText inline) of
+      (key, ':' : value) -> Map.fromList [(trimSpaces key, trimSpaces value)]
+      _ -> Map.empty
+  toEntry _ = Map.empty
+
+parseFrontmatter :: Md.Extension
+parseFrontmatter document =
+  let (doc, kv) = frontmatter document
+  in (doc, Map.map (\v -> [Md.Fragment [Md.Plain v]]) kv) 
 
 parseTOC :: Md.Extension
 parseTOC doc = (map anchor doc, Map.singleton "toc" toc)
@@ -54,13 +59,6 @@ parseTOC doc = (map anchor doc, Map.singleton "toc" toc)
     isHeading :: Md.Block -> Bool
     isHeading (Md.Heading (_, _, _)) = True
     isHeading _ = False
-
-    slug :: String -> String
-    slug =
-      map (\c -> if c == ' ' then '-' else c)
-        . filter (\c -> isAlphaNum c || c == ' ')
-        . map toLower
-        . trim
 
 -- TODO
 -- Footnotes come in two flavours:

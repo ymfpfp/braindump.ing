@@ -2,7 +2,6 @@
 rm -rf out
 
 cd src
-cabal run notes
 cabal run ssg
 
 bun run transform.js
