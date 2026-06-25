@@ -75,22 +75,23 @@ async function renderInline(tex) {
   }
 }
 
-// Math may not occur inside code blocks, so highlight first and only scan the
-// segments that fall outside any `<pre>...</pre>`.
+// Math may not occur inside code, so highlight first and only scan the segments
+// that fall outside any block (`<pre>...</pre>`) or inline (`<code>...</code>`)
+// code. A `$` inside inline code (e.g. `trim $ words`) is literal, not math.
 async function transform(html) {
   const highlighted = highlightCode(html);
 
   // Collect every distinct TeX snippet outside the code blocks, render them
   // concurrently, then substitute. Caching by snippet avoids re-typesetting
   // repeats like `$n$`.
-  const PRE = /<pre[\s\S]*?<\/pre>/g;
+  const CODE = /<pre[\s\S]*?<\/pre>|<code[\s\S]*?<\/code>/g;
   const rendered = new Map();
   const collect = (segment) => {
     let m;
     INLINE_MATH.lastIndex = 0;
     while ((m = INLINE_MATH.exec(segment))) rendered.set(m[2], null);
   };
-  splitOutsidePre(highlighted, PRE).forEach(({ inside, text }) => {
+  splitOutsidePre(highlighted, CODE).forEach(({ inside, text }) => {
     if (!inside) collect(text);
   });
   await Promise.all(
@@ -99,7 +100,7 @@ async function transform(html) {
     ),
   );
 
-  return splitOutsidePre(highlighted, PRE)
+  return splitOutsidePre(highlighted, CODE)
     .map(({ inside, text }) =>
       inside
         ? text

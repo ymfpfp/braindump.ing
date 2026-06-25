@@ -31,11 +31,10 @@ data Inline
   deriving Show
 
 documentToHtml :: Document -> String
--- `foldr` is basically `reduce`, folding the given list from the right.
 documentToHtml = foldr (\block html -> blockToHtml block ++ html) ""
 
 documentToText :: Document -> String
-documentToText = foldr (\block text -> blockToText block ++ "\n" ++ text) ""
+documentToText = foldr (\block text -> blockToText block ++ text) ""
 
 wrap :: String -> String -> String
 wrap tag content = "<" ++ tag ++ ">" ++ content ++ "</" ++ tag ++ ">"
@@ -104,7 +103,7 @@ parse raw = maybe [] fst ((runParser $ many parseBlock) raw)
 parseWithExtensions :: String -> [Extension] -> (Document, Map String Document)
 parseWithExtensions raw [] = (parse raw, Map.empty)
 parseWithExtensions raw extensions =
-  foldr (\extension (doc, extras) -> 
+  foldl (\(doc, extras) extension -> 
     let (out, extra) = extension doc in (out, Map.union extras extra))
     (parse raw, Map.empty) extensions
 

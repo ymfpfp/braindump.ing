@@ -290,6 +290,7 @@ header #recent p {
   font-family: var(--serif);
   padding: var(--article-block-padding) var(--article-inline-padding);
   padding-bottom: calc(var(--article-block-padding) + 1rem);
+  position: relative;
 }
 #post article a {
   color: var(--theme);
@@ -392,7 +393,6 @@ header #recent p {
   opacity: 1;
 }
 #post article p {
-  position: relative;
   text-wrap: pretty;
 }
 #post article p span.aside {
@@ -402,10 +402,14 @@ header #recent p {
   font-style: italic;
   position: absolute;
   left: calc(50% - 50vw) !important;
-  max-width: calc((100vw - (100% + var(--article-inline-padding) * 2)) / 2);
+  min-width: calc((100vw - 100%) / 2);
+  max-width: calc((100vw - 100%) / 2);
   z-index: 99;
   padding-inline: var(--aside-inline-padding);
   text-align: right;
+}
+#post article p span.aside code {
+  font-size: calc(var(--aside-font-size) - 0.1rem) !important;
 }
 #post article p span.aside a {
   color: white;
@@ -458,6 +462,10 @@ header #recent p {
 }
 #toc h3 {
   padding-left: 8px;
+}
+
+.list p {
+  margin: 0;
 }
 
 @keyframes shake {

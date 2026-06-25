@@ -43,12 +43,25 @@ instance Applicative Parser where
   -- The difference between `*>` and `<*` and monadic chaining is that applicative
   -- chaining means you have no way to change the "shape" of the result.
   -- 
-  -- This is based off monad chaining for `Maybe` type, that is, we are able
-  pf <*> px = Parser (\stream -> do
-    -- `pf` is a parser that returns a function.
-    (f, fs) <- (runParser pf) stream
-    (x, xs) <- (runParser px) fs
+  -- This is based off monad chaining for `Maybe` type, that is, we don't have to handle 
+  -- the case where
+  -- pf <*> px = Parser (\stream -> do
+  --   -- `pf` is a parser that returns a function.
+  --   (f, fs) <- (runParser pf) stream
+  --   (x, xs) <- (runParser px) fs
+  --   Just (f x, xs))
+
+  pf <*> px = Parser (\stream -> 
+    runParser pf stream >>= \(f, fs) -> 
+    runParser px fs >>= \(x, xs) -> 
     Just (f x, xs))
+
+  -- pf <*> px = Parser (\stream -> 
+  --   case (runParser pf) stream of
+  --     Nothing -> Nothing
+  --     Just (f, fs) -> case (runParser px) fs of
+  --       Nothing -> Nothing
+  --       Just (x, xs) -> Just (f x, xs))
 
 instance Monad Parser where
   return = pure

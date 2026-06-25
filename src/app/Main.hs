@@ -60,8 +60,6 @@ main = do
   outputDirectoryTo :: String -> String -> [String] -> Bool -> IO ()
   outputDirectoryTo input output blacklist list = do
     entries <- listDirectory input
-    -- mapM_ :: Monad m -> (a -> m ()) -> [a] -> m ()
-    -- mapM_ :: Monad IO -> (String -> IO ()) -> [String] -> IO ()
     mapM_ (\entry -> do
       let path = input ++ entry
       let outputPath = output ++ entry

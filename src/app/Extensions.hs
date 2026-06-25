@@ -1,11 +1,11 @@
 module Extensions where
 
 import Data.Char (isAlphaNum, isSpace)
-import Data.List (dropWhileEnd, intercalate, partition)
+import Data.List (intercalate, partition)
 
 import qualified Data.Map as Map
 import qualified Markdown as Md
-import Utils (slug, trim, trimSpaces)
+import Utils (slug, trimSpaces)
 
 desc :: Md.Extension
 desc doc = (doc, Map.singleton "description" [Md.Fragment [Md.Plain $ summary ++ "..."]])

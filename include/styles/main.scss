@@ -197,6 +197,7 @@ header {
     font-family: var(--serif);
     padding: var(--article-block-padding) var(--article-inline-padding);
     padding-bottom: calc(var(--article-block-padding) + 1rem);
+    position: relative;
     // overflow-x: hidden;
 
     a {
@@ -325,7 +326,6 @@ header {
     }
 
     p {
-      position: relative;
       text-wrap: pretty;
 
       span.aside {
@@ -335,12 +335,18 @@ header {
         font-style: italic;
         position: absolute;
         left: calc(50% - 50vw) !important;
-        max-width: calc(
-          (100vw - (100% + var(--article-inline-padding) * 2)) / 2
-        );
+        min-width: calc((100vw - 100%) / 2);
+        max-width: calc((100vw - 100%) / 2);
+        // max-width: calc(
+        //   (100vw - (100% + var(--article-inline-padding)))
+        // );
         z-index: 99;
         padding-inline: var(--aside-inline-padding);
         text-align: right;
+
+        code {
+          font-size: calc(var(--aside-font-size) - 0.1rem) !important;
+        }
 
         a {
           color: white;
@@ -416,6 +422,12 @@ header {
 
   h3 {
     padding-left: 8px;
+  }
+}
+
+.list {
+  p {
+    margin: 0;
   }
 }
 
