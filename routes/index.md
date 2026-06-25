@@ -56,7 +56,8 @@ I believe in a lot of things:
       1. Related to this: As a kid, you're forced to learn. As an adult, you realize that everything is about learning, yet no one is forcing you to learn. When you realize that learning is fun, it opens up a lot of new avenues of joy. See [_How to like everything more_](https://sashachapin.substack.com/p/how-to-like-everything-more).
    4. Related to this: There is a particularly strong joy to be found in the mundane. Doing the same things every day, or the same thing every year.
    5. Related to this: It's jarring to realize that adults are just kids with more responsibilities and conscience. A lot of shit in this world past the physical boundary (i.e. physics) are made up, usually by a group of people! People don't have their shit together and are usually always struggling with something.
-4. The world is not black and white. It's immature to think it is; everything grows and changes. I'm not black and white; the world is both worse and better for it.
+4. Pay it forward when you can; do things with no expectation of the result. God, I love bike tourers so much; every single one I've ever talked to regularly shares this like it's gospel.
+5. The world is not black and white. It's immature to think it is; everything grows and changes. I'm not black and white; the world is both worse and better for it. Try not to fetishize yourself, but have the mercy you have for other people for yourself too.
 
    > … things get broken, and sometimes they get repaired, and in most cases, you realize that no matter what gets damaged, life rearranges itself to compensate for your loss, sometimes wonderfully.
    >
@@ -76,12 +77,6 @@ I believe in a lot of things:
    > It proved to me a side of humanity that lately I feel has been getting lost: the ability to empathise with human error ... how much shame we take on as we get older and how much that stunts our ability to connect with each other. To continue to be vulnerable in the face of constant rejection especially in a world increasingly intolerant of error ... They always stayed curious about each other and went to comical lengths to understand one another. They were clumsy as fuck and problematic at times but they dared to endure it in the pursuit of connection and grew together as a result.
    >
    > [_here_](https://www.instagram.com/p/DWYKZnplkD-/)
-   1. Related to this: Think about the leftovers. Life is not a book. There are no winners, no losers, no post-credit scenes. Get used to the mix of peaks, troughs, and flatlines.
-   2. Related to this: Try not to fetishize yourself, but have the mercy you have for other people for yourself too.
-
-5. Pay it forward when you can; do things with no expectation of the result. God, I love bike tourers so much; every single one I've ever talked to regularly shares this like it's gospel.
-6. You're not stupid, you're just missing the fundamentals. And it doesn't help that your attention span doesn't help you sometimes.
-   1. Related to this: A lot of problems, especially personal ones, tend to follow the same shape if you will. Programming analogy to be made here.
 
 If you would like to donate to a good cause, I highly recommend donating to [Hack Club](https://hackclub.com), which changed my life personally and I'm sure has done so for many others.
 
