@@ -55,7 +55,7 @@ blockToHtml block = case block of
   UnorderedList items -> wrap "ul" $ concatMap (wrap "li" . documentToHtml) items
   Image (alt, src) -> wrapWithProps "img" [("alt", alt), ("src", src)] ""
   HorizontalBreak -> "<hr>"
-  CodeBlock (language, code) -> 
+  CodeBlock (language, code) ->
     wrap "pre" $ wrapWithProps "code" [("class", "language-" ++ language)] code
   Fragment inline -> concatMap inlineToHtml inline
 
@@ -111,8 +111,8 @@ parseBlock :: Parser Block
 parseBlock = do
   -- Parse as many newlines first.
   _ <- many $ satisfy (\c -> c == '\n')
-  parseOrderedList <|> parseUnorderedList <|> parseCodeBlock <|> 
-   parseHorizontalBreak <|> parseImage <|> parseBlockquote <|> 
+  parseOrderedList <|> parseUnorderedList <|> parseCodeBlock <|>
+    parseHorizontalBreak <|> parseImage <|> parseBlockquote <|>
     parseHeading <|> parseParagraph
 
 -- TODO: Need to figure on \n\n vs \n.

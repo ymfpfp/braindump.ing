@@ -346,6 +346,74 @@ header #recent p {
 #post article pre > code span {
   background-color: transparent !important;
 }
+#post article .demo {
+  font-family: var(--sans-serif);
+  font-size: 1rem;
+  padding-left: calc(50vw - 50% - var(--article-inline-padding));
+}
+#post article .demo p {
+  margin: 0;
+}
+#post article .demo code {
+  font-size: 0.9rem;
+}
+#post article .demo code.accent {
+  color: var(--theme);
+}
+#post article .demo .note {
+  color: #777;
+  font-style: italic;
+  font-size: 0.9rem;
+  text-wrap: pretty;
+}
+#post article .demo .title {
+  font-weight: 600;
+}
+#post article .demo .diagram {
+  display: flex;
+  gap: 2rem;
+}
+#post article .demo .model {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+#post article .demo .row {
+  display: flex;
+  gap: 0.5rem;
+}
+#post article .demo .box,
+#post article .demo .layer {
+  background-color: var(--foreground);
+  border: 1px solid var(--darker-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  text-align: center;
+}
+#post article .demo .box {
+  flex: 1;
+}
+#post article .demo .box.guest {
+  border-color: var(--theme);
+}
+#post article .demo .inner {
+  border: 1px solid var(--darker-border);
+  padding: 0.25rem;
+}
+#post article .demo .boundary {
+  border-top: 1px dashed var(--theme);
+  font-size: 0.9rem;
+  padding-top: 0.5rem;
+  text-align: center;
+}
+#post article .demo .hardware {
+  background-color: var(--border);
+}
+#post article .demo .model > .note:last-child {
+  margin-top: 0.25rem;
+}
 #post article code {
   font-size: 1.1rem;
 }

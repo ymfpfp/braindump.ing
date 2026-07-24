@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta property="og:title" content="braindump.ing | On all the sandboxing options" />
+    <meta property="og:site_name" content="braindump.ing" />
+
+    <meta name="description" content="date: 2026-07-20title: On all the sandboxing optionslayout: writingtl;dr: Being written, incomplete, not very well structured, yapfest. Goals: look at three different levels of running sandboxed code - containers, Type I, Type I hosted, Type II, assuming you basically know nothing. Details relevant to x86-64ContainersContainers are basically just isolated Linux containersDocker..." />
+    <meta name="og:description" content="date: 2026-07-20title: On all the sandboxing optionslayout: writingtl;dr: Being written, incomplete, not very well structured, yapfest. Goals: look at three different levels of running sandboxed code - containers, Type I, Type I hosted, Type II, assuming you basically know nothing. Details relevant to x86-64ContainersContainers are basically just isolated Linux containersDocker..." />
+
+    <meta property="og:url" content="https://braindump.ing/2026-07-20-firecracker.html" />
+    <link rel="canonical" href="https://braindump.ing/2026-07-20-firecracker.html" />
+
+    <meta property="og:image" content="" />
+    <meta property="og:image:width" content="" />
+    <meta property="og:image:height" content="" />
+
+    <meta name="robots" content="index,follow" />
+    <meta name="googlebot" content="index,follow" />
+    <!-- <meta name="twitter:card" content="summary_large_image" /> -->
+    <!-- <meta name="twitter:site" content="" /> -->
+    <!-- <meta name="twitter:creator" content="" /> -->
+    <meta property="og:type" content="article" />
+    <meta property="og:locale" content="en_US" />
+
+    <meta name="theme-color" content="#690" />
+
+    <link rel="icon" type="image/png" href="/images/dumpster.png" />
+
+    <meta property="article:author:first_name" content="JC" />
+    <meta property="article:author:username" content="JC" />
+    <meta property="article:author:gender" content="female" />
+
+    <script
+      data-goatcounter="https://gc.braindump.ing/count"
+      async
+      src="//gc.braindump.ing/count.js"
+    ></script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": "On all the sandboxing options",
+        "abstract": "date: 2026-07-20title: On all the sandboxing optionslayout: writingtl;dr: Being written, incomplete, not very well structured, yapfest. Goals: look at three different levels of running sandboxed code - containers, Type I, Type I hosted, Type II, assuming you basically know nothing. Details relevant to x86-64ContainersContainers are basically just isolated Linux containersDocker...",
+        "image": [
+          {
+            "contentUrl": "",
+            "width": "",
+            "height": ""
+          }
+        ],
+        "author": [
+          {
+            "@type": "Person",
+            "name": "JC",
+            "url": "https://braindump.ing"
+          }
+        ]
+      }
+    </script>
+
+    <title>braindump.ing | On all the sandboxing options</title>
+    <link href="/styles/globals.css" rel="stylesheet" />
+    <link href="/styles/main.css" rel="stylesheet" />
+    <link href="/styles/prism.css" rel="stylesheet" />
+    <link href="/styles/mjx.css" rel="stylesheet" />
+    <script src="/scripts/email.js"></script>
+  </head>
+  <body>
+    <header>
+      <aside></aside>
+      <div>
+        <div id="logo">
+          <h1><a href="/">braindump.ing</a></h1>
+        </div>
+        <div id="recent">
+          <div>
+            <p><a href="/writing.html">Writing</a></p>
+            <p><a href="/aesthetics.html">Aesthetics</a></p>
+            <p>
+              <i>When will I be ready to just enjoy sunburning with you?</i>
+            </p>
+          </div>
+        </div>
+      </div>
+    </header>
+    <div id="post">
+      <aside></aside>
+      <article id="index"><div>
+  <div id="date">
+    <p>2026-07-20</p>
+    <h1>On all the sandboxing options</h1>
+  </div>
+  <p>tl;dr: Being written, incomplete, not very well structured, yapfest. Goals: look at three different levels of running sandboxed code - containers, Type I, Type I hosted, Type II, assuming you basically know nothing. Details relevant to x86-64</p><h2 id="containers">Containers</h2><p>Containers are basically just isolated Linux containers</p><p>Docker is a little more than just containers. I think describing it as a runtime might be the best way to approach it. There are a lot of moving parts and it's easy to over-complicate  </p><p>Docker is a lot of shit, actually. Did I mention that already? Some other features Docker provides you with -</p><ul><li><p>BuildKit is a </p></li></ul><h2 id="vms">VMs</h2><p>tl;dr: Read the first paragraph. This is basically me getting nerdsniped int</p><p>VMs are deceptively simple at their core. Point to memory region, fetch/decode/execute, emulate some devices - whether by poking through to actual devices on the host or simulating via allocating more memory regions. All emulation makes use of virtualized memory + virtualized processor + virtualized devices, in spirit of Von Neumann/Harvard architectures.</p><p>Thus the differences lie in how exactly this emulation is performed and what optimizations are done; terminology typically separates </p><p>Pedantically, the difference between a hyper</p><h3 id="images">Images</h3><p>Some common formats:</p><h2 id="firecracker--co">Firecracker & co.</h2><p><a href="https://github.com/firecracker-microvm/firecracker">Firecracker</a> is "an open source virtualization technology that is purpose-built for creating and managing secure, multi-tenant container and function-based services... Firecracker runs workloads in lightweight virtual machines, called microVMs, ... that uses [KVM] to create and run microVMs".</p><p>Firecracker is used by AWS to provide <a href="https://aws.amazon.com/lambda/">Lambda</a>, their serverless functions, and <a href="https://aws.amazon.com/fargate/">Fargate</a>, their service for deploying container-based services serverless-ly.</p><p>Firecracker is essentially a really stripped down fork of Google's <a href="https://github.com/google/crosvm"><code>crosvm</code></a>, which I need to do more research on.</p><p>In simpler terms, it provides you with:</p><ol><li><p>A VMM (Virtual Machine Monitor) exposed over a HTTP service on a Unix socket that lets you create and manage virtual machines and associated resources. The virtual machines are created by taking advantage of a Linux kernel module called KVM, short for Linux Kernel Virtual Machine.</p></li><li><p>A set of programs that allow you to run a full Linux kernel supplied by the user on these virtual machines. Behind the scenes these programs interface with KVM to set up what is necessary to run Linux (e.g., setting up virtual CPUs, virtual memory, etc.).</p></li><li><p>Extra utilities, e.g. a set of virtio devices </p></li></ol><p>Why you might want to use Firecracker boils down to: it's faster than a normal VM in terms of spinning up and down, and provides. This is why you'll see it labeled as a . In theory I doubt that either of those are super big issues given modern hardware and software, but it is objectively attractive.</p><h3 id="kvm">KVM</h3><p>The source code for KVM on x86 architectures can be found at <a href="https://github.com/torvalds/linux/tree/b95f03f04d475aa6719d15a636ddf32222d55657/arch/x86/kvm"><code>linux/arch/x86/kvm</code></a>.</p><p>KVM runs instructions on the CPU directly, without the host Linux kernel getting in the way. You write userspace code to set up the resources, e.g. memory: you can <code>mmap</code> memory and then copy a set of instructions into that memory. The virtual machine you create can then execute these instructions directly on the CPU via hardware extensions. In addition, the kernel module allows you to emulate </p><ul><li><p>When an interrupt happens, if it's relevant to the VM, it'll inject a virtual interrupt into the guest.</p></li><li><p>The VM will then exit for operations that require emulation. When this occurs, KVM will pass the details to your userspace process, which handles the operation and then passes control back to KVM. </p></li></ul><p>Compare this to the Linux container model. Containers are basically isolated Linux processes. A comparison of the two different models looks something like:</p><p><div class="demo"></p><p>  <div class="diagram"></p><p>    <div class="model"></p><p>      <p class="title">Linux container model</p></p><p>      <p class="note">Isolation is a kernel feature.</p></p><p>      <div class="row"></p><p>        <div class="box">Container<code>process</code></div></p><p>        <div class="box">Container<code>process</code></div></p><p>        <div class="box">Container<code>process</code></div></p><p>      </div></p><p>      <p class="boundary"><code>namespaces</code> + <code>cgroups</code> + <code>seccomp</code> / <code>LSM</code></p></p><p>      <div class="layer"></p><p>        Shared host kernel</p><p>        <span class="note">One syscall surface for everyone, around 350 syscalls of attack surface.</span></p><p>      </div></p><p>      <div class="layer hardware">Hardware</div></p><p>      <p class="note">A container is just an isolated Linux process: cheap to start, but it shares the very kernel it is being isolated by.</p></p><p>    </div></p><p>    <div class="model"></p><p>      <p class="title">KVM virtualization model</p></p><p>      <p class="note">Isolation is a hardware feature.</p></p><p>      <div class="row"></p><p>        <div class="box guest"></p><p>          microVM</p><p>          <span class="inner"><code>process</code></span></p><p>          <span class="inner">Guest kernel</span></p><p>        </div></p><p>        <div class="box guest"></p><p>          microVM</p><p>          <span class="inner"><code>process</code></span></p><p>          <span class="inner">Guest kernel</span></p><p>        </div></p><p>      </div></p><p>      <div class="layer"><code>firecracker</code> VMM, one per microVM</div></p><p>      <div class="layer"></p><p>        Host kernel, driven through <code>ioctl</code> on <code class="accent">/dev/kvm</code></p><p>      </div></p><p>      <div class="layer hardware"></p><p>        Hardware</p><p>        <span class="note">VT-x / AMD-V, EPT, VMCS</span></p><p>      </div></p><p>      <p class="note">Guest instructions run on the CPU directly; the guest only exits to the VMM for what needs emulating.</p></p><p>    </div></p><p>  </div></p><p></div></p><p>This is vaguely based off a similar <a href="https://cdn.braindump.ing/writing/kvm.png">diagram</a> in AWS' <a href="https://www.usenix.org/system/files/nsdi20-paper-agache.pdf">paper</a> on Firecracker<sup>0</sup><span class="aside">(0) The end of this paper is cool, they talk a bit about Firecracker usage in Lambda and performance. </span>.</p><p>Interacting with KVM is done by making <code>ioctl</code> syscalls to the file descriptor at <code>/dev/kvm</code>, given that the module is enabled (use <code>lsmod | grep kvm</code> for quick check). You might know <code>ioctl</code> as the grab-bag syscall on POSIX systems; its primitive type signature is basically a syscall in the form <code>ioctl(fd, int op, void* arg)</code>, per the <a href="https://man7.org/linux/man-pages/man2/ioctl.2.html">man</a> page:</p><pre class="language-c"><code class="language-c"><span class="token macro property"><span class="token directive-hash">#</span><span class="token directive keyword">include</span> <span class="token string">&lt;sys/ioctl.h></span></span>
+
+<span class="token keyword">int</span> <span class="token function">ioctl</span><span class="token punctuation">(</span><span class="token keyword">int</span> fd<span class="token punctuation">,</span> <span class="token keyword">unsigned</span> <span class="token keyword">long</span> op<span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">)</span><span class="token punctuation">;</span>  <span class="token comment">/* glibc, BSD */</span>
+<span class="token keyword">int</span> <span class="token function">ioctl</span><span class="token punctuation">(</span><span class="token keyword">int</span> fd<span class="token punctuation">,</span> <span class="token keyword">int</span> op<span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">)</span><span class="token punctuation">;</span>            <span class="token comment">/* musl, other UNIX */</span>
+
+<span class="token comment">// The ioctl() system call manipulates the underlying device</span>
+<span class="token comment">// parameters of special files. In particular, many operating</span>
+<span class="token comment">// characteristics of character special files (e.g., terminals) may</span>
+<span class="token comment">// be controlled with ioctl() operations. The argument fd must be an</span>
+<span class="token comment">// open file descriptor.</span>
+<span class="token comment">//</span>
+<span class="token comment">// The second argument is a device-dependent operation code. The</span>
+<span class="token comment">// third argument is an untyped pointer to memory. It's</span>
+<span class="token comment">// traditionally char *argp (from the days before void * was valid</span>
+<span class="token comment">// C), and will be so named for this discussion.</span></code></pre><p>Extra data (e.g., a file descriptor index, is typically written to the )</p><p>KVM's <code>op</code> value is <code>0xAE</code>, as defined <a href="https://github.com/torvalds/linux/blob/b95f03f04d475aa6719d15a636ddf32222d55657/include/uapi/linux/kvm.h#L682">here</a> in the Linux kernel. So interfacing with KVM might look like:</p><ol><li><p>Open a file handle to <code>/dev/kvm</code>.</p></li><li><p><code>ioctl</code> to the handle with arg <code>0x01</code> to create a VM handle (as file descriptor) - KVM will create a VM behind the scenes.</p></li><li><p><code>ioctl</code> to this VM handle with arg <code>0x41</code> to create a vCPU handle (also as file descriptor).</p></li><li><p><code>ioctl</code> to this vCPU handle to g</p></li><li><p>Copy instructions over to mapped memory</p></li><li><p>Jump to code start by setting appropriate registers to <code>ioctl</code> (i.e.,), and execute with <code>ioctl</code> to the vCPU handle with arg <code>0x80</code>, which will cause the CPU to begin executing instructions until a VM exit happens.</p></li></ol><p>It may be useful to look at KVM's <code>ioctl</code> <a href="https://www.kernel.org/doc/html/latest/virt/kvm/api.html">reference</a>.</p><p>Naturally you'll also have to handle all the quirks of the actual CPU. For example, if we want to run 64-bit code in <i>long mode</i>, you'll have to set up paging. </p><p>That's really all there is to it on the surface. Firecracker uses this to create VMs; now instead of running instructions directly, we want to run a whole Linux kernel.</p><h2 id="digression-before-the-bootloader">Digression: before the bootloader</h2><p>Some prerequisite understanding is what exactly your device does when you turn it on. Feel free to skip down to booting Linux/what Firecracker does for you.</p><hr><p>(dropdown)</p><p>Some intuition on how physical drives work: at this point in time, most nonvolatile memory storage is stereotypically either magnetic, a la HDDs (Hard Disk Drives), or solid-state, a la SSDs (Solid State Drives).</p><p>Hard drives are made of magnetic platters that spin at a fixed speed (typically, either 5400 or 7200 RPM for consumer hard drives).</p><p>Since there are two methods, there are also two addressing schemes that you'll see:</p><ul><li><p>The old fashioned Cylinder-Head-Sector </p></li><li><p>LBA (Logical Block Address) addressing. Instead of using hard-disk based physical geometry, treat the disk as a flat array of blocks, which is more analogous to SSDs then</p></li></ul><p>todo(jc): Maybe helps to have a diagram here.</p><p>There's a wonderful article</p><hr><p>Typically it starts with the power supply triggering a <code>PWR_OK</code> line to the motherboard... this powers up everything including the volatile parts (e.g., RAM is volatile so it starts out with random values).</p><p>The CPU starts out in <i>reset mode</i>. It automatically starts executing from a fixed reset vector, a hardcoded address where it expects to find the first instruction. The fixed reset vector on modern day CPUs is typically equivalent or similar to <code>0xFFFFFFF0</code>, which is near the top of the 4GiB memory space (that is, the 32-bit address space). To be pedantic, when the CPU starts out in reset mode, it is in something called <i>real mode</i> for 16-bit compatibility (from 8086 days). In real mode, the address space is 16 bits, but can extend to 20 bits<sup>1</sup><span class="aside">(1) The difference here is having access to X more addresses.</span>, </p><p>Anyways, this address maps to firmware that lives in a flash ROM chip on the motherboard. It's a physical chip, but the CPU memory maps it to the top of the 32-bit address space.</p><p>(But how is this firmware mapped? It's thanks to the address bus, it hits the address bus and the address bus' chipset will automatically route to the </p><p>Firmware nowadays fall into one of two categories:</p><ul><li><p>BIOS (Basic Input/Output System). This the original, came out in 1981. Runs in real mode, is limited. Uses a partition scheme called Master Boot Record (MBR) to find the <i>bootloader</i>. The bootloader is what is actually responsible for performing the operations needed to set up and load the kernel into memory.</p></li><li><p>UEFI (Unified Extensible Firmware Interface). Modern replacement developed by Intel in the late 90s/early 00s. This specifically operates in the 64-bit address space; the firmware is typically in PE/COFF format. </p></li></ul><p>Nowadays these are typically written in some higher language and compiled down to the appropriate architecture. Flashing utilizes SPI (serial peripheral interface), using:</p><ul><li><p>In-system: Chipset comes with SPI controller. </p></li><li><p>External programmer: Physical hardware controller that clips on or solders on to flash chp</p></li><li><p>Nowadays motherboards come with dual BIOS (two SPI controllers!) or BIOS flashback (flash from thumb drive via USB port on motherboard) if you somehow manage to mess it up. </p></li></ul><p>Most motherboards only ship with UEFI in this modern day and age, but include CSM (Compatibility Support Module) to emulate legacy BIOS behavior. (Although they're also beginning to drop this).</p><p>If you're running a hypervisor like <a href="">QEMU</a>, you can typically expect these to be emulated. For example, QEMU comes by default with SeaBIOS, but you can pass custom firmware with <code>-bios</code>, and there's also OVMF (Open Virtual Machine Framework) which is open source UEFI firmware.</p><p>On the surface level, firmware will typically do the following things in common:</p><ul><li><p>POST, or Power On Self Test. Check up on critical connections.</p></li><li><p>Sets up all hardware components in a specific order, and construct a map of resources that will be passed</p></li><li><p>Scan all PCI/PCIe (Peripheral Component Interconnect / Express, interface standards for connecting hardware components to a computer's motherboard), looking for all add-on cards. Add-on cards typically have their own firmware called Option ROMs, small pieces of code the firmware will execute to set them up.</p></li><li><p>Choose an initial <i>bootloader</i> to hand off to. On BIOS, this is done by searching each sector on the available disks for a magic number indicating a valid bootloader. For UEFI, this is done by searching each </p></li><li><p>Hand it off to the bootloader!</p></li></ul><h3 id="bios">BIOS</h3><p>Each storage device that contains a working bootloader has to have a MBR at the beginning of LBA 0. LBA refers to <i>Logical Block Address</i>: instead of using the physical geometry of a typical disk - cylinder/des </p><p>(dropdown) Nowadays we have hard disks</p><p>The MBR is 512 bytes and starts with the actual MBR, the bootstrap code that the BIOS loads and reads directly. This is about 90% of the bytes.</p><p>The next 64 bytes are the partition table, which contains four 16-byte partition table entries (PTE). Each PTE contains:</p><ul><li><p>Boot flag (1 byte): Indicates this partition is active/bootable.</p></li><li><p>Starting CHS address (3 bytes): Old addressing for start of this partition.</p></li><li><p>Partition type (1 byte): Identifies the file system, e.g., <code>0x83</code> for Linux.</p></li><li><p>Ending CHS address (3 bytes)</p></li><li><p>Starting LBA address (4 bytes)</p></li><li><p>Partition size in sectors (4 bytes)</p></li></ul><p>As you can see, for backwards compatibility there is a CHS range (start + end) and a LBA range (start + size).</p><p>The last 2 bytes are the magic number <code>0x55aa</code>, the magic number that validates this as a bootable sector. BIOS will scan this first to determine whether or not to skip this disk. BIOS does not let you construct a priority list; the list of storage devices it scans is in a fixed order.</p><p>When BIOS finds a valid MBR locates this magic number, it'll bootstrap the MBR code, which in turn scans the four PTEs, finds the partition with the boot flag set, and loads the bootloader from that partition. It passes off control to the bootloader; this is typically referred to as <i>chain loading</i>. The partition that has the boot flag is known as the PBR (Partition Boot Record) or VBR (Volume Boot Record).</p><p>As you can see there are lot of limitations. For one, there are only four entries max. To deal wth this, you can designate one of your four primary partitions as an extended partition (i.e., partition type <code>0x05</code> for CHS addressing and <code>0x0f</code> for LBA addressing). </p><p>todo(jc): Diagram </p><h3 id="uefi">UEFI</h3><p>Instead of usinw usin</p><p>Once firmware has located a bootloader.</p><p>Some typical bootloaders are <a href="">GRUB</a> (GRand Unified Bootloader) for Linux and <a href=""><code>bootmgr</code></a> for Windows. Naturally, Apple has their own firmware; their boot chain looks a bit like: boot ROM</p><h2 id="digression-the-bootloader">Digression: the bootloader</h2><p>Booting Linux in general requires at minimum three things:</p><ol><li><p>We need the actual kernel image we'll be running.</p></li><li><p>We need <code>initramfs</code> (Initial RAM Filesystem), a filesystem that has a binary that we can run as <code>init</code> for PID 1.</p></li><li><p>We need a kernel command line (usually abbreviated to cmdline), a string of parameters. These are also typically referred to as the boot args.</p></li><li><p>We need to load <code>boot_params</code> somewhere in memory.</p></li><li><p>In terms of registers</p></li></ol><p>Unfortunately there is sort of a chicken-and-egg problem: most kernels nowadays are modular and need access to drivers to be able to access disks; but disks are </p><p>What a bootloader might do: </p><h3 id="kernel-images">Kernel images</h3><p>Typically the bootloader knows where to find kernel file on storage file, e.g.:</p><ul><li><p><code>vmlinuz</code> on Linux </p></li></ul><h3 id="initramfs">initramfs</h3><p>This is typically a CPIO archive, per this <a href="https://www.kernel.org/doc/Documentation/early-userspace/buffer-format.txt">kernel documentation</a>.</p><h3 id="example-bootloader">Example bootloader</h3><p>todo: I think writing a quick bootloader would be educational.</p><h2 id="minimal-working-firecracker">Minimal working Firecracker </h2><p>Given that booting Linux requires these things, Firecracker has us pass in a couple of options:</p><ol><li><p>The kernel image.  </p></li><li><p>Boot args</p></li><li><p>A rootfs.</p></li><li><p>Machine configuration, i.e., how much</p></li></ol><p>All of this is done by communicating over the API that you expose on a Unix socket, e.g.:</p><pre class="language-shell"><code class="language-shell"><span class="token assign-left variable">API_SOCKET</span><span class="token operator">=</span><span class="token string">"/tmp/firecracker.socket"</span>
+
+<span class="token comment"># Remove API unix socket</span>
+<span class="token function">sudo</span> <span class="token function">rm</span> <span class="token parameter variable">-f</span> <span class="token variable">$API_SOCKET</span>
+
+<span class="token comment"># Run firecracker</span>
+<span class="token function">sudo</span> ./firecracker --api-sock <span class="token string">"<span class="token variable">${API_SOCKET}</span>"</span> --enable-pci</code></pre><p>Once you pass in these parameters Firecracker will do most of the hard work.</p><h2 id="virtio">virtio</h2><p><code>virtio</code> for some reason was confusing to</p><h2 id="extras">Extras </h2><p>Please see </p>
+</div>
+</article>
+      <aside>
+        <div id="toc"><h2><a href="#containers">Containers</a></h2><h2><a href="#vms">VMs</a></h2><h3><a href="#images">Images</a></h3><h2><a href="#firecracker--co">Firecracker & co.</a></h2><h3><a href="#kvm">KVM</a></h3><h2><a href="#digression-before-the-bootloader">Digression: before the bootloader</a></h2><h3><a href="#bios">BIOS</a></h3><h3><a href="#uefi">UEFI</a></h3><h2><a href="#digression-the-bootloader">Digression: the bootloader</a></h2><h3><a href="#kernel-images">Kernel images</a></h3><h3><a href="#initramfs">initramfs</a></h3><h3><a href="#example-bootloader">Example bootloader</a></h3><h2><a href="#minimal-working-firecracker">Minimal working Firecracker </a></h2><h2><a href="#virtio">virtio</a></h2><h2><a href="#extras">Extras </a></h2></div>
+      </aside>
+    </div>
+    <div id="footer">
+      <aside></aside>
+      <footer>
+        <div class="subscribe">
+          <p>
+            Sometimes I write posts! This happens at infrequent intervals so if
+            you like what I write you can subscribe to get notified when I do.
+          </p>
+          <p>No spam.</p>
+          <form>
+            <input
+              required="true"
+              autocomplete="off"
+              name="email"
+              type="email"
+              placeholder="sven.wonders@braindump.ing"
+            />
+            <button type="submit">Subscribe</button>
+          </form>
+        </div>
+        <div>
+          <p>
+            Everything here is written by me, occasionally reviewed by an LLM,
+            and then rewritten by me if needed! You can find the Haskell source
+            <a href="https://github.com/ymfpfp/braindump.ing">here</a>.
+          </p>
+          <p>
+            Questions? Something wrong? Want someone to talk to? Feel free to
+            email at <i>jc[at]website</i>.
+          </p>
+        </div>
+      </footer>
+      <aside></aside>
+    </div>
+  </body>
+</html>

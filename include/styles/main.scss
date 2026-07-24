@@ -267,6 +267,92 @@ header {
       }
     }
 
+    .demo {
+      font-family: var(--sans-serif);
+      font-size: 1rem;
+      padding-left: calc(50vw - 50% - var(--article-inline-padding));
+
+      p {
+        margin: 0;
+      }
+
+      code {
+        font-size: 0.9rem;
+
+        &.accent {
+          color: var(--theme);
+        }
+      }
+
+      .note {
+        color: #777;
+        font-style: italic;
+        font-size: 0.9rem;
+        text-wrap: pretty;
+      }
+
+      .title {
+        font-weight: 600;
+      }
+
+      .diagram {
+        display: flex;
+        gap: 2rem;
+      }
+
+      .model {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+
+      // Each model is a stack of layers, with the peers on any one layer in a row.
+      .row {
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      .box,
+      .layer {
+        background-color: var(--foreground);
+        border: 1px solid var(--darker-border);
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        padding: 0.75rem;
+        text-align: center;
+      }
+
+      .box {
+        flex: 1;
+      }
+
+      .box.guest {
+        border-color: var(--theme);
+      }
+
+      .inner {
+        border: 1px solid var(--darker-border);
+        padding: 0.25rem;
+      }
+
+      .boundary {
+        border-top: 1px dashed var(--theme);
+        font-size: 0.9rem;
+        padding-top: 0.5rem;
+        text-align: center;
+      }
+
+      .hardware {
+        background-color: var(--border);
+      }
+
+      // The last note in a model is a caption, so it sits apart from the stack.
+      .model > .note:last-child {
+        margin-top: 0.25rem;
+      }
+    }
+
     code {
       font-size: 1.1rem;
     }
