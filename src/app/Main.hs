@@ -141,7 +141,7 @@ main = do
     let transformedPath = (filename path) ++ "html"
 
     raw <- readFile path
-    let (parsed, injections) = Md.parseWithExtensions raw [Extensions.desc, Extensions.parseFrontmatter, Extensions.parseTOC, Extensions.parseFootnotes]
+    let (parsed, injections) = Md.parseWithExtensions raw [Extensions.parseFrontmatter, Extensions.desc, Extensions.parseTOC, Extensions.parseFootnotes]
     let layoutPath = trim (== '\n') <$> (Md.documentToText <$> Map.lookup "layout" injections)
 
     -- Reading the file is REALLY bad every time. TODO

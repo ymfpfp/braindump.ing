@@ -72,6 +72,10 @@ header {
 
     p {
       margin: 0;
+
+      &:has(i) {
+        max-width: 35vw;
+      }
     }
   }
 }
@@ -268,16 +272,23 @@ header {
     }
 
     .demo {
+      --unit-fill: color-mix(in srgb, var(--theme) 9%, var(--foreground));
+      --unit-border: color-mix(in srgb, var(--theme) 42%, var(--foreground));
+      --band-fill: #e9f0f8;
+      --band-border: #9db8d4;
+
       font-family: var(--sans-serif);
+      // font-family: var(--monospace);
       font-size: 1rem;
-      padding-left: calc(50vw - 50% - var(--article-inline-padding));
+      padding: var(--article-block-padding);
+      // padding-left: calc(50vw - 50% - var(--article-inline-padding));
 
       p {
         margin: 0;
       }
 
       code {
-        font-size: 0.9rem;
+        font-size: 0.995rem;
 
         &.accent {
           color: var(--theme);
@@ -287,7 +298,7 @@ header {
       .note {
         color: #777;
         font-style: italic;
-        font-size: 0.9rem;
+        font-size: 0.995rem;
         text-wrap: pretty;
       }
 
@@ -314,8 +325,9 @@ header {
 
       .box,
       .layer {
-        background-color: var(--foreground);
-        border: 1px solid var(--darker-border);
+        background-color: var(--unit-fill);
+        border: 1px solid var(--unit-border);
+        border-radius: 0;
         display: flex;
         flex-direction: column;
         gap: 0.25rem;
@@ -327,12 +339,26 @@ header {
         flex: 1;
       }
 
+      // A microVM is the emphasised unit — a fuller green fill sets it apart.
       .box.guest {
-        border-color: var(--theme);
+        background-color: color-mix(
+          in srgb,
+          var(--theme) 16%,
+          var(--foreground)
+        );
+        border-color: color-mix(in srgb, var(--theme) 60%, var(--foreground));
+      }
+
+      // Full-width layers are infrastructure the units sit on, so they read as
+      // blue bands rather than green units.
+      .layer {
+        background-color: var(--band-fill);
+        border-color: var(--band-border);
       }
 
       .inner {
-        border: 1px solid var(--darker-border);
+        background-color: var(--foreground);
+        border: 1px solid var(--unit-border);
         padding: 0.25rem;
       }
 
@@ -343,13 +369,83 @@ header {
         text-align: center;
       }
 
+      // Bare metal: the one uncolored, gray band at the bottom of the stack.
       .hardware {
         background-color: var(--border);
+        border-color: var(--darker-border);
       }
 
       // The last note in a model is a caption, so it sits apart from the stack.
       .model > .note:last-child {
         margin-top: 0.25rem;
+      }
+
+      // Container stack diagram. The body of each tier is an ordinary .row or
+      // .model of .box-es (groups are just a .box wrapping a .title and more
+      // boxes), so the only thing bespoke here is the left rail of daemon names.
+      .stack {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+
+        // "kubernetes expands on this" points up and to the right, above it all.
+        > .note {
+          margin: 0;
+          text-align: right;
+        }
+      }
+
+      .tier {
+        display: grid;
+        grid-template-columns: minmax(0, 10rem) 1fr;
+        gap: 0.75rem;
+        align-items: center;
+
+        // The daemon name is the rail label; the ↓ marks its hand-off to the
+        // tier below, echoing the delegation arrows in the original.
+        > code {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          color: var(--theme);
+          font-weight: 600;
+          text-align: right;
+        }
+
+        &:not(:last-child) > code::after {
+          content: "↓";
+          color: #999;
+          line-height: 1;
+          margin-top: 0.35rem;
+        }
+
+        // Bodies wrap, and boxes keep a readable width instead of stretching
+        // across the full-bleed figure.
+        .row {
+          flex-wrap: wrap;
+        }
+
+        > .row {
+          align-items: flex-start;
+        }
+
+        .box {
+          max-width: 24rem;
+        }
+
+        @media screen and (max-width: $sm) {
+          grid-template-columns: 1fr;
+          gap: 0.35rem;
+
+          > code {
+            align-items: flex-start;
+            text-align: left;
+          }
+
+          &:not(:last-child) > code::after {
+            content: none;
+          }
+        }
       }
     }
 

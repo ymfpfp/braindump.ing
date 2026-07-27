@@ -1,4 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap");
 @font-face {
   font-family: "Roberte";
   src: url("/fonts/Roberte-Regular.ttf") format("truetype");
@@ -152,7 +151,7 @@ header h1 {
 }
 .grid-item:has(blockquote, p) blockquote,
 .grid-item:has(blockquote, p) p {
-  font-family: "Lato";
+  font-family: "Source Sans 3";
   line-height: 1.6;
   pointer-events: none;
 }

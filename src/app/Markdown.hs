@@ -16,8 +16,9 @@ data Block
   | OrderedList [[Block]]
   | UnorderedList [[Block]]
   | Image (String, String)
-  | HorizontalBreak 
+  | HorizontalBreak
   | CodeBlock (String, String)
+  | HtmlBlock String
   | Fragment [Inline]
   deriving Show
 
@@ -57,6 +58,8 @@ blockToHtml block = case block of
   HorizontalBreak -> "<hr>"
   CodeBlock (language, code) ->
     wrap "pre" $ wrapWithProps "code" [("class", "language-" ++ language)] code
+  -- The escape hatch for hand-written figures: emit the markup verbatim.
+  HtmlBlock html -> html
   Fragment inline -> concatMap inlineToHtml inline
 
 blockToText :: Block -> String
@@ -69,6 +72,8 @@ blockToText block = case block of
   Image (alt, _) -> alt
   HorizontalBreak -> ""
   CodeBlock (_, code) -> code
+  -- Raw markup carries no prose, so it stays out of descriptions and summaries.
+  HtmlBlock _ -> ""
   Fragment inline -> concatMap inlineToText inline
 
 inlineToHtml :: Inline -> String
@@ -112,7 +117,7 @@ parseBlock = do
   -- Parse as many newlines first.
   _ <- many $ satisfy (\c -> c == '\n')
   parseOrderedList <|> parseUnorderedList <|> parseCodeBlock <|>
-    parseHorizontalBreak <|> parseImage <|> parseBlockquote <|>
+    parseHtmlBlock <|> parseHorizontalBreak <|> parseImage <|> parseBlockquote <|>
     parseHeading <|> parseParagraph
 
 -- TODO: Need to figure on \n\n vs \n.
@@ -201,7 +206,7 @@ parseBlockquote = do
     _ <- match ">"
     content <- 
       (match " " *> manyUntil (match "\n") (satisfy $ \c -> c /= '\n') <* match "\n") 
-      <|> (match "\n" *> pure "<br>")
+      <|> (match "\n" *> pure "")
     return content
 
 parseImage :: Parser Block
@@ -218,8 +223,20 @@ parseImage = do
   return $ Image (alt, src)
 
 parseHorizontalBreak :: Parser Block
--- `<$` vs. `<$>`: Here we're using `<$`, which ends up mapping the lhs on 
+-- `<$` vs. `<$>`: Here we're using `<$`, which ends up mapping the lhs on
 parseHorizontalBreak = HorizontalBreak <$ match "---"
+
+-- A raw HTML escape hatch for hand-written figures. It works like a fenced code
+-- block whose fence is an unindented `<div`...`</div>` pair: we open on a `<div`
+-- at the start of a line and swallow everything verbatim up to a `</div>` that is
+-- itself at the start of a line. Nested markup just has to be indented, so its
+-- own closing `</div>`s never terminate the block early.
+parseHtmlBlock :: Parser Block
+parseHtmlBlock = do
+  _ <- check $ match "<div"
+  content <- manyUntil (match "\n</div>") (satisfy $ \_ -> True)
+  close <- match "\n</div>"
+  return $ HtmlBlock (content ++ close)
 
 parseCodeBlock :: Parser Block
 parseCodeBlock = do

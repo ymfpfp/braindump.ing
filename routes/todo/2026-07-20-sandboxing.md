@@ -10,17 +10,81 @@ tl;dr: Being written, incomplete, not very well structured, yapfest. Goals: look
 
 Containers are basically just isolated Linux containers
 
-Docker is a little more than just containers. I think describing it as a runtime might be the best way to approach it. There are a lot of moving parts and it's easy to over-complicate
+Docker is a little more than just containers. I think describing it as a runtime might be the best way to approach it. There are a lot of moving parts and it's easy to over-complicate it, but it's basically just stacking different tools on top of one another. From top to bottom, it looks mostly like:
 
-Docker is a lot of shit, actually. Did I mention that already? Some other features Docker provides you with -
+1. Docker CLI/Docker Desktop: Some user interface. Since Docker makes use of specific Linux kernel features, on non-Linux OSes Docker Desktop will also run and manage a lightweight VM (e.g., WSL2 on Windows). Docker Desktop nowadays also comes with Kubernetes
+2. Docker Engine/dockerd(aemon): This is the
+3. containerd: At this point we're running in the Linux VM if we aren't on Linux. This is the daemon that does the actual grunt work of managing the containers and images. Pull down an image, containerd constructs the overlayfs snapshot.
+4. runc(ontainer): Fork a child process, creating the actual container by making use of the aforementioned Linux features. Since we're trying to lock
+   - cgroups and namespaces etc.
 
-- BuildKit is a
+Kubernetes is just a scaling technology built on top of this.
+
+Docker is a lot of shit, actually. Did I mention that already? Some other features Docker provides you with, briefly:
+
+- BuildKit
+  - Docker uses [overlayfs]().
+  - Docker will typically
+
+I'm not going to go into containers into too much detail, but here's a nice bird's eye view in case you would like to do more research into the individual components:
+
+<div class="demo">
+  <div class="stack">
+    <p class="note">↗ kubernetes expands on this</p>
+    <div class="tier">
+      <code>docker cli / desktop</code>
+      <div class="row">
+        <div class="box">operate a VM if not on Linux</div>
+      </div>
+    </div>
+    <div class="tier">
+      <code>docker engine / dockerd</code>
+      <div class="row">
+        <div class="box">networking</div>
+        <div class="box">storage</div>
+        <div class="box">
+          <p class="title">extra tools</p>
+          <div class="row">
+            <div class="box"><code>buildkit</code></div>
+            <div class="box"><code>compose</code></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="tier">
+      <code>containerd</code>
+      <div class="row">
+        <div class="box">images: pull, cache, save, extract and overlay with <code>overlayfs</code></div>
+        <div class="box">manage containers</div>
+      </div>
+    </div>
+    <div class="tier">
+      <code>runc</code>
+      <div class="model">
+        <div class="box">fork a process</div>
+        <div class="row">
+          <div class="box">
+            <p class="title">security / "hardening"</p>
+            <div class="box"><code>capabilities</code></div>
+            <div class="box"><code>seccomp</code></div>
+          </div>
+          <div class="box">
+            <p class="title">isolation</p>
+            <div class="box"><code>cgroups</code> (cpu, ram, memory, etc.)</div>
+            <div class="box"><code>namespaces</code> (pid/uid/gid, mounts, uts, etc.)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="note">Each layer delegates downward: the CLI drives the daemon, which drives <code>containerd</code>, which drives <code>runc</code> — which in the end just forks an isolated, hardened Linux process.</p>
+</div>
 
 ## VMs
 
 tl;dr: Read the first paragraph. This is basically me getting nerdsniped int
 
-VMs are deceptively simple at their core. Point to memory region, fetch/decode/execute, emulate some devices - whether by poking through to actual devices on the host or simulating via allocating more memory regions. All emulation makes use of virtualized memory + virtualized processor + virtualized devices, in spirit of Von Neumann/Harvard architectures.
+VMs are deceptively simple at their core. Point to memory region, fetch/decode/execute, emulate some devices - whether by poking through to actual devices on the host or simulating via allocating more memory regions. The majority of emulation makes use of virtualized memory + virtualized processor + virtualized devices, in spirit of Von Neumann/Harvard architectures.
 
 Thus the differences lie in how exactly this emulation is performed and what optimizations are done; terminology typically separates
 
@@ -289,6 +353,8 @@ Once you pass in these parameters Firecracker will do most of the hard work.
 ## virtio
 
 `virtio` for some reason was confusing to
+
+## v8 isolates
 
 ## Extras
 

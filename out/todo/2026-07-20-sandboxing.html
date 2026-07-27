@@ -5,11 +5,11 @@
     <meta property="og:title" content="braindump.ing | On all the sandboxing options" />
     <meta property="og:site_name" content="braindump.ing" />
 
-    <meta name="description" content="date: 2026-07-20title: On all the sandboxing optionslayout: writingtl;dr: Being written, incomplete, not very well structured, yapfest. Goals: look at three different levels of running sandboxed code - containers, Type I, Type I hosted, Type II, assuming you basically know nothing. Details relevant to x86-64ContainersContainers are basically just isolated Linux containersDocker..." />
-    <meta name="og:description" content="date: 2026-07-20title: On all the sandboxing optionslayout: writingtl;dr: Being written, incomplete, not very well structured, yapfest. Goals: look at three different levels of running sandboxed code - containers, Type I, Type I hosted, Type II, assuming you basically know nothing. Details relevant to x86-64ContainersContainers are basically just isolated Linux containersDocker..." />
+    <meta name="description" content="tl;dr: Being written, incomplete, not very well structured, yapfest. Goals: look at three different levels of running sandboxed code - containers, Type I, Type I hosted, Type II, assuming you basically know nothing. Details relevant to x86-64ContainersContainers are basically just isolated Linux containersDocker is a little more than just containers...." />
+    <meta name="og:description" content="tl;dr: Being written, incomplete, not very well structured, yapfest. Goals: look at three different levels of running sandboxed code - containers, Type I, Type I hosted, Type II, assuming you basically know nothing. Details relevant to x86-64ContainersContainers are basically just isolated Linux containersDocker is a little more than just containers...." />
 
-    <meta property="og:url" content="https://braindump.ing/2026-07-20-firecracker.html" />
-    <link rel="canonical" href="https://braindump.ing/2026-07-20-firecracker.html" />
+    <meta property="og:url" content="https://braindump.ing/2026-07-20-sandboxing.html" />
+    <link rel="canonical" href="https://braindump.ing/2026-07-20-sandboxing.html" />
 
     <meta property="og:image" content="" />
     <meta property="og:image:width" content="" />
@@ -41,7 +41,7 @@
         "@context": "https://schema.org",
         "@type": "Article",
         "headline": "On all the sandboxing options",
-        "abstract": "date: 2026-07-20title: On all the sandboxing optionslayout: writingtl;dr: Being written, incomplete, not very well structured, yapfest. Goals: look at three different levels of running sandboxed code - containers, Type I, Type I hosted, Type II, assuming you basically know nothing. Details relevant to x86-64ContainersContainers are basically just isolated Linux containersDocker...",
+        "abstract": "tl;dr: Being written, incomplete, not very well structured, yapfest. Goals: look at three different levels of running sandboxed code - containers, Type I, Type I hosted, Type II, assuming you basically know nothing. Details relevant to x86-64ContainersContainers are basically just isolated Linux containersDocker is a little more than just containers....",
         "image": [
           {
             "contentUrl": "",
@@ -78,7 +78,8 @@
             <p><a href="/writing.html">Writing</a></p>
             <p><a href="/aesthetics.html">Aesthetics</a></p>
             <p>
-              <i>When will I be ready to just enjoy sunburning with you?</i>
+              <i>How fast the night changes and yet: when will I be ready to just enjoy sunburning with you?</i>
+              <!-- <i>Wonder is the foundation of all philosophy, inquiry its progress, ignorance its end.</i> -->
             </p>
           </div>
         </div>
@@ -91,7 +92,101 @@
     <p>2026-07-20</p>
     <h1>On all the sandboxing options</h1>
   </div>
-  <p>tl;dr: Being written, incomplete, not very well structured, yapfest. Goals: look at three different levels of running sandboxed code - containers, Type I, Type I hosted, Type II, assuming you basically know nothing. Details relevant to x86-64</p><h2 id="containers">Containers</h2><p>Containers are basically just isolated Linux containers</p><p>Docker is a little more than just containers. I think describing it as a runtime might be the best way to approach it. There are a lot of moving parts and it's easy to over-complicate</p><p>Docker is a lot of shit, actually. Did I mention that already? Some other features Docker provides you with -</p><ul><li><p>BuildKit is a</p></li></ul><h2 id="vms">VMs</h2><p>tl;dr: Read the first paragraph. This is basically me getting nerdsniped int</p><p>VMs are deceptively simple at their core. Point to memory region, fetch/decode/execute, emulate some devices - whether by poking through to actual devices on the host or simulating via allocating more memory regions. All emulation makes use of virtualized memory + virtualized processor + virtualized devices, in spirit of Von Neumann/Harvard architectures.</p><p>Thus the differences lie in how exactly this emulation is performed and what optimizations are done; terminology typically separates</p><p>Pedantically, the difference between a hyper</p><h3 id="images">Images</h3><p>Some common formats:</p><h2 id="firecracker--co">Firecracker & co.</h2><p><a href="https://github.com/firecracker-microvm/firecracker">Firecracker</a> is "an open source virtualization technology that is purpose-built for creating and managing secure, multi-tenant container and function-based services... Firecracker runs workloads in lightweight virtual machines, called microVMs, ... that uses [KVM] to create and run microVMs".</p><p>Firecracker is used by AWS to provide <a href="https://aws.amazon.com/lambda/">Lambda</a>, their serverless functions, and <a href="https://aws.amazon.com/fargate/">Fargate</a>, their service for deploying container-based services serverless-ly.</p><p>Firecracker is essentially a really stripped down fork of Google's <a href="https://github.com/google/crosvm"><code>crosvm</code></a>, which I need to do more research on.</p><p>In simpler terms, it provides you with:</p><ol><li><p>A VMM (Virtual Machine Monitor) exposed over a HTTP service on a Unix socket that lets you create and manage virtual machines and associated resources. The virtual machines are created by taking advantage of a Linux kernel module called KVM, short for Linux Kernel Virtual Machine.</p></li><li><p>A set of programs that allow you to run a full Linux kernel supplied by the user on these virtual machines. Behind the scenes these programs interface with KVM to set up what is necessary to run Linux (e.g., setting up virtual CPUs, virtual memory, etc.).</p></li><li><p>Extra utilities, e.g. a set of virtio devices</p></li></ol><p>Why you might want to use Firecracker boils down to: it's faster than a normal VM in terms of spinning up and down, and provides. This is why you'll see it labeled as a . In theory I doubt that either of those are super big issues given modern hardware and software, but it is objectively attractive.</p><h3 id="kvm">KVM</h3><p>The source code for KVM on x86 architectures can be found at <a href="https://github.com/torvalds/linux/tree/b95f03f04d475aa6719d15a636ddf32222d55657/arch/x86/kvm"><code>linux/arch/x86/kvm</code></a>.</p><p>KVM runs instructions on the CPU directly, without the host Linux kernel getting in the way. You write userspace code to set up the resources, e.g. memory: you can <code>mmap</code> memory and then copy a set of instructions into that memory. The virtual machine you create can then execute these instructions directly on the CPU via hardware extensions. In addition, the kernel module allows you to emulate</p><ul><li><p>When an interrupt happens, if it's relevant to the VM, it'll inject a virtual interrupt into the guest.</p></li><li><p>The VM will then exit for operations that require emulation. When this occurs, KVM will pass the details to your userspace process, which handles the operation and then passes control back to KVM.</p></li></ul><p>Compare this to the Linux container model. Containers are basically isolated Linux processes. A comparison of the two different models looks something like:</p><p><div class="demo"></p><p>  <div class="diagram"></p><p>    <div class="model"></p><p>      <p class="title">Linux container model</p></p><p>      <p class="note">Isolation is a kernel feature.</p></p><p>      <div class="row"></p><p>        <div class="box">Container<code>process</code></div></p><p>        <div class="box">Container<code>process</code></div></p><p>        <div class="box">Container<code>process</code></div></p><p>      </div></p><p>      <p class="boundary"><code>namespaces</code> + <code>cgroups</code> + <code>seccomp</code> / <code>LSM</code></p></p><p>      <div class="layer"></p><p>        Shared host kernel</p><p>        <span class="note">One syscall surface for everyone, around 350 syscalls of attack surface.</span></p><p>      </div></p><p>      <div class="layer hardware">Hardware</div></p><p>      <p class="note">A container is just an isolated Linux process: cheap to start, but it shares the very kernel it is being isolated by.</p></p><p>    </div></p><p>    <div class="model"></p><p>      <p class="title">KVM virtualization model</p></p><p>      <p class="note">Isolation is a hardware feature.</p></p><p>      <div class="row"></p><p>        <div class="box guest"></p><p>          microVM</p><p>          <span class="inner"><code>process</code></span></p><p>          <span class="inner">Guest kernel</span></p><p>        </div></p><p>        <div class="box guest"></p><p>          microVM</p><p>          <span class="inner"><code>process</code></span></p><p>          <span class="inner">Guest kernel</span></p><p>        </div></p><p>      </div></p><p>      <div class="layer"><code>firecracker</code> VMM, one per microVM</div></p><p>      <div class="layer"></p><p>        Host kernel, driven through <code>ioctl</code> on <code class="accent">/dev/kvm</code></p><p>      </div></p><p>      <div class="layer hardware"></p><p>        Hardware</p><p>        <span class="note">VT-x / AMD-V, EPT, VMCS</span></p><p>      </div></p><p>      <p class="note">Guest instructions run on the CPU directly; the guest only exits to the VMM for what needs emulating.</p></p><p>    </div></p><p>  </div></p><p></div></p><p>This is vaguely based off a similar <a href="https://cdn.braindump.ing/writing/kvm.png">diagram</a> in AWS' <a href="https://www.usenix.org/system/files/nsdi20-paper-agache.pdf">paper</a> on Firecracker<sup>0</sup><span class="aside">(0) The end of this paper is cool, they talk a bit about Firecracker usage in Lambda and performance.</span>.</p><p>Interacting with KVM is done by making <code>ioctl</code> syscalls to the file descriptor at <code>/dev/kvm</code>, given that the module is enabled (use <code>lsmod | grep kvm</code> for quick check). You might know <code>ioctl</code> as the grab-bag syscall on POSIX systems; its primitive type signature is basically a syscall in the form <code>ioctl(fd, int op, void* arg)</code>, per the <a href="https://man7.org/linux/man-pages/man2/ioctl.2.html">man</a> page:</p><pre class="language-c"><code class="language-c"><span class="token macro property"><span class="token directive-hash">#</span><span class="token directive keyword">include</span> <span class="token string">&lt;sys/ioctl.h></span></span>
+  <p>tl;dr: Being written, incomplete, not very well structured, yapfest. Goals: look at three different levels of running sandboxed code - containers, Type I, Type I hosted, Type II, assuming you basically know nothing. Details relevant to x86-64</p><h2 id="containers">Containers</h2><p>Containers are basically just isolated Linux containers</p><p>Docker is a little more than just containers. I think describing it as a runtime might be the best way to approach it. There are a lot of moving parts and it's easy to over-complicate it, but it's basically just stacking different tools on top of one another. From top to bottom, it looks mostly like:</p><ol><li><p>Docker CLI/Docker Desktop: Some user interface. Since Docker makes use of specific Linux kernel features, on non-Linux OSes Docker Desktop will also run and manage a lightweight VM (e.g., WSL2 on Windows). Docker Desktop nowadays also comes with Kubernetes</p></li><li><p>Docker Engine/dockerd(aemon): This is the </p></li><li><p>containerd: At this point we're running in the Linux VM if we aren't on Linux. This is the daemon that does the actual grunt work of managing the containers and images. Pull down an image, containerd constructs the overlayfs snapshot.</p></li><li><p>runc(ontainer): Fork a child process, creating the actual container by making use of the aforementioned Linux features. Since we're trying to lock</p><ul><li><p>cgroups and namespaces etc.</p></li></ul></li></ol><p>Kubernetes is just a scaling technology built on top of this. </p><p>Docker is a lot of shit, actually. Did I mention that already? Some other features Docker provides you with, briefly:</p><ul><li><p>BuildKit</p><ul><li><p>Docker uses <a href="">overlayfs</a>.</p></li><li><p>Docker will typically </p></li></ul></li></ul><p>I'm not going to go into containers into too much detail, but here's a nice bird's eye view in case you would like to do more research into the individual components:</p><div class="demo">
+  <div class="stack">
+    <p class="note">↗ kubernetes expands on this</p>
+    <div class="tier">
+      <code>docker cli / desktop</code>
+      <div class="row">
+        <div class="box">operate a VM if not on Linux</div>
+      </div>
+    </div>
+    <div class="tier">
+      <code>docker engine / dockerd</code>
+      <div class="row">
+        <div class="box">networking</div>
+        <div class="box">storage</div>
+        <div class="box">
+          <p class="title">extra tools</p>
+          <div class="row">
+            <div class="box"><code>buildkit</code></div>
+            <div class="box"><code>compose</code></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="tier">
+      <code>containerd</code>
+      <div class="row">
+        <div class="box">images: pull, cache, save, extract and overlay with <code>overlayfs</code></div>
+        <div class="box">manage containers</div>
+      </div>
+    </div>
+    <div class="tier">
+      <code>runc</code>
+      <div class="model">
+        <div class="box">fork a process</div>
+        <div class="row">
+          <div class="box">
+            <p class="title">security / "hardening"</p>
+            <div class="box"><code>capabilities</code></div>
+            <div class="box"><code>seccomp</code></div>
+          </div>
+          <div class="box">
+            <p class="title">isolation</p>
+            <div class="box"><code>cgroups</code> (cpu, ram, memory, etc.)</div>
+            <div class="box"><code>namespaces</code> (pid/uid/gid, mounts, uts, etc.)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="note">Each layer delegates downward: the CLI drives the daemon, which drives <code>containerd</code>, which drives <code>runc</code> — which in the end just forks an isolated, hardened Linux process.</p>
+</div><h2 id="vms">VMs</h2><p>tl;dr: Read the first paragraph. This is basically me getting nerdsniped int</p><p>VMs are deceptively simple at their core. Point to memory region, fetch/decode/execute, emulate some devices - whether by poking through to actual devices on the host or simulating via allocating more memory regions. The majority of emulation makes use of virtualized memory + virtualized processor + virtualized devices, in spirit of Von Neumann/Harvard architectures.</p><p>Thus the differences lie in how exactly this emulation is performed and what optimizations are done; terminology typically separates</p><p>Pedantically, the difference between a hyper</p><h3 id="images">Images</h3><p>Some common formats:</p><h2 id="firecracker--co">Firecracker & co.</h2><p><a href="https://github.com/firecracker-microvm/firecracker">Firecracker</a> is "an open source virtualization technology that is purpose-built for creating and managing secure, multi-tenant container and function-based services... Firecracker runs workloads in lightweight virtual machines, called microVMs, ... that uses [KVM] to create and run microVMs".</p><p>Firecracker is used by AWS to provide <a href="https://aws.amazon.com/lambda/">Lambda</a>, their serverless functions, and <a href="https://aws.amazon.com/fargate/">Fargate</a>, their service for deploying container-based services serverless-ly.</p><p>Firecracker is essentially a really stripped down fork of Google's <a href="https://github.com/google/crosvm"><code>crosvm</code></a>, which I need to do more research on.</p><p>In simpler terms, it provides you with:</p><ol><li><p>A VMM (Virtual Machine Monitor) exposed over a HTTP service on a Unix socket that lets you create and manage virtual machines and associated resources. The virtual machines are created by taking advantage of a Linux kernel module called KVM, short for Linux Kernel Virtual Machine.</p></li><li><p>A set of programs that allow you to run a full Linux kernel supplied by the user on these virtual machines. Behind the scenes these programs interface with KVM to set up what is necessary to run Linux (e.g., setting up virtual CPUs, virtual memory, etc.).</p></li><li><p>Extra utilities, e.g. a set of virtio devices</p></li></ol><p>Why you might want to use Firecracker boils down to: it's faster than a normal VM in terms of spinning up and down, and provides. This is why you'll see it labeled as a . In theory I doubt that either of those are super big issues given modern hardware and software, but it is objectively attractive.</p><h3 id="kvm">KVM</h3><p>The source code for KVM on x86 architectures can be found at <a href="https://github.com/torvalds/linux/tree/b95f03f04d475aa6719d15a636ddf32222d55657/arch/x86/kvm"><code>linux/arch/x86/kvm</code></a>.</p><p>KVM runs instructions on the CPU directly, without the host Linux kernel getting in the way. You write userspace code to set up the resources, e.g. memory: you can <code>mmap</code> memory and then copy a set of instructions into that memory. The virtual machine you create can then execute these instructions directly on the CPU via hardware extensions. In addition, the kernel module allows you to emulate</p><ul><li><p>When an interrupt happens, if it's relevant to the VM, it'll inject a virtual interrupt into the guest.</p></li><li><p>The VM will then exit for operations that require emulation. When this occurs, KVM will pass the details to your userspace process, which handles the operation and then passes control back to KVM.</p></li></ul><p>Compare this to the Linux container model. Containers are basically isolated Linux processes. A comparison of the two different models looks something like:</p><div class="demo">
+  <div class="diagram">
+    <div class="model">
+      <p class="title">Linux container model</p>
+      <p class="note">Isolation is a kernel feature.</p>
+      <div class="row">
+        <div class="box">Container<code>process</code></div>
+        <div class="box">Container<code>process</code></div>
+        <div class="box">Container<code>process</code></div>
+      </div>
+      <p class="boundary"><code>namespaces</code> + <code>cgroups</code> + <code>seccomp</code> / <code>LSM</code></p>
+      <div class="layer">
+        Shared host kernel
+        <span class="note">One syscall surface for everyone, around 350 syscalls of attack surface.</span>
+      </div>
+      <div class="layer hardware">Hardware</div>
+      <p class="note">A container is just an isolated Linux process: cheap to start, but it shares the very kernel it is being isolated by.</p>
+    </div>
+    <div class="model">
+      <p class="title">KVM virtualization model</p>
+      <p class="note">Isolation is a hardware feature.</p>
+      <div class="row">
+        <div class="box guest">
+          microVM
+          <span class="inner"><code>process</code></span>
+          <span class="inner">Guest kernel</span>
+        </div>
+        <div class="box guest">
+          microVM
+          <span class="inner"><code>process</code></span>
+          <span class="inner">Guest kernel</span>
+        </div>
+      </div>
+      <div class="layer"><code>firecracker</code> VMM, one per microVM</div>
+      <div class="layer">
+        Host kernel, driven through <code>ioctl</code> on <code class="accent">/dev/kvm</code>
+      </div>
+      <div class="layer hardware">
+        Hardware
+        <span class="note">VT-x / AMD-V, EPT, VMCS</span>
+      </div>
+      <p class="note">Guest instructions run on the CPU directly; the guest only exits to the VMM for what needs emulating.</p>
+    </div>
+  </div>
+</div><p>This is vaguely based off a similar <a href="https://cdn.braindump.ing/writing/kvm.png">diagram</a> in AWS' <a href="https://www.usenix.org/system/files/nsdi20-paper-agache.pdf">paper</a> on Firecracker<sup>0</sup><span class="aside">(0) The end of this paper is cool, they talk a bit about Firecracker usage in Lambda and performance.</span>.</p><p>Interacting with KVM is done by making <code>ioctl</code> syscalls to the file descriptor at <code>/dev/kvm</code>, given that the module is enabled (use <code>lsmod | grep kvm</code> for quick check). You might know <code>ioctl</code> as the grab-bag syscall on POSIX systems; its primitive type signature is basically a syscall in the form <code>ioctl(fd, int op, void* arg)</code>, per the <a href="https://man7.org/linux/man-pages/man2/ioctl.2.html">man</a> page:</p><pre class="language-c"><code class="language-c"><span class="token macro property"><span class="token directive-hash">#</span><span class="token directive keyword">include</span> <span class="token string">&lt;sys/ioctl.h></span></span>
 
 <span class="token keyword">int</span> <span class="token function">ioctl</span><span class="token punctuation">(</span><span class="token keyword">int</span> fd<span class="token punctuation">,</span> <span class="token keyword">unsigned</span> <span class="token keyword">long</span> op<span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">)</span><span class="token punctuation">;</span>  <span class="token comment">/* glibc, BSD */</span>
 <span class="token keyword">int</span> <span class="token function">ioctl</span><span class="token punctuation">(</span><span class="token keyword">int</span> fd<span class="token punctuation">,</span> <span class="token keyword">int</span> op<span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">.</span><span class="token punctuation">)</span><span class="token punctuation">;</span>            <span class="token comment">/* musl, other UNIX */</span>
@@ -111,11 +206,11 @@
 <span class="token function">sudo</span> <span class="token function">rm</span> <span class="token parameter variable">-f</span> <span class="token variable">$API_SOCKET</span>
 
 <span class="token comment"># Run firecracker</span>
-<span class="token function">sudo</span> ./firecracker --api-sock <span class="token string">"<span class="token variable">${API_SOCKET}</span>"</span> --enable-pci</code></pre><p>Once you pass in these parameters Firecracker will do most of the hard work.</p><h2 id="virtio">virtio</h2><p><code>virtio</code> for some reason was confusing to</p><h2 id="extras">Extras</h2><p>Please see</p>
+<span class="token function">sudo</span> ./firecracker --api-sock <span class="token string">"<span class="token variable">${API_SOCKET}</span>"</span> --enable-pci</code></pre><p>Once you pass in these parameters Firecracker will do most of the hard work.</p><h2 id="virtio">virtio</h2><p><code>virtio</code> for some reason was confusing to</p><h2 id="v8-isolates">v8 isolates </h2><h2 id="extras">Extras</h2><p>Please see</p>
 </div>
 </article>
       <aside>
-        <div id="toc"><h2><a href="#containers">Containers</a></h2><h2><a href="#vms">VMs</a></h2><h3><a href="#images">Images</a></h3><h2><a href="#firecracker--co">Firecracker & co.</a></h2><h3><a href="#kvm">KVM</a></h3><h2><a href="#digression-before-the-bootloader">Digression: before the bootloader</a></h2><h3><a href="#bios">BIOS</a></h3><h3><a href="#uefi">UEFI</a></h3><h2><a href="#digression-the-bootloader">Digression: the bootloader</a></h2><h3><a href="#kernel-images">Kernel images</a></h3><h3><a href="#initramfs">initramfs</a></h3><h3><a href="#example-bootloader">Example bootloader</a></h3><h2><a href="#minimal-working-firecracker">Minimal working Firecracker</a></h2><h2><a href="#virtio">virtio</a></h2><h2><a href="#extras">Extras</a></h2></div>
+        <div id="toc"><h2><a href="#containers">Containers</a></h2><h2><a href="#vms">VMs</a></h2><h3><a href="#images">Images</a></h3><h2><a href="#firecracker--co">Firecracker & co.</a></h2><h3><a href="#kvm">KVM</a></h3><h2><a href="#digression-before-the-bootloader">Digression: before the bootloader</a></h2><h3><a href="#bios">BIOS</a></h3><h3><a href="#uefi">UEFI</a></h3><h2><a href="#digression-the-bootloader">Digression: the bootloader</a></h2><h3><a href="#kernel-images">Kernel images</a></h3><h3><a href="#initramfs">initramfs</a></h3><h3><a href="#example-bootloader">Example bootloader</a></h3><h2><a href="#minimal-working-firecracker">Minimal working Firecracker</a></h2><h2><a href="#virtio">virtio</a></h2><h2><a href="#v8-isolates">v8 isolates </a></h2><h2><a href="#extras">Extras</a></h2></div>
       </aside>
     </div>
     <div id="footer">
