@@ -33,7 +33,7 @@ A brief table of contents might look like:
 - Bonuses
 - Appendices
 
-Language wise, a mix of: TypeScript and CUDA; I kind of want to introduce Rust, but I don't think that will actually add anything. The ideal case would be literate programming but I don't think that'll work since there are so many specifics.
+Language wise, a mix of: TypeScript, CUDA, SystemVerilog; I kind of want to introduce Rust, but I'm not sure that will actually add anything as much as maybe make things more confusing (two general purpose programming languages rather than one). The ideal case would be literate programming but I don't think that'll work since there are so many specifics.
 
 Below follows a quick outline of what each part could potentially look like. As you get further down the list you might notice that the list gets a bit more sparse — I'm not sure what these parts will really look like until I write the thing.
 
@@ -115,9 +115,9 @@ From here on out, the remaining chapters aren't quite laid out as the rest and a
 
 At this point, we can see why we need GPUs. And we have an idea of how they work. We've also gone pretty low-level, and now when we see magic colors on our screen we know how they got there!
 
-But also to me, it's kind of hard to internalize how something how something works without actually building it out. So what I'm thinking is a good idea to do here is similar to what [Nand2Tetris](https://www.nand2tetris.org/) does — have a simulator for building this out and getting to see what really happens, all the way down to the silicon.
+But also to me, it's kind of hard to internalize how something works without actually building it out. So what I'm thinking is a good idea to do here is similar to what [Nand2Tetris](https://www.nand2tetris.org/) does — have a simulator for building this out and getting to see what really happens, all the way down to the silicon.
 
-To see what exactly we're doing, here is a simplified diagram of NVIDIA's H100 GPU, generated from their [whitepaper](https://resources.nvidia.com/en-us-hopper-architecture/nvidia-h100-tensor-c) (pape 19):
+To see what exactly we're doing, here is a simplified diagram of NVIDIA's H100 GPU, generated from their [whitepaper](https://resources.nvidia.com/en-us-hopper-architecture/nvidia-h100-tensor-c) (page 19):
 
 <div class="demo">
   <style>
@@ -512,7 +512,7 @@ As seen on page 21 of the same whitepaper:
   </div>
 </div>
 
-For our GPU, we'll most likely handle FP16 versus 32/64 bits, meaning that in the next part we might need to quantize the model, and will have three layers of instruction caching. Things we do on our toy GPU will be constrained by the fact that we have no memory past the highest memory cache. My thinking is that all the memory our kernels will need will fit into this highest memory cache, and our kernels' working set will also fit it in. The scope for implementing memory buses/interconnect is out of scope here, but we'll discuss how modern GPU communication works toward the end.
+For our GPU, we'll most likely handle FP16 versus 32/64 bits, meaning that in the next part we might need to quantize the model, and will have three layers of instruction caching (same as these diagrams). Things we do on our toy GPU will be constrained by the fact that we have no memory past the highest memory cache. My thinking is that all the memory our kernels will need will fit into this highest memory cache, and our kernels' working set will also fit it in. The scope for implementing memory buses/interconnect is out of scope here, but we'll discuss how modern GPU communication works toward the end.
 
 This will also reduce the problem set, e.g. we won't have to handle cache eviction at the highest-level cache.
 
@@ -525,7 +525,7 @@ This will also reduce the problem set, e.g. we won't have to handle cache evicti
 7. _SIMT/SIMD_: Discuss parallelism.
 8. _Extending The Memory Hierarchy_: Build out the higher level caches.
 9. _Building The Streaming Multiprocessor_: Warps, etc.
-10. _Compiling A Kernel_: Compile a kernel down to our ISA by writing a quick compiler to try and convert some custom language we'll design down.
+10. _Compiling A Kernel_: Compile a kernel down to our ISA by writing a quick compiler to try and convert some custom language we'll design.
 11. _A Hello, World! Kernel_: Moment of truth: let's test tiny kernel.
 12. _Interconnect Protocols In Modern GPUs_: Purely reading chapter, good time to also discuss HPC.
 
@@ -533,13 +533,13 @@ The end goal of this is to understand what NVIDIA/AMD/etc. are doing in this day
 
 ## Part IV: Tensors
 
-This is the last core part. GPUs nowadays have tensor units directly in the hardware for matrix computations, as you can see in the diagram above: this is where we tie in that part and really fulfill the namesake of this whole series. The goal is to see our machine learning model
+This is the last core part. GPUs nowadays have tensor units directly in the hardware for matrix computations, as you can see in the diagram above: this is where we tie in that part and really fulfill the namesake of this whole series. The goal is to see our machine learning model be able to run on a chip we are going to tape out :)
 
 1. _Woah, This Machine Does Learning! 101_: Learn how multilayer perceptrons work. Classic MNIST from scratch is what I'm thinking. Get a set of hyperparameters and parameters for inference in a later chapter.
-2. _Writing A Tensor Framework_: Write a tiny tensor framework with the kernel
-3. _Inference_: Discuss quantization,
-4. _Tensors In Hardware_: Discuss tensor units, try to write
-5. _Taping Out & Testing_: Most definitely multiple parts, I'm just not sure what this looks like yet[^4].
+2. _Writing A Tensor Framework_: Write a tiny tensor framework with the kernel.
+3. _Inference_: Discuss quantization, get the model configuration (hyperparameters, parameters) working with our tensor framework.
+4. _Tensors In Hardware_: Discuss tensor units in modern GPUs and see how we can do something similar in our simulator.
+5. _Taping Out & Testing_: Most definitely multiple parts since this is such a big jump (will need to write SystemVerilog, etc.), I'm just not sure what this looks like yet[^4].
 
 [^4]: I've never done this, I would really like to do this.
 
@@ -562,7 +562,7 @@ The appendices would contain the bare minimum info to read the actual stuff. I'm
 
 &approx; around 70 chapters total.
 
-So yeah. I'm going to try and carve out space and time in my life to work on this :) It really fulfills sort of an ethos I have: to explore what I'm interested in while making along the way. I am realizing all of this is quite ambitious.
+So yeah. I'm going to try and carve out space and time in my life to work on this :) It really fulfills sort of an ethos I have: to explore what I'm interested in while making along the way. I am realizing all of this is quite ambitious but also of course quite exciting.
 
 If you are interested in funding this sort of thing so I can spend more time on it — please email me at jc at this website.
 

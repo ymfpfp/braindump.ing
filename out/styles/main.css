@@ -375,6 +375,9 @@ header #recent p:has(i) {
   margin-top: 1rem;
   text-wrap: pretty;
 }
+#post article .demo .note code {
+  font-size: 0.895rem;
+}
 #post article .demo .title {
   font-weight: 600;
 }
