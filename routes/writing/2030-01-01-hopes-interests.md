@@ -8,10 +8,11 @@ date: 3000-01-01
 Right now -
 
 - My goal this year is to just do stuff without worrying where they will or won't take me to. I know this doesn't work for most people but it works for me.
-- microVMs, etc.
+- microVMs, IDEs, etc.
 - Graphics stuff. Notably [this](/writing/2026-07-16-graphics-idea.html).
 - Triathlons.
 - Learning Japanese.
+- Creative writing. I have a bunch of random ideas for a book I want to write and I want to iterate on the smaller ideas until I have a more cohesive version.
 
 There are a lot of interesting things and not enough time. I'm usually able to focus (i.e., put 100% effort into) on just a few things at once. Some things I hope to be interested in more in the future:
 

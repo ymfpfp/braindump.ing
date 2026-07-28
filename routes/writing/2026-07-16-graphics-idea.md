@@ -1,19 +1,19 @@
 ---
 date: 2026-07-24
-title: Something on GPUs I would like to write, or pixels2tensors
+title: Something on GPUs I would like to write, or "From Pixels To Tensors"
 layout: writing
 ---
 
 There is this project that I would like to actualize: I'd like to write a series of volumes on everything GPUs, from rendering pixels to encoding tensors, inspired by a mix of something like [Making Software](https://www.makingsoftware.com/) and [Crafting Interpreters](https://craftinginterpreters.com/). It'd be called _From Pixels To Tensors_.
 
-The thesis is to present a story about GPUs to curious people by doing hands-on experiments, like writing a font renderer from scratch. The story is that two of the most relevant things in computing (certainly right now) — graphics and machine learning — are directly related because they're both tied to massive parallelism - and that parallelism happens to be in the form of GPUs. And maybe doing these hands-on experiments will really clarify: how did we get to where we are today? What is the evolution here?
+The thesis is to present a story about GPUs to curious people by doing hands-on experiments, like writing a font renderer from scratch. The story is that two of the most relevant things in computing (certainly right now) — graphics and machine learning — are directly related because they're both tied to massive parallelism — and that parallelism happens to be in the form of GPUs. And maybe doing these hands-on experiments will really clarify: how did we get to where we are today? What is the evolution here?
 
 Some reasons why I want to do this off the top of my head:
 
-- The Feynman Technique - teach something to really understand it - really appeals to me. Also, I want to spread the joy that I've had talking about this stuff in comfortable environments and explore something I'm curious about in more depth.
+- The Feynman Technique — teach something to really understand it — really appeals to me. Also, I want to spread the joy that I've had talking about this stuff in comfortable environments and explore something I'm curious about in more depth.
 - Graphics textbooks can be kind of dense and unrewarding and FOR WHAT. Graphics is supposed to be about ART; it's visually appealing and is a subfield that can be so intuitively appreciated, even by children. Wouldn't it be nice for this to be **the** graphics textbook that people reach for? It covers most of what you might find in a typical graphics programming course, if not more[^1]. On the other side of the spectrum is a bunch of resources you have to cobble together. (This is not to dunk on the greats like _OpenGL Superbible_, _Real-Time Rendering_, _Physically Based Rendering_, etc., just pointing out that these can feel like references or impenetrable sometimes.)
 - Also, open source. Open access can be annoying.
-- Coming back here after I finished writing this - this project feels very [_The Art Of Computer Programming_]()-esque.
+- Coming back here after I finished writing this — this project feels very [_The Art Of Computer Programming_](https://www-cs-faculty.stanford.edu/~knuth/taocp.html)-esque.
 
 [^1]: Based off the table of contents below, a bit of computer architecture, a bit of compilers, a bit of distributed systems, a bit of hardware...
 
@@ -33,26 +33,26 @@ A brief table of contents might look like:
 - Bonuses
 - Appendices
 
-Language wise, a mix of: TypeScript. The ideal case would be literate programming but I don't think that'll work since there are so many specifics.
+Language wise, a mix of: TypeScript and CUDA; I kind of want to introduce Rust, but I don't think that will actually add anything. The ideal case would be literate programming but I don't think that'll work since there are so many specifics.
 
-Below follows a quick outline of what each part could potentially look like. As you get further down the list you might notice that the list gets a bit more sparse - I'm not sure what these parts will really look like until I write the thing.
+Below follows a quick outline of what each part could potentially look like. As you get further down the list you might notice that the list gets a bit more sparse — I'm not sure what these parts will really look like until I write the thing.
 
 ## Part I: Pixels
 
 This part would walk through the high-level abstractions of actually getting pixels onto the screen, i.e. with a high-level API like WebGL. The question I had when I decided to learn about this stuff was the question 10-year-old me had, which is how video games were created (well, more specifically, how could I create them).
 
-Have you see [Minecraft](https://en.wikipedia.org/wiki/Minecraft)? You could learn how that works here.
+Have you seen [Minecraft](https://en.wikipedia.org/wiki/Minecraft)? You could learn how that works here.
 
-Have you see [Figma](https://figma.com), and wonder how they are able to render SVGs and text? You could learn how that works here.
+Have you seen [Figma](https://figma.com), and wonder how they are able to render SVGs and text? You could learn how that works here.
 
-Have you see [Pretext](https://github.com/chenglou/pretext) recently? You could learn how that works here.
+Have you seen [Pretext](https://github.com/chenglou/pretext) recently? You could learn how that works here.
 
 A table of contents for this part might look like:
 
 1. _Hello, World! Rendering A Cube_: Do the classic rendering a square in clip space, then render a cube in clip space that looks like a square, and then leave on a cliffhanger for transformations: "Why does it look exactly the same?"
 2. _How Shaders Work_: The "Hello, world!" introduces two ideas that might be a little bit jarring: VAOs and shaders. This part talks about the second and tries to instill some sort of wonder with regards to this, and also tries to lay out the idea that rendering is a very _optimized pipeline_.
-3. _Making A Cube Move_: Now we look at transformations - translations, rotations, scaling - and try to figure out how to shove all of that into one singular transformation matrix. This touches on the model to world pipeline in the typical model-world-projection model.
-4. _How Cameras Work_: This would touch on the world to projection in. We'd try to derive both the orthographic and perspective projection matrix, as seen [here](https://www.songho.ca/opengl/gl_projectionmatrix.html). By the end we'd be able to move around in the world with the controls you might typically expect, proper pitch/yaw/roll.
+3. _Making A Cube Move_: Now we look at transformations — translations, rotations, scaling — and try to figure out how to shove all of that into one singular transformation matrix. This touches on the model to world pipeline in the typical model-world-projection model.
+4. _How Cameras Work_: This would touch on the world to projection matrix. We'd try to derive both the orthographic and perspective projection matrix, as seen [here](https://www.songho.ca/opengl/gl_projectionmatrix.html). By the end we'd be able to move around in the world with the controls you might typically expect, proper pitch/yaw/roll.
 5. _Voxels: Making Many Cubes_: Now that we have the concept of a world, we would try to render many of these cubes. We'd touch upon using indexed vertices (that is, EBOs) and backface culling (that is, counterclockwise vertices).
 6. _How Textures Work_: We'd talk about laying textures on cubes, how filtering, mipmapping, texture units, etc. works. Other things that could probably be touched upon here: antialiasing, framebuffers?
 7. _How Lighting Works_: Now that we have a bunch of voxels with textures, we'd like to apply some lighting to them. We would look at lighting source, reflection/refraction, and utilize the Phong lighting model, i.e. ambient + diffuse + specular lighting. I think touching upon other lighting models at this point could be useful here too.
@@ -61,12 +61,12 @@ A table of contents for this part might look like:
 10. _Voxel Optimizations_: We'd look at how to optimize the chunking via different methods, e.g., using workers (threads), frustum culling, etc.
 11. _Rendering The Sky: Cubemaps_: Figure out how to render the sky as a cubemap, then figure out day/night cycles and the sun as a light source.
 12. _Transparency_: Figure out transparent objects (glass, water). We'll implement blending and order-dependent transparency, and maybe look at order-independent transparency.
-13. _Rendering Text, Part I: How Fonts & Bezier Curves Work_: When I started messing around with this, I was entirely nerdsniped by it - I would keep thinking, "This is so cool!" - so the goal of this chapter is to instill this same wonder. We'll write a font parser ([TTF file format](https://en.wikipedia.org/wiki/TrueType)), which will involve learning about Bezier curves as well. We'll also touch upon the typical modern text rendering pipeline here, which will be relevant in the next couple of chapters.
+13. _Rendering Text, Part I: How Fonts & Bezier Curves Work_: When I started messing around with this, I was entirely nerdsniped by it — I would keep thinking, "This is so cool!" — so the goal of this chapter is to instill this same wonder. We'll write a font parser ([TTF file format](https://en.wikipedia.org/wiki/TrueType)), which will involve learning about Bezier curves as well. We'll also touch upon the typical modern text rendering pipeline here, which will be relevant in the next couple of chapters.
 14. _Rendering Text, Part II: Rendering On The GPU_: We'll figure out how to render bezier curves online to render text.
 15. _Rendering Text, Part III: Rendering Offline, Or How SDFs Work_: To render text offline, we'll make use of [signed distance functions](https://iquilezles.org/articles/distfunctions/) to encode the distance between pixels and curves into a fixed, packed font atlas.
 16. _Rendering UI, Part I: UI Components From Shapes_: Now that we have the ability to render text and graphics, we want to be able to render a proper UI. Let's make use of SDFs to render shapes, and construct UI primitives (e.g., buttons, text input, etc.).
-17. _Rendering UI, Part I: Layout Algorithms_: If you've ever used something like CSS flex/grid or some UI framework like [SwiftUI](https://developer.apple.com/swiftui/), you might wonder what's actually happening behind the scenes; how does auto layout work when we don't provide fixed dimensions? We'll figure that out by implementing a subset of the [flex algorithm](https://www.w3.org/TR/css-flexbox-1/#layout-algorithm).
-18. _Rendering UI, Part II: Text Measurements_: An extension to layout algorithms - we talk about laying out text given constraints - this is what libraries like [Pretext](https://github.com/chenglou/pretext) do - and write a simple function to do so. By the end of this we'll be able to render all the UI screens we could possibly want for our voxel engine.
+17. _Rendering UI, Part II: Layout Algorithms_: If you've ever used something like CSS flex/grid or some UI framework like [SwiftUI](https://developer.apple.com/swiftui/), you might wonder what's actually happening behind the scenes; how does auto layout work when we don't provide fixed dimensions? We'll figure that out by implementing a subset of the [flex algorithm](https://www.w3.org/TR/css-flexbox-1/#layout-algorithm).
+18. _Rendering UI, Part III: Text Measurements_: An extension to layout algorithms — we talk about laying out text given constraints — this is what libraries like [Pretext](https://github.com/chenglou/pretext) do — and write a simple function to do so. By the end of this we'll be able to render all the UI screens we could possibly want for our voxel engine.
 19. _Optimizations & Testing_
 20. _Bonus: Storing And Loading Maps_: i.e., let's load up some [Anvil maps](https://minecraft.wiki/w/Anvil_file_format) and see how they perform!
 21. _Bonus: Multiplayer_
@@ -88,7 +88,7 @@ Another one of the big-picture goals in this part is to walk away with an idea o
 >
 > In the G80 die, there is no more distinction between layers. The Stream Multiprocessor (SM) replaces all previous units thanks to its ability to run vertex, fragment and geometry "kernel" without distinction. The load balancing happens automatically by swapping the "kernel" run by each SM depending on the need of the pipeline.
 
-Conveying this to the reader would be pretty awesome; **after all, part of the thesis is that graphics and machine learning are two sides of the same coin**. One of the things I really struggle as someone who hasn't been in the field of computing for >= 10,000 hours is that iteration is really, really relevant, and it's really hard to get anything right on the first try!
+Conveying this to the reader would be pretty awesome; **after all, part of the thesis is that graphics and machine learning are two sides of the same coin**. One of the things I really struggle with as someone who hasn't been in the field of computing for >= 10,000 hours is that iteration is really, really relevant, and it's really hard to get anything right on the first try!
 
 So something like starting from implementing a rasterizer on the CPU and looking at these fixed functions we're implementing and realizing that getting our voxel engine to be working pretty smoothly is kind of difficult &rarr; and then taking a look at GPU history and seeing a solution to our problem &rarr; rewriting our code to use the GPU instead seems to be a pretty good line of thought here.
 
@@ -115,9 +115,9 @@ From here on out, the remaining chapters aren't quite laid out as the rest and a
 
 At this point, we can see why we need GPUs. And we have an idea of how they work. We've also gone pretty low-level, and now when we see magic colors on our screen we know how they got there!
 
-But also to me, it's kind of hard to internalize how something how something works without actually building it out. So what I'm thinking is a good idea to do here is similar to what [Nand2Tetris](https://www.nand2tetris.org/) does - have a simulator for building this out and getting to see what really happens, all the way down to the silicon.
+But also to me, it's kind of hard to internalize how something how something works without actually building it out. So what I'm thinking is a good idea to do here is similar to what [Nand2Tetris](https://www.nand2tetris.org/) does — have a simulator for building this out and getting to see what really happens, all the way down to the silicon.
 
-To see what exactly we're doing, here is a diagram of NVIDIA's H100 GPU, generated from their [whitepaper](https://resources.nvidia.com/en-us-hopper-architecture/nvidia-h100-tensor-c) (pape 19):
+To see what exactly we're doing, here is a simplified diagram of NVIDIA's H100 GPU, generated from their [whitepaper](https://resources.nvidia.com/en-us-hopper-architecture/nvidia-h100-tensor-c) (pape 19):
 
 <div class="demo">
   <style>
@@ -138,43 +138,36 @@ To see what exactly we're doing, here is a diagram of NVIDIA's H100 GPU, generat
       color: #3a2600;
     }
 
-    /* The die core: HBM3 memory rails flank the compute cluster. */
-    #post article .demo .gpu .core {
-      display: flex;
-      gap: 0.4rem;
-      align-items: stretch;
-    }
-
-    #post article .demo .gpu .mem {
-      display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
-      justify-content: space-around;
-    }
-
-    #post article .demo .gpu .mem span {
-      background-color: var(--border);
-      border: 1px solid var(--darker-border);
-      color: #666;
-      font-size: 0.7rem;
-      letter-spacing: 0.05em;
-      padding: 0.4rem 0.5rem;
-      text-align: center;
-    }
-
+    /* The die core: an HBM3 memory controller flanks each row of the compute
+       cluster, so the labels line up with the GPC banks and the L2 band. */
     #post article .demo .gpu .cluster {
       display: flex;
-      flex: 1;
       flex-direction: column;
       gap: 0.4rem;
     }
 
     #post article .demo .gpu .cluster .row {
       gap: 0.4rem;
+      align-items: stretch;
+    }
+
+    #post article .demo .gpu .hbm {
+      flex: 0 0 3.6rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--border);
+      border: 1px solid var(--darker-border);
+      color: #666;
+      font-size: 0.7rem;
+      letter-spacing: 0.05em;
+      padding: 0.4rem 0.3rem;
+      text-align: center;
     }
 
     /* L2 is the wide blue band the two GPC banks share. */
-    #post article .demo .gpu .cluster > .layer {
+    #post article .demo .gpu .l2 {
+      flex: 1;
       font-weight: 600;
     }
 
@@ -208,8 +201,6 @@ To see what exactly we're doing, here is a diagram of NVIDIA's H100 GPU, generat
     }
 
     @media screen and (max-width: 576px) {
-      #post article .demo .gpu .core { flex-direction: column; }
-      #post article .demo .gpu .mem { flex-direction: row; justify-content: center; }
       #post article .demo .gpu .row { flex-wrap: wrap; }
       #post article .demo .gpu .gpc { min-width: 6rem; }
       #post article .demo .gpu .links { grid-template-columns: repeat(9, 1fr); }
@@ -219,45 +210,41 @@ To see what exactly we're doing, here is a diagram of NVIDIA's H100 GPU, generat
   <div class="gpu">
     <div class="layer hardware bar">PCI Express 5.0 Host Interface</div>
     <div class="layer sched bar">GigaThread Engine with MIG Control</div>
-    <div class="core">
-      <div class="mem">
-        <span>HBM3</span>
-        <span>HBM3</span>
-        <span>HBM3</span>
+    <div class="cluster">
+      <div class="row">
+        <span class="hbm">HBM3</span>
+        <div class="box gpc"><span class="title">Graphics Processing Cluster</span></div>
+        <div class="box gpc"><span class="title">Graphics Processing Cluster</span></div>
+        <div class="box gpc"><span class="title">Graphics Processing Cluster</span></div>
+        <div class="box gpc"><span class="title">Graphics Processing Cluster</span></div>
+        <span class="hbm">HBM3</span>
       </div>
-      <div class="cluster">
-        <div class="row">
-          <div class="box gpc"><span class="title">GPC</span></div>
-          <div class="box gpc"><span class="title">GPC</span></div>
-          <div class="box gpc"><span class="title">GPC</span></div>
-          <div class="box gpc"><span class="title">GPC</span></div>
-        </div>
+      <div class="row">
+        <span class="hbm">HBM3</span>
         <div class="layer l2">L2 Cache</div>
-        <div class="row">
-          <div class="box gpc"><span class="title">GPC</span></div>
-          <div class="box gpc"><span class="title">GPC</span></div>
-          <div class="box gpc"><span class="title">GPC</span></div>
-          <div class="box gpc"><span class="title">GPC</span></div>
-        </div>
+        <span class="hbm">HBM3</span>
       </div>
-      <div class="mem">
-        <span>HBM3</span>
-        <span>HBM3</span>
-        <span>HBM3</span>
+      <div class="row">
+        <span class="hbm">HBM3</span>
+        <div class="box gpc"><span class="title">Graphics Processing Cluster</span></div>
+        <div class="box gpc"><span class="title">Graphics Processing Cluster</span></div>
+        <div class="box gpc"><span class="title">Graphics Processing Cluster</span></div>
+        <div class="box gpc"><span class="title">Graphics Processing Cluster</span></div>
+        <span class="hbm">HBM3</span>
       </div>
     </div>
     <div class="layer hardware bar">High-Speed Hub</div>
-    <div class="links">
-      <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
-      <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
-    </div>
-    <p class="note">The NVIDIA H100 (GH100) die: eight GPCs of streaming multiprocessors wrapped around a shared L2 cache, fed by HBM3 stacks on either flank, with the NVLink lanes running along the bottom edge. Compute is green, the L2 band blue, and the host interface, scheduler, hub, and memory read as structural bands.</p>
+    <p class="note">HBM3 = High Bandwidth Memory; High Speed Hub consists of NVIDIA's proprietary NVLink connectors.</p>
   </div>
 </div>
 
-We will be skipping
+We will be skipping all the external connectors (GigaThread Engine, HBM3, High Speed Hub, PCIe), leaving us to implement caching — straightforward — and an equivalent of the _Graphics Processing Cluster_.
 
-Taking a look at each of the individual
+In this case each cluster is made up of individual generalized _Streaming Multiprocessors_, which perform the general SIMT. To clarify, NVIDIA GPUs tend to still have specialized hardware within each cluster, but rather than having fixed function parts these are just abstractions on top of their Streaming Multiprocessors[^3].
+
+[^3]: E.g., H100 has Texture Processing Cluster.
+
+As seen on page 21 of the same whitepaper:
 
 <div class="demo">
   <style>
@@ -329,17 +316,29 @@ Taking a look at each of the individual
     }
 
     #post article .demo .sm .lane {
+      --cell: 1.1rem;
       flex: 1;
       min-height: 8rem;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      padding-top: 0.2rem;
       border: 1px solid rgba(0, 0, 0, 0.12);
       color: #1f3a10;
       font-size: 0.6rem;
       font-weight: 700;
-      background-image: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.55) 0 1px, transparent 1px 8px);
+      /* Cell lines start at the top and repeat every --cell, so the first line
+         lands right under the label and the label reads as the first cell. */
+      background-image: repeating-linear-gradient(
+        to bottom,
+        transparent 0 calc(var(--cell) - 1px),
+        rgba(255, 255, 255, 0.55) calc(var(--cell) - 1px) var(--cell)
+      );
+    }
+
+    #post article .demo .sm .lane > span {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: var(--cell);
     }
 
     #post article .demo .sm .lane.int {
@@ -426,7 +425,6 @@ Taking a look at each of the individual
 
   </style>
   <div class="sm">
-    <span class="title">SM</span>
     <div class="layer cache">L1 Instruction Cache</div>
     <div class="blocks">
       <div class="block">
@@ -510,13 +508,13 @@ Taking a look at each of the individual
       <div class="box">Tex</div>
       <div class="box">Tex</div>
     </div>
-    <p class="note">One streaming multiprocessor (SM) of the H100, expanded. Four processing blocks each pair a warp scheduler and register file with their own INT32, FP32, and FP64 lanes and a 4th-generation tensor core; the whole SM shares the L1 instruction cache at the top and the 256 KB L1 data cache, tensor memory accelerator, and texture units at the bottom.</p>
+    <p class="note">There is no term for the individual execution units here. <code>Tex</code> refers to the Texture Processing Cluster (TPC) I mentioned.</p>
   </div>
 </div>
 
-For our GPU, we'll most likely handle FP16, meaning that in the next part we'll need to quantize the model, and will have three layers of instruction caching. Things we do on our toy GPU will be constrained by the fact that because we have no memory past the highest memory cache. My thinking is that all the memory our kernels will need will fit into this highest memory cache, and for
+For our GPU, we'll most likely handle FP16 versus 32/64 bits, meaning that in the next part we might need to quantize the model, and will have three layers of instruction caching. Things we do on our toy GPU will be constrained by the fact that we have no memory past the highest memory cache. My thinking is that all the memory our kernels will need will fit into this highest memory cache, and our kernels' working set will also fit it in. The scope for implementing memory buses/interconnect is out of scope here, but we'll discuss how modern GPU communication works toward the end.
 
-It's also probably important to discuss the interconnect protocols that modern GPUs have here, since we're probably not implementing them and are out of scope (and we already have a big scope!).
+This will also reduce the problem set, e.g. we won't have to handle cache eviction at the highest-level cache.
 
 1. _Manufacturing Circuits_: Discuss how circuits are manufactured.
 2. _Logic Gates_: Introduction to our simulator, try to build out some basic logic gates.
@@ -525,8 +523,8 @@ It's also probably important to discuss the interconnect protocols that modern G
 5. _Constructing A Processor_: At this point we have a simple fetch-decode-execute processor. This is basically what you derive in something like [Nand2Tetris](https://www.nand2tetris.org/). This probably involves discussing some sort of ISA for our GPU that is simple and extensible in future chapters.
 6. _Control Flow_
 7. _SIMT/SIMD_: Discuss parallelism.
-8. _Building The Streaming Multiprocessor_: Warps
-9. _Extending The Memory Hierarchy_: Build out the higher level caches.
+8. _Extending The Memory Hierarchy_: Build out the higher level caches.
+9. _Building The Streaming Multiprocessor_: Warps, etc.
 10. _Compiling A Kernel_: Compile a kernel down to our ISA by writing a quick compiler to try and convert some custom language we'll design down.
 11. _A Hello, World! Kernel_: Moment of truth: let's test tiny kernel.
 12. _Interconnect Protocols In Modern GPUs_: Purely reading chapter, good time to also discuss HPC.
@@ -535,35 +533,39 @@ The end goal of this is to understand what NVIDIA/AMD/etc. are doing in this day
 
 ## Part IV: Tensors
 
-This is the last core part. GPUs nowadays have tensor units directly in the hardware for matrix computations: this is where we tie in how
+This is the last core part. GPUs nowadays have tensor units directly in the hardware for matrix computations, as you can see in the diagram above: this is where we tie in that part and really fulfill the namesake of this whole series. The goal is to see our machine learning model
 
 1. _Woah, This Machine Does Learning! 101_: Learn how multilayer perceptrons work. Classic MNIST from scratch is what I'm thinking. Get a set of hyperparameters and parameters for inference in a later chapter.
 2. _Writing A Tensor Framework_: Write a tiny tensor framework with the kernel
 3. _Inference_: Discuss quantization,
 4. _Tensors In Hardware_: Discuss tensor units, try to write
-5. _Taping Out & Testing_: Most definitely multiple parts, I'm just not sure what this looks like yet[^3].
+5. _Taping Out & Testing_: Most definitely multiple parts, I'm just not sure what this looks like yet[^4].
 
-[^3]: I've never done this, I would really like to do this.
+[^4]: I've never done this, I would really like to do this.
 
 ## Bonuses
 
 Just a bunch of random, related topics that I couldn't stuff into the actual parts. I'm not sure if this will be a part of the book or just here on my personal website.
 
 1. _A Gander At Vulkan & Metal_: I think learning WebGPU roughly encompasses the necessary abstractions needed to understand these lower-level APIs. At the same time, I personally would really like to mess around with these APIs. Maybe write a 3D object renderer or something.
-2. _Messing Around With Guassian Splats_
-3. _Building The Simulator_
+2. _Messing Around With Gaussian Splats_
+3. _Building The Simulator_: To be honest might be a job for LLM given the scope of everything else.
 
 ## Appendices
 
 The appendices would contain the bare minimum info to read the actual stuff. I'm a firm believer in ["You are not dumb, you just lack the prerequisites"](https://lelouch.dev/blog/you-are-probably-not-dumb/).
 
-1. _Just Enough Color Science_: While writing out the table of contents for [_Part II_](#part-ii-gpu) I realized that I assume that people know that computers render RGB color triplets typically. This is not necessarily true; thus, a appendix on color science and other fascinating info!
+1. _Just Enough Color Science_: While writing out the table of contents for [_Part II_](#part-ii-gpu) I realized that I assume that people know that computers render RGB color triplets typically. This is not necessarily true; thus, an appendix on color science and other fascinating info!
 2. _Just Enough Trigonometry_
-3. _Just Enough Calculus_: Understand as mathematics of change. Limits, differentiation, chain rule, partial deriviatives.
+3. _Just Enough Calculus_: Understand as mathematics of change. Limits, differentiation, chain rule, partial derivatives.
 4. _Just Enough Linear Algebra_: Gradients.
 
-&approx; around 65 chapters total.
+&approx; around 70 chapters total.
 
-So yeah. I'm going to try and carve out a little bit of space and time in my life to work on this :) It really fulfills sort of an ethos I have: to explore what I'm interested in while making along the way. I am realizing all of this is quite ambitious.
+So yeah. I'm going to try and carve out space and time in my life to work on this :) It really fulfills sort of an ethos I have: to explore what I'm interested in while making along the way. I am realizing all of this is quite ambitious.
 
-If you are interested in funding this sort of thing so I can spend more time on it - please email me at jc at this website.
+If you are interested in funding this sort of thing so I can spend more time on it — please email me at jc at this website.
+
+---
+
+Diagrams rendered with LLM assistance.

@@ -277,9 +277,9 @@ header {
       --band-fill: #e9f0f8;
       --band-border: #9db8d4;
 
-      font-family: var(--sans-serif);
-      // font-family: var(--monospace);
-      font-size: 1rem;
+      // font-family: var(--sans-serif);
+      font-family: var(--monospace);
+      font-size: 0.995rem;
       padding: var(--article-block-padding);
       // padding-left: calc(50vw - 50% - var(--article-inline-padding));
 
@@ -297,8 +297,10 @@ header {
 
       .note {
         color: #777;
+        font-family: var(--sans-serif);
         font-style: italic;
         font-size: 0.995rem;
+        margin-top: 1rem;
         text-wrap: pretty;
       }
 
@@ -451,6 +453,15 @@ header {
 
     code {
       font-size: 1.1rem;
+    }
+
+    hr {
+      background-color: var(--darker-border);
+      border: 0;
+      color: var(--darker-border);
+      display: block;
+      margin-block: 3rem;
+      height: 1px;
     }
 
     sup {

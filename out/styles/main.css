@@ -354,8 +354,8 @@ header #recent p:has(i) {
   --unit-border: color-mix(in srgb, var(--theme) 42%, var(--foreground));
   --band-fill: #e9f0f8;
   --band-border: #9db8d4;
-  font-family: var(--sans-serif);
-  font-size: 1rem;
+  font-family: var(--monospace);
+  font-size: 0.995rem;
   padding: var(--article-block-padding);
 }
 #post article .demo p {
@@ -369,8 +369,10 @@ header #recent p:has(i) {
 }
 #post article .demo .note {
   color: #777;
+  font-family: var(--sans-serif);
   font-style: italic;
   font-size: 0.995rem;
+  margin-top: 1rem;
   text-wrap: pretty;
 }
 #post article .demo .title {
@@ -482,6 +484,14 @@ header #recent p:has(i) {
 }
 #post article code {
   font-size: 1.1rem;
+}
+#post article hr {
+  background-color: var(--darker-border);
+  border: 0;
+  color: var(--darker-border);
+  display: block;
+  margin-block: 3rem;
+  height: 1px;
 }
 #post article sup {
   font-size: 0.7em;

@@ -7,5 +7,3 @@ I will not redesign this in the next ten years I will not redesign this in the n
 To run: `cabal run` in `src`.
 
 todo:
-
-- Dynamically generate og images
