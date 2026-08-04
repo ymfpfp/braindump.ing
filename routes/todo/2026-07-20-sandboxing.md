@@ -8,23 +8,30 @@ tl;dr: Being written, incomplete, not very well structured, yapfest. Goals: look
 
 ## Containers
 
-Containers are basically just isolated Linux containers
+Containers are basically just isolated Linux containers. The isolation part is handled by specific kernel features that either isolate or limit:
 
-Docker is a little more than just containers. I think describing it as a runtime might be the best way to approach it. There are a lot of moving parts and it's easy to over-complicate it, but it's basically just stacking different tools on top of one another. From top to bottom, it looks mostly like:
+- cgroups, namespaces, etc.: Try to isolate namespaces: PID/UID/GID, mounts,
+- seccomp, capabilities
+
+Given the amount of iteration we've done on containers in the last... while... this is relatively secure, but discovered kernel vulnerabilities affect
+
+Docker is a little more than just containers. I think describing it as a runtime might be the best way to approach it. There are a lot of moving parts and it's easy to over-complicate it, but it's basically just stacking different tools on top of one another and optimizing the tools themselves and the communication between the tools. From top to bottom, it looks mostly like:
 
 1. Docker CLI/Docker Desktop: Some user interface. Since Docker makes use of specific Linux kernel features, on non-Linux OSes Docker Desktop will also run and manage a lightweight VM (e.g., WSL2 on Windows). Docker Desktop nowadays also comes with Kubernetes
 2. Docker Engine/dockerd(aemon): This is the
 3. containerd: At this point we're running in the Linux VM if we aren't on Linux. This is the daemon that does the actual grunt work of managing the containers and images. Pull down an image, containerd constructs the overlayfs snapshot.
 4. runc(ontainer): Fork a child process, creating the actual container by making use of the aforementioned Linux features. Since we're trying to lock
-   - cgroups and namespaces etc.
 
-Kubernetes is just a scaling technology built on top of this.
+Kubernetes is just a scaling technology built on top of this, and OCI (Open Container Interface) is a specification for building on top of containers
 
 Docker is a lot of shit, actually. Did I mention that already? Some other features Docker provides you with, briefly:
 
 - BuildKit
-  - Docker uses [overlayfs]().
-  - Docker will typically
+  - Docker uses [overlayfs](). Images are made of layers.
+  - When you pass a Dockerfile to Docker, it'll use the Dockerfile to construct these image layers. You can
+- Networking
+- Storage
+  - This is relatively obvious. Sharing volumes, dockerd manages storage volumes on the host; you can
 
 I'm not going to go into containers into too much detail, but here's a nice bird's eye view in case you would like to do more research into the individual components:
 
@@ -82,9 +89,12 @@ I'm not going to go into containers into too much detail, but here's a nice bird
 
 ## VMs
 
-tl;dr: Read the first paragraph. This is basically me getting nerdsniped int
+tl;dr: Read the first paragraph. I go into VMs quite a bit more than I go into containers.
 
 VMs are deceptively simple at their core. Point to memory region, fetch/decode/execute, emulate some devices - whether by poking through to actual devices on the host or simulating via allocating more memory regions. The majority of emulation makes use of virtualized memory + virtualized processor + virtualized devices, in spirit of Von Neumann/Harvard architectures.
+
+<div class="demo">
+</div>
 
 Thus the differences lie in how exactly this emulation is performed and what optimizations are done; terminology typically separates
 
@@ -350,7 +360,9 @@ sudo ./firecracker --api-sock "${API_SOCKET}" --enable-pci
 
 Once you pass in these parameters Firecracker will do most of the hard work.
 
-## virtio
+## Attachments
+
+### virtio
 
 `virtio` for some reason was confusing to
 

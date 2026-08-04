@@ -1,0 +1,3 @@
+User-agent: *
+Disallow: /aesthetics.html
+Disallow: /todo/

@@ -12,7 +12,7 @@ Right now -
 - Graphics stuff. Notably [this](/writing/2026-07-16-graphics-idea.html).
 - Triathlons.
 - Learning Japanese.
-- Creative writing. I have a bunch of random ideas for a book I want to write and I want to iterate on the smaller ideas until I have a more cohesive version.
+- Creative writing. I have a bunch of random ideas for a book I want to write and I want to iterate on the smaller ideas until I have a more cohesive version. In general I've come to believe that my _personal_ headspace is valuable and the best ways of expressing that are with my close friends and through creative endeavors.
 
 There are a lot of interesting things and not enough time. I'm usually able to focus (i.e., put 100% effort into) on just a few things at once. Some things I hope to be interested in more in the future:
 
