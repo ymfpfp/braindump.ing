@@ -237,7 +237,15 @@ header {
     }
 
     .demo,
-    pre {
+    pre,
+    table {
+      padding-top: 1.5rem;
+      padding-bottom: 1.5rem;
+    }
+
+    .demo:not(.sm),
+    pre,
+    table {
       // border-top: 1px solid var(--darker-border);
       // border-bottom: 1px solid var(--darker-border);
       background-color: var(--background);
@@ -250,8 +258,6 @@ header {
       overflow-x: auto;
       position: relative;
       z-index: 99;
-      padding-top: 1.5rem;
-      padding-bottom: 1.5rem;
     }
 
     pre {
@@ -271,15 +277,41 @@ header {
       }
     }
 
-    .demo {
+    table {
+      border-spacing: 0;
+      border-collapse: collapse;
+
+      th {
+        font-style: italic;
+        font-weight: normal;
+      }
+
+      th,
+      td {
+        border: 1px solid var(--darker-border);
+        margin: 0;
+        text-align: left;
+        padding: 7px 14px;
+      }
+
+      tr {
+        margin: 0;
+      }
+    }
+
+    .demo:not(.sm),
+    table {
+      font-family: var(--monospace);
+      font-size: 0.995rem;
+    }
+
+    .demo:not(.sm) {
       --unit-fill: color-mix(in srgb, var(--theme) 9%, var(--foreground));
       --unit-border: color-mix(in srgb, var(--theme) 42%, var(--foreground));
       --band-fill: #e9f0f8;
       --band-border: #9db8d4;
 
       // font-family: var(--sans-serif);
-      font-family: var(--monospace);
-      font-size: 0.995rem;
       padding: var(--article-block-padding);
       // padding-left: calc(50vw - 50% - var(--article-inline-padding));
 

@@ -323,7 +323,14 @@ header #recent p:has(i) {
   overflow-x: auto;
 }
 #post article .demo,
-#post article pre {
+#post article pre,
+#post article table {
+  padding-top: 1.5rem;
+  padding-bottom: 1.5rem;
+}
+#post article .demo:not(.sm),
+#post article pre,
+#post article table {
   background-color: var(--background);
   margin-top: 2rem;
   margin-bottom: 2rem;
@@ -333,8 +340,6 @@ header #recent p:has(i) {
   overflow-x: auto;
   position: relative;
   z-index: 99;
-  padding-top: 1.5rem;
-  padding-bottom: 1.5rem;
 }
 #post article pre {
   font-size: 0.995rem !important;
@@ -349,25 +354,44 @@ header #recent p:has(i) {
 #post article pre > code span {
   background-color: transparent !important;
 }
-#post article .demo {
+#post article table {
+  border-spacing: 0;
+  border-collapse: collapse;
+}
+#post article table th {
+  font-style: italic;
+  font-weight: normal;
+}
+#post article table th, #post article table td {
+  border: 1px solid var(--darker-border);
+  margin: 0;
+  text-align: left;
+  padding: 7px 14px;
+}
+#post article table tr {
+  margin: 0;
+}
+#post article .demo:not(.sm), #post article table {
+  font-family: var(--monospace);
+  font-size: 0.995rem;
+}
+#post article .demo:not(.sm) {
   --unit-fill: color-mix(in srgb, var(--theme) 9%, var(--foreground));
   --unit-border: color-mix(in srgb, var(--theme) 42%, var(--foreground));
   --band-fill: #e9f0f8;
   --band-border: #9db8d4;
-  font-family: var(--monospace);
-  font-size: 0.995rem;
   padding: var(--article-block-padding);
 }
-#post article .demo p {
+#post article .demo:not(.sm) p {
   margin: 0;
 }
-#post article .demo code {
+#post article .demo:not(.sm) code {
   font-size: 0.995rem;
 }
-#post article .demo code.accent {
+#post article .demo:not(.sm) code.accent {
   color: var(--theme);
 }
-#post article .demo .note {
+#post article .demo:not(.sm) .note {
   color: #777;
   font-family: var(--sans-serif);
   font-style: italic;
@@ -375,27 +399,27 @@ header #recent p:has(i) {
   margin-top: 1rem;
   text-wrap: pretty;
 }
-#post article .demo .note code {
+#post article .demo:not(.sm) .note code {
   font-size: 0.895rem;
 }
-#post article .demo .title {
+#post article .demo:not(.sm) .title {
   font-weight: 600;
 }
-#post article .demo .diagram {
+#post article .demo:not(.sm) .diagram {
   display: flex;
   gap: 2rem;
 }
-#post article .demo .model {
+#post article .demo:not(.sm) .model {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
-#post article .demo .row {
+#post article .demo:not(.sm) .row {
   display: flex;
   gap: 0.5rem;
 }
-#post article .demo .box,
-#post article .demo .layer {
+#post article .demo:not(.sm) .box,
+#post article .demo:not(.sm) .layer {
   background-color: var(--unit-fill);
   border: 1px solid var(--unit-border);
   border-radius: 0;
@@ -405,51 +429,51 @@ header #recent p:has(i) {
   padding: 0.75rem;
   text-align: center;
 }
-#post article .demo .box {
+#post article .demo:not(.sm) .box {
   flex: 1;
 }
-#post article .demo .box.guest {
+#post article .demo:not(.sm) .box.guest {
   background-color: color-mix(in srgb, var(--theme) 16%, var(--foreground));
   border-color: color-mix(in srgb, var(--theme) 60%, var(--foreground));
 }
-#post article .demo .layer {
+#post article .demo:not(.sm) .layer {
   background-color: var(--band-fill);
   border-color: var(--band-border);
 }
-#post article .demo .inner {
+#post article .demo:not(.sm) .inner {
   background-color: var(--foreground);
   border: 1px solid var(--unit-border);
   padding: 0.25rem;
 }
-#post article .demo .boundary {
+#post article .demo:not(.sm) .boundary {
   border-top: 1px dashed var(--theme);
   font-size: 0.9rem;
   padding-top: 0.5rem;
   text-align: center;
 }
-#post article .demo .hardware {
+#post article .demo:not(.sm) .hardware {
   background-color: var(--border);
   border-color: var(--darker-border);
 }
-#post article .demo .model > .note:last-child {
+#post article .demo:not(.sm) .model > .note:last-child {
   margin-top: 0.25rem;
 }
-#post article .demo .stack {
+#post article .demo:not(.sm) .stack {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
 }
-#post article .demo .stack > .note {
+#post article .demo:not(.sm) .stack > .note {
   margin: 0;
   text-align: right;
 }
-#post article .demo .tier {
+#post article .demo:not(.sm) .tier {
   display: grid;
   grid-template-columns: minmax(0, 10rem) 1fr;
   gap: 0.75rem;
   align-items: center;
 }
-#post article .demo .tier > code {
+#post article .demo:not(.sm) .tier > code {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -457,31 +481,31 @@ header #recent p:has(i) {
   font-weight: 600;
   text-align: right;
 }
-#post article .demo .tier:not(:last-child) > code::after {
+#post article .demo:not(.sm) .tier:not(:last-child) > code::after {
   content: "↓";
   color: #999;
   line-height: 1;
   margin-top: 0.35rem;
 }
-#post article .demo .tier .row {
+#post article .demo:not(.sm) .tier .row {
   flex-wrap: wrap;
 }
-#post article .demo .tier > .row {
+#post article .demo:not(.sm) .tier > .row {
   align-items: flex-start;
 }
-#post article .demo .tier .box {
+#post article .demo:not(.sm) .tier .box {
   max-width: 24rem;
 }
 @media screen and (max-width: 576px) {
-  #post article .demo .tier {
+  #post article .demo:not(.sm) .tier {
     grid-template-columns: 1fr;
     gap: 0.35rem;
   }
-  #post article .demo .tier > code {
+  #post article .demo:not(.sm) .tier > code {
     align-items: flex-start;
     text-align: left;
   }
-  #post article .demo .tier:not(:last-child) > code::after {
+  #post article .demo:not(.sm) .tier:not(:last-child) > code::after {
     content: none;
   }
 }

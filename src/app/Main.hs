@@ -1,6 +1,7 @@
 module Main where
 
 import Control.Monad (when)
+import Data.Char (isAlphaNum)
 import Data.List (isSuffixOf, sortBy)
 import qualified Data.Map as Map
 import Data.Map (Map)
@@ -10,6 +11,7 @@ import System.Directory (
   copyFile,
   createDirectoryIfMissing,
   doesDirectoryExist,
+  doesFileExist,
   listDirectory)
 import System.Process (readProcess)
 
@@ -88,10 +90,31 @@ main = do
   extension :: String -> String
   extension s = snd $ breakFromEnd (== '.') s
 
+  rootDirectory = "../"
   assetsDirectory = "../include/"
   layoutDirectory = "../layout/"
   inputDirectory = "../routes/"
   outputDirectory = "../out/"
+
+  -- `@components/figure.html` anywhere in a Markdown source is swapped for the
+  -- verbatim contents of that file, resolved from the project root. This is a
+  -- plain find-and-replace over the raw text, run before parsing, so an inlined
+  -- `<div>` gets picked up by `parseHtmlBlock` exactly as if it had been typed
+  -- there by hand. A token that doesn't name a real file is left alone, which
+  -- keeps ordinary prose (email addresses, handles) untouched.
+  inlineComponents :: String -> IO String
+  inlineComponents [] = return []
+  inlineComponents ('@':rest) = do
+    let (path, remaining) = span isPathChar rest
+    exists <- if null path then return False else doesFileExist (rootDirectory ++ path)
+    if exists
+      then do
+        contents <- readFile (rootDirectory ++ path)
+        (contents ++) <$> inlineComponents remaining
+      else ('@':) <$> inlineComponents rest
+    where
+    isPathChar c = isAlphaNum c || c == '.' || c == '_' || c == '-' || c == '/'
+  inlineComponents (c:cs) = (c:) <$> inlineComponents cs
 
   generateList :: String -> String -> IO ()
   generateList directory _ = do
@@ -140,7 +163,7 @@ main = do
   transformMarkdown = \path -> do
     let transformedPath = (filename path) ++ "html"
 
-    raw <- readFile path
+    raw <- inlineComponents =<< readFile path
     let (parsed, injections) = Md.parseWithExtensions raw [Extensions.parseFrontmatter, Extensions.desc, Extensions.parseTOC, Extensions.parseFootnotes]
     let layoutPath = trim (== '\n') <$> (Md.documentToText <$> Map.lookup "layout" injections)
 

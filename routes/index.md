@@ -8,7 +8,7 @@ Hi, I'm JC! I bought this domain when .ing TLD became a thing. I think it's a ve
 
 A bit about me:
 
-I like to build things. I want to build things one day of both simplicity and scale while deeply enjoying myself, and ideally this involves hard-ware in the future as I think there is a lot of room for simplicity and scale there. My conformist take is that as you get older curiosity is a joy that you need to carve space for.
+I like to build things. I want to build things one day of both simplicity and scale while deeply enjoying myself, and ideally this involves hard-ware in the future as I think there is a lot of room for simplicity and scale there.
 
 I like a lot of things, even if I'm not particularly good at them. Here I will talk about some of them:
 

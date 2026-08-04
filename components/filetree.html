@@ -1,0 +1,115 @@
+<div class="filetree">
+  <style>
+    .filetree .host {
+      /* Height comes from the model — see `fit` below. */
+      border-radius: 0.5rem;
+      /* The tree defaults to `system-ui` at 13px; take the page font instead. */
+      --trees-font-family-override: var(--sans-serif);
+      --trees-font-size-override: 0.85rem;
+      /* The tree paints its own background on the host, so clip it to the
+         radius or the corners stay square. */
+      overflow: hidden;
+    }
+  </style>
+
+  <div class="host"></div>
+
+  <script type="module">
+    // A vanilla `@pierre/trees` file tree — https://trees.software/docs#get-started-with-vanilla.
+    const PATHS = [
+      ".gitignore",
+      "README.md",
+      "package.json",
+      "vite.config.ts",
+      ".github/workflows/ci.yml",
+      ".github/workflows/release.yml",
+      "src/index.ts",
+      "src/components/Button.tsx",
+      "src/components/Card.tsx",
+      "src/hooks/useDebounce.ts",
+      "src/styles/globals.css",
+      "src/utils/cn.ts",
+    ];
+
+    // Every directory in the set, so the tree opens fully expanded. A collapsed
+    // folder chain (`.github/workflows`) renders as one row, but naming both
+    // halves is harmless and keeps this a plain prefix walk.
+    const DIRECTORIES = [
+      ...new Set(
+        PATHS.flatMap((path) => {
+          const parts = path.split("/").slice(0, -1);
+          return parts.map((_, i) => parts.slice(0, i + 1).join("/"));
+        }),
+      ),
+    ];
+
+    // A VS Code-shaped theme object, which `themeToTreeStyles` maps onto the
+    // `--trees-theme-*` variables the tree reads. Warm dark neutrals so the
+    // panel doesn't fight the page, with the site green on selection and focus.
+    const THEME = {
+      type: "dark",
+      bg: "#1b1a18",
+      fg: "#d8d4cc",
+      colors: {
+        "sideBar.background": "#1b1a18",
+        "sideBar.foreground": "#d8d4cc",
+        "sideBar.border": "#2d2b28",
+        "sideBarSectionHeader.foreground": "#d8d4cc",
+        "list.activeSelectionBackground": "#33470a",
+        "list.activeSelectionForeground": "#f2efe8",
+        "list.hoverBackground": "rgba(255, 255, 255, 0.06)",
+        "list.focusOutline": "#8ab82e",
+        "scrollbarSlider.background": "rgba(255, 255, 255, 0.14)",
+      },
+    };
+
+    // The block is inlined by the compiler, so the same script may run for more
+    // than one copy on a page. Claim every unmounted host, and let the later
+    // copies of this script find nothing left to do.
+    const hosts = document.querySelectorAll(".filetree:not([data-mounted])");
+    for (const host of hosts) host.dataset.mounted = "true";
+
+    if (hosts.length > 0) {
+      // Dynamic import so a blocked or offline CDN degrades to a note instead
+      // of a silently empty box.
+      let FileTree, themeToTreeStyles;
+      try {
+        ({ FileTree, themeToTreeStyles } =
+          await import("https://esm.sh/@pierre/trees@1.0.0-beta.6"));
+      } catch {
+        for (const host of hosts) {
+          host.querySelector(".host").textContent =
+            "couldn't load @pierre/trees";
+        }
+      }
+
+      for (const host of hosts) {
+        if (!FileTree) break;
+
+        const tree = new FileTree({
+          paths: PATHS,
+          icons: "standard",
+          initialExpandedPaths: DIRECTORIES,
+          initialSelectedPaths: ["src/components/Button.tsx"],
+          density: "compact",
+        });
+
+        const container = host.querySelector(".host");
+        tree.render({ fileTreeContainer: container });
+
+        // Custom properties need `setProperty`; the rest are plain style keys.
+        for (const [key, value] of Object.entries(themeToTreeStyles(THEME))) {
+          if (key.startsWith("--")) container.style.setProperty(key, value);
+          else container.style[key] = value;
+        }
+
+        // The tree is virtualized, so it needs a height to render into rather
+        // than growing on its own. Take that height from the model, once, while
+        // everything is still expanded — that's the tallest the tree can get, so
+        // nothing ever scrolls. Deliberately not re-fit on collapse: the panel
+        // holds its size instead of yanking the rest of the page up and down.
+        container.style.height = `${tree.getVisibleCount() * tree.getItemHeight()}px`;
+      }
+    }
+  </script>
+</div>
