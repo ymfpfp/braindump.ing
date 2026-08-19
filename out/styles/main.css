@@ -110,6 +110,68 @@ textarea {
   resize: none;
 }
 
+#post article .demo:has(pre.ascii) {
+  padding-inline: 0;
+}
+#post article .demo:has(pre.ascii) > :not(pre.ascii) {
+  padding-inline: var(--article-block-padding);
+}
+#post article .demo pre.ascii {
+  margin: 0 !important;
+  width: auto;
+  max-width: none;
+  min-width: fit-content;
+  padding: 1.2em 2ch;
+  overflow: visible;
+  font-family: var(--monospace) !important;
+  font-size: 0.995rem !important;
+  line-height: 1.2;
+  white-space: pre;
+  text-align: center;
+  background-color: transparent;
+  background-image: repeating-linear-gradient(to right, rgba(0, 0, 0, 0.09) 0 1px, transparent 1px 1ch), repeating-linear-gradient(to bottom, rgba(0, 0, 0, 0.09) 0 1px, transparent 1px 1.2em), linear-gradient(rgba(0, 0, 0, 0.09), rgba(0, 0, 0, 0.09));
+  background-size: auto, auto, 100% 1px;
+  background-position: 0 0, 0 0, left bottom;
+  background-repeat: repeat, repeat, no-repeat;
+  background-origin: padding-box;
+  background-clip: padding-box;
+}
+#post article .demo pre.ascii b,
+#post article .demo pre.ascii i {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+  font-style: normal;
+}
+#post article .demo pre.ascii b {
+  font-weight: 500;
+}
+#post article .demo pre.ascii .d-green {
+  color: #567a00;
+}
+#post article .demo pre.ascii .d-orange {
+  color: #d98c00;
+}
+#post article .demo pre.ascii .d-rust {
+  color: #c2611c;
+}
+#post article .demo pre.ascii .d-teal {
+  color: #2f6c7c;
+}
+#post article .demo pre.ascii .d-blue {
+  color: #2f56b0;
+}
+#post article .demo pre.ascii .d-red {
+  color: #8f4444;
+}
+#post article .demo pre.ascii .d-dim {
+  color: #999;
+}
+#post article .demo pre.ascii .fill {
+  background-color: color-mix(in srgb, currentColor 12%, transparent);
+}
+
 body,
 html {
   background-color: var(--theme);
@@ -322,7 +384,6 @@ header #recent p:has(i) {
   font-family: var(--monospace) !important;
   overflow-x: auto;
 }
-#post article .demo,
 #post article pre,
 #post article table {
   padding-top: 1.5rem;
@@ -354,6 +415,9 @@ header #recent p:has(i) {
 #post article pre > code span {
   background-color: transparent !important;
 }
+#post article h1, #post article h2 {
+  font-style: italic;
+}
 #post article table {
   border-spacing: 0;
   border-collapse: collapse;
@@ -362,7 +426,8 @@ header #recent p:has(i) {
   font-style: italic;
   font-weight: normal;
 }
-#post article table th, #post article table td {
+#post article table th,
+#post article table td {
   border: 1px solid var(--darker-border);
   margin: 0;
   text-align: left;
@@ -371,7 +436,8 @@ header #recent p:has(i) {
 #post article table tr {
   margin: 0;
 }
-#post article .demo:not(.sm), #post article table {
+#post article .demo:not(.sm),
+#post article table {
   font-family: var(--monospace);
   font-size: 0.995rem;
 }
@@ -380,7 +446,6 @@ header #recent p:has(i) {
   --unit-border: color-mix(in srgb, var(--theme) 42%, var(--foreground));
   --band-fill: #e9f0f8;
   --band-border: #9db8d4;
-  padding: var(--article-block-padding);
 }
 #post article .demo:not(.sm) p {
   margin: 0;
@@ -396,118 +461,12 @@ header #recent p:has(i) {
   font-family: var(--sans-serif);
   font-style: italic;
   font-size: 0.995rem;
-  margin-top: 1rem;
+  margin-block: 1rem;
   text-wrap: pretty;
+  text-align: center;
 }
 #post article .demo:not(.sm) .note code {
   font-size: 0.895rem;
-}
-#post article .demo:not(.sm) .title {
-  font-weight: 600;
-}
-#post article .demo:not(.sm) .diagram {
-  display: flex;
-  gap: 2rem;
-}
-#post article .demo:not(.sm) .model {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-#post article .demo:not(.sm) .row {
-  display: flex;
-  gap: 0.5rem;
-}
-#post article .demo:not(.sm) .box,
-#post article .demo:not(.sm) .layer {
-  background-color: var(--unit-fill);
-  border: 1px solid var(--unit-border);
-  border-radius: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  padding: 0.75rem;
-  text-align: center;
-}
-#post article .demo:not(.sm) .box {
-  flex: 1;
-}
-#post article .demo:not(.sm) .box.guest {
-  background-color: color-mix(in srgb, var(--theme) 16%, var(--foreground));
-  border-color: color-mix(in srgb, var(--theme) 60%, var(--foreground));
-}
-#post article .demo:not(.sm) .layer {
-  background-color: var(--band-fill);
-  border-color: var(--band-border);
-}
-#post article .demo:not(.sm) .inner {
-  background-color: var(--foreground);
-  border: 1px solid var(--unit-border);
-  padding: 0.25rem;
-}
-#post article .demo:not(.sm) .boundary {
-  border-top: 1px dashed var(--theme);
-  font-size: 0.9rem;
-  padding-top: 0.5rem;
-  text-align: center;
-}
-#post article .demo:not(.sm) .hardware {
-  background-color: var(--border);
-  border-color: var(--darker-border);
-}
-#post article .demo:not(.sm) .model > .note:last-child {
-  margin-top: 0.25rem;
-}
-#post article .demo:not(.sm) .stack {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-#post article .demo:not(.sm) .stack > .note {
-  margin: 0;
-  text-align: right;
-}
-#post article .demo:not(.sm) .tier {
-  display: grid;
-  grid-template-columns: minmax(0, 10rem) 1fr;
-  gap: 0.75rem;
-  align-items: center;
-}
-#post article .demo:not(.sm) .tier > code {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  color: var(--theme);
-  font-weight: 600;
-  text-align: right;
-}
-#post article .demo:not(.sm) .tier:not(:last-child) > code::after {
-  content: "↓";
-  color: #999;
-  line-height: 1;
-  margin-top: 0.35rem;
-}
-#post article .demo:not(.sm) .tier .row {
-  flex-wrap: wrap;
-}
-#post article .demo:not(.sm) .tier > .row {
-  align-items: flex-start;
-}
-#post article .demo:not(.sm) .tier .box {
-  max-width: 24rem;
-}
-@media screen and (max-width: 576px) {
-  #post article .demo:not(.sm) .tier {
-    grid-template-columns: 1fr;
-    gap: 0.35rem;
-  }
-  #post article .demo:not(.sm) .tier > code {
-    align-items: flex-start;
-    text-align: left;
-  }
-  #post article .demo:not(.sm) .tier:not(:last-child) > code::after {
-    content: none;
-  }
 }
 #post article code {
   font-size: 1.1rem;
@@ -595,9 +554,6 @@ header #recent p:has(i) {
 #post article li p {
   margin: 0 !important;
 }
-#post article li p span.aside {
-  margin-left: -0.5rem;
-}
 #toc {
   font-family: var(--sans-serif);
   position: sticky;
@@ -636,6 +592,9 @@ header #recent p:has(i) {
 }
 
 .list p {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  column-gap: 0.5em;
   margin: 0;
 }
 

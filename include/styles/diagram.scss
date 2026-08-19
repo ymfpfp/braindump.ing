@@ -1,0 +1,143 @@
+@use "globals" as *;
+
+// ASCII diagram component.
+//
+// Authoring recipe (in a markdown post):
+//
+//   <div class="demo">
+//     <pre class="ascii">
+//   ┌─────────────────────────────┐
+//   │ <b class="d-orange">Warp Scheduler (32 thd/clk)</b> │
+//   └─────────────────────────────┘
+//   </pre>
+//     <p class="note">Caption.</p>
+//   </div>
+//
+// - Art lines sit flush left inside <pre class="ascii">; close </pre> at
+//   column 0 (only a line-initial </div> ends the raw markdown block).
+// - NO fully blank lines inside the <div> block: prettier's markdown parser
+//   ends a raw HTML block at a blank line and reflows what follows as
+//   paragraphs, collapsing the art's whitespace. Use a lone &nbsp; on a line
+//   for vertical gaps instead.
+// - Content is emitted verbatim: escape literal < > & as entities, or better,
+//   use Unicode arrows (→ ← ▲ ▼ ▶ ◀) so columns line up in the source too.
+// - Color a region by wrapping it in <b class="d-...">…</b>; add the "fill"
+//   class for a tinted interior. Spans only ever change color/weight, so the
+//   character grid cannot shift.
+// - Importing from Monodraw: copy as text, paste, wrap colored regions. No
+//   per-diagram CSS.
+
+#post article .demo {
+  // Drop the band's inline padding around ascii diagrams so the pre can span
+  // it edge to edge without negative margins (which leave phantom horizontal
+  // scroll: the scroll container's right padding gets appended after the
+  // overhanging pre). Other children, like the .note caption, get the
+  // padding back.
+  &:has(pre.ascii) {
+    padding-inline: 0;
+
+    > :not(pre.ascii) {
+      padding-inline: var(--article-block-padding);
+    }
+  }
+
+  pre.ascii {
+    // Opt out of the article-wide full-bleed <pre> treatment; the .demo
+    // wrapper already provides the bleed band and horizontal scrolling.
+    // Fill the band exactly when the art fits; grow to the art (and let the
+    // band scroll) only when it doesn't.
+    margin: 0 !important;
+    width: auto;
+    max-width: none;
+    min-width: fit-content;
+    // Whole cells of breathing room, so the grid stays on the cell lattice.
+    padding: 1.2em 2ch;
+    overflow: visible;
+
+    // Match the band's content type exactly: same monospace, same size as
+    // the surrounding .demo/pre/table content.
+    font-family: var(--monospace) !important;
+    font-size: 0.995rem !important;
+    line-height: 1.2; // one cell = 1ch × 1.2em, mirrored by the grid below
+    white-space: pre;
+    // Every art line is the same length, so centering per-line centers the
+    // whole diagram within the full-width pre.
+    text-align: center;
+
+    // Monodraw-style cell grid over the diagram itself (padding included),
+    // transparent against the band behind it. The repeating gradients draw a
+    // line at the start of every cell, which leaves the bottom edge open —
+    // the third layer closes it with a final line anchored to the bottom.
+    background-color: transparent;
+    background-image:
+      repeating-linear-gradient(
+        to right,
+        rgba(0, 0, 0, 0.09) 0 1px,
+        transparent 1px 1ch
+      ),
+      repeating-linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0.09) 0 1px,
+        transparent 1px 1.2em
+      ),
+      linear-gradient(rgba(0, 0, 0, 0.09), rgba(0, 0, 0, 0.09));
+    background-size:
+      auto,
+      auto,
+      100% 1px;
+    background-position:
+      0 0,
+      0 0,
+      left bottom;
+    background-repeat: repeat, repeat, no-repeat;
+    background-origin: padding-box;
+    background-clip: padding-box;
+
+    b,
+    i {
+      font-family: inherit;
+      font-size: inherit;
+      line-height: inherit;
+      letter-spacing: inherit;
+      font-style: normal;
+    }
+
+    b {
+      font-weight: 500; // JetBrains Mono stays monospaced across weights
+    }
+
+    // Generic palette, coordinated with the site theme.
+    .d-green {
+      color: #567a00;
+    }
+
+    .d-orange {
+      color: #d98c00;
+    }
+
+    .d-rust {
+      color: #c2611c;
+    }
+
+    .d-teal {
+      color: #2f6c7c;
+    }
+
+    .d-blue {
+      color: #2f56b0;
+    }
+
+    .d-red {
+      color: #8f4444;
+    }
+
+    .d-dim {
+      color: #999;
+    }
+
+    // fill modifier: tinted interior driven by the same class's stroke color.
+    .fill {
+      background-color: color-mix(in srgb, currentColor 12%, transparent);
+    }
+  }
+}

@@ -1,4 +1,5 @@
 @use "globals" as *;
+@use "diagram";
 
 body,
 html {
@@ -236,7 +237,6 @@ header {
       overflow-x: auto;
     }
 
-    .demo,
     pre,
     table {
       padding-top: 1.5rem;
@@ -277,6 +277,19 @@ header {
       }
     }
 
+    h1,
+    h2 {
+      font-style: italic;
+    }
+
+    // h1 {
+    //   letter-spacing: -1.5px;
+    // }
+    //
+    // h2 {
+    //   letter-spacing: -1px;
+    // }
+
     table {
       border-spacing: 0;
       border-collapse: collapse;
@@ -312,7 +325,6 @@ header {
       --band-border: #9db8d4;
 
       // font-family: var(--sans-serif);
-      padding: var(--article-block-padding);
       // padding-left: calc(50vw - 50% - var(--article-inline-padding));
 
       p {
@@ -332,157 +344,12 @@ header {
         font-family: var(--sans-serif);
         font-style: italic;
         font-size: 0.995rem;
-        margin-top: 1rem;
+        margin-block: 1rem;
         text-wrap: pretty;
+        text-align: center;
 
         code {
           font-size: 0.895rem;
-        }
-      }
-
-      .title {
-        font-weight: 600;
-      }
-
-      .diagram {
-        display: flex;
-        gap: 2rem;
-      }
-
-      .model {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-      }
-
-      // Each model is a stack of layers, with the peers on any one layer in a row.
-      .row {
-        display: flex;
-        gap: 0.5rem;
-      }
-
-      .box,
-      .layer {
-        background-color: var(--unit-fill);
-        border: 1px solid var(--unit-border);
-        border-radius: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 0.25rem;
-        padding: 0.75rem;
-        text-align: center;
-      }
-
-      .box {
-        flex: 1;
-      }
-
-      // A microVM is the emphasised unit — a fuller green fill sets it apart.
-      .box.guest {
-        background-color: color-mix(
-          in srgb,
-          var(--theme) 16%,
-          var(--foreground)
-        );
-        border-color: color-mix(in srgb, var(--theme) 60%, var(--foreground));
-      }
-
-      // Full-width layers are infrastructure the units sit on, so they read as
-      // blue bands rather than green units.
-      .layer {
-        background-color: var(--band-fill);
-        border-color: var(--band-border);
-      }
-
-      .inner {
-        background-color: var(--foreground);
-        border: 1px solid var(--unit-border);
-        padding: 0.25rem;
-      }
-
-      .boundary {
-        border-top: 1px dashed var(--theme);
-        font-size: 0.9rem;
-        padding-top: 0.5rem;
-        text-align: center;
-      }
-
-      // Bare metal: the one uncolored, gray band at the bottom of the stack.
-      .hardware {
-        background-color: var(--border);
-        border-color: var(--darker-border);
-      }
-
-      // The last note in a model is a caption, so it sits apart from the stack.
-      .model > .note:last-child {
-        margin-top: 0.25rem;
-      }
-
-      // Container stack diagram. The body of each tier is an ordinary .row or
-      // .model of .box-es (groups are just a .box wrapping a .title and more
-      // boxes), so the only thing bespoke here is the left rail of daemon names.
-      .stack {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-
-        // "kubernetes expands on this" points up and to the right, above it all.
-        > .note {
-          margin: 0;
-          text-align: right;
-        }
-      }
-
-      .tier {
-        display: grid;
-        grid-template-columns: minmax(0, 10rem) 1fr;
-        gap: 0.75rem;
-        align-items: center;
-
-        // The daemon name is the rail label; the ↓ marks its hand-off to the
-        // tier below, echoing the delegation arrows in the original.
-        > code {
-          display: flex;
-          flex-direction: column;
-          align-items: flex-end;
-          color: var(--theme);
-          font-weight: 600;
-          text-align: right;
-        }
-
-        &:not(:last-child) > code::after {
-          content: "↓";
-          color: #999;
-          line-height: 1;
-          margin-top: 0.35rem;
-        }
-
-        // Bodies wrap, and boxes keep a readable width instead of stretching
-        // across the full-bleed figure.
-        .row {
-          flex-wrap: wrap;
-        }
-
-        > .row {
-          align-items: flex-start;
-        }
-
-        .box {
-          max-width: 24rem;
-        }
-
-        @media screen and (max-width: $sm) {
-          grid-template-columns: 1fr;
-          gap: 0.35rem;
-
-          > code {
-            align-items: flex-start;
-            text-align: left;
-          }
-
-          &:not(:last-child) > code::after {
-            content: none;
-          }
         }
       }
     }
@@ -593,10 +460,6 @@ header {
 
       p {
         margin: 0 !important;
-
-        span.aside {
-          margin-left: -0.5rem;
-        }
       }
     }
 
@@ -656,6 +519,9 @@ header {
 
 .list {
   p {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    column-gap: 0.5em;
     margin: 0;
   }
 }

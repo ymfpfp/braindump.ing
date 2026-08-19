@@ -7,3 +7,5 @@ I will not redesign this in the next ten years I will not redesign this in the n
 To run: `cabal run` in `src`.
 
 todo:
+
+- make a couple of tweaks to design for easier reading

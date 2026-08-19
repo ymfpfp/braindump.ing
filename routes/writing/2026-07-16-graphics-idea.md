@@ -62,15 +62,14 @@ A table of contents for this part might look like:
 11. _Rendering The Sky: Cubemaps_: Figure out how to render the sky as a cubemap, then figure out day/night cycles and the sun as a light source.
 12. _Transparency_: Figure out transparent objects (glass, water). We'll implement blending and order-dependent transparency, and maybe look at order-independent transparency.
 13. _Rendering Text, Part I: How Fonts & Bezier Curves Work_: When I started messing around with this, I was entirely nerdsniped by it — I would keep thinking, "This is so cool!" — so the goal of this chapter is to instill this same wonder. We'll write a font parser ([TTF file format](https://en.wikipedia.org/wiki/TrueType)), which will involve learning about Bezier curves as well. We'll also touch upon the typical modern text rendering pipeline here, which will be relevant in the next couple of chapters.
-14. _Rendering Text, Part II: Rendering On The GPU_: We'll figure out how to render bezier curves online to render text.
-15. _Rendering Text, Part III: Rendering Offline, Or How SDFs Work_: To render text offline, we'll make use of [signed distance functions](https://iquilezles.org/articles/distfunctions/) to encode the distance between pixels and curves into a fixed, packed font atlas.
-16. _Rendering UI, Part I: UI Components From Shapes_: Now that we have the ability to render text and graphics, we want to be able to render a proper UI. Let's make use of SDFs to render shapes, and construct UI primitives (e.g., buttons, text input, etc.).
-17. _Rendering UI, Part II: Layout Algorithms_: If you've ever used something like CSS flex/grid or some UI framework like [SwiftUI](https://developer.apple.com/swiftui/), you might wonder what's actually happening behind the scenes; how does auto layout work when we don't provide fixed dimensions? We'll figure that out by implementing a subset of the [flex algorithm](https://www.w3.org/TR/css-flexbox-1/#layout-algorithm).
-18. _Rendering UI, Part III: Text Measurements_: An extension to layout algorithms — we talk about laying out text given constraints — this is what libraries like [Pretext](https://github.com/chenglou/pretext) do — and write a simple function to do so. By the end of this we'll be able to render all the UI screens we could possibly want for our voxel engine.
-19. _Optimizations & Testing_
-20. _Bonus: Storing And Loading Maps_: i.e., let's load up some [Anvil maps](https://minecraft.wiki/w/Anvil_file_format) and see how they perform!
-21. _Bonus: Multiplayer_
-22. At this point, I want to introduce WebGPU, so we can go down to a lower-level API. Part of this is to understand why we want to jump down to that lower-level and provide some transition before the next part. I'm just not sure how to work this in though...
+14. _Rendering Text, Part II: Rendering Offline, Or How SDFs Work_: To render text offline, we'll make use of [signed distance functions](https://iquilezles.org/articles/distfunctions/) to encode the distance between pixels and curves into a fixed, packed font atlas.
+15. _Rendering UI, Part I: UI Components From Shapes_: Now that we have the ability to render text and graphics, we want to be able to render a proper UI. Let's make use of SDFs to render shapes, and construct UI primitives (e.g., buttons, text input, etc.).
+16. _Rendering UI, Part II: Layout Algorithms_: If you've ever used something like CSS flex/grid or some UI framework like [SwiftUI](https://developer.apple.com/swiftui/), you might wonder what's actually happening behind the scenes; how does auto layout work when we don't provide fixed dimensions? We'll figure that out by implementing a subset of the [flex algorithm](https://www.w3.org/TR/css-flexbox-1/#layout-algorithm).
+17. _Rendering UI, Part III: Text Measurements_: An extension to layout algorithms — we talk about laying out text given constraints — this is what libraries like [Pretext](https://github.com/chenglou/pretext) do — and write a simple function to do so. By the end of this we'll be able to render all the UI screens we could possibly want for our voxel engine.
+18. _Optimizations & Testing_
+19. _Bonus: Storing And Loading Maps_: i.e., let's load up some [Anvil maps](https://minecraft.wiki/w/Anvil_file_format) and see how they perform!
+20. _Bonus: Multiplayer_
+21. At this point, I want to introduce WebGPU, so we can go down to a lower-level API. Part of this is to understand why we want to jump down to that lower-level and provide some transition before the next part. I'm just not sure how to work this in though...
 
 So by the end of this part you can kind of begin to see, "Hey! This is how a video game works!" And if you're anything like me that would bring out a bit of the childhood wonder in you :)
 
@@ -120,122 +119,34 @@ But also to me, it's kind of hard to internalize how something works without act
 To see what exactly we're doing, here is a simplified diagram of NVIDIA's H100 GPU, generated from their [whitepaper](https://resources.nvidia.com/en-us-hopper-architecture/nvidia-h100-tensor-c) (page 19):
 
 <div class="demo">
-  <style>
-    #post article .demo .gpu {
-      display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
-    }
-
-    #post article .demo .gpu .bar {
-      font-weight: 600;
-    }
-
-    /* The scheduler is the one orange band, echoing NVIDIA's own diagrams. */
-    #post article .demo .gpu .sched {
-      background-color: #f6a623;
-      border-color: #d98c00;
-      color: #3a2600;
-    }
-
-    /* The die core: an HBM3 memory controller flanks each row of the compute
-       cluster, so the labels line up with the GPC banks and the L2 band. */
-    #post article .demo .gpu .cluster {
-      display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
-    }
-
-    #post article .demo .gpu .cluster .row {
-      gap: 0.4rem;
-      align-items: stretch;
-    }
-
-    #post article .demo .gpu .hbm {
-      flex: 0 0 3.6rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background-color: var(--border);
-      border: 1px solid var(--darker-border);
-      color: #666;
-      font-size: 0.7rem;
-      letter-spacing: 0.05em;
-      padding: 0.4rem 0.3rem;
-      text-align: center;
-    }
-
-    /* L2 is the wide blue band the two GPC banks share. */
-    #post article .demo .gpu .l2 {
-      flex: 1;
-      font-weight: 600;
-    }
-
-    /* Each GPC is a green compute unit textured with a lattice of SMs, drawn with
-       gradients so the density needs no extra markup. */
-    #post article .demo .gpu .gpc {
-      min-height: 5.5rem;
-      justify-content: flex-start;
-      gap: 0.4rem;
-      background-color: color-mix(in srgb, var(--theme) 32%, var(--foreground));
-      background-position: center 1.7rem;
-    }
-
-    #post article .demo .gpu .gpc > .title {
-      align-self: flex-start;
-      color: #2f4a12;
-      font-size: 0.75rem;
-    }
-
-    /* NVLink lanes: a strip of small green units along the bottom edge. */
-    #post article .demo .gpu .links {
-      display: grid;
-      grid-template-columns: repeat(18, 1fr);
-      gap: 0.25rem;
-    }
-
-    #post article .demo .gpu .links i {
-      background-color: color-mix(in srgb, var(--theme) 55%, var(--foreground));
-      border: 1px solid color-mix(in srgb, var(--theme) 70%, var(--foreground));
-      height: 1.1rem;
-    }
-
-    @media screen and (max-width: 576px) {
-      #post article .demo .gpu .row { flex-wrap: wrap; }
-      #post article .demo .gpu .gpc { min-width: 6rem; }
-      #post article .demo .gpu .links { grid-template-columns: repeat(9, 1fr); }
-    }
-
-  </style>
-  <div class="gpu">
-    <div class="layer hardware bar">PCI Express 5.0 Host Interface</div>
-    <div class="layer sched bar">GigaThread Engine with MIG Control</div>
-    <div class="cluster">
-      <div class="row">
-        <span class="hbm">HBM3</span>
-        <div class="box gpc"><span class="title">Graphics Processing Cluster</span></div>
-        <div class="box gpc"><span class="title">Graphics Processing Cluster</span></div>
-        <div class="box gpc"><span class="title">Graphics Processing Cluster</span></div>
-        <div class="box gpc"><span class="title">Graphics Processing Cluster</span></div>
-        <span class="hbm">HBM3</span>
-      </div>
-      <div class="row">
-        <span class="hbm">HBM3</span>
-        <div class="layer l2">L2 Cache</div>
-        <span class="hbm">HBM3</span>
-      </div>
-      <div class="row">
-        <span class="hbm">HBM3</span>
-        <div class="box gpc"><span class="title">Graphics Processing Cluster</span></div>
-        <div class="box gpc"><span class="title">Graphics Processing Cluster</span></div>
-        <div class="box gpc"><span class="title">Graphics Processing Cluster</span></div>
-        <div class="box gpc"><span class="title">Graphics Processing Cluster</span></div>
-        <span class="hbm">HBM3</span>
-      </div>
-    </div>
-    <div class="layer hardware bar">High-Speed Hub</div>
-    <p class="note">HBM3 = High Bandwidth Memory; High Speed Hub consists of NVIDIA's proprietary NVLink connectors.</p>
-  </div>
+  <pre class="ascii">
+┌───────────────────────────────────────────────────────────────────────────┐
+│                       PCI Express 5.0 Host Interface                      │
+└───────────────────────────────────────────────────────────────────────────┘
+&nbsp;
+<b class="d-orange fill">┌───────────────────────────────────────────────────────────────────────────┐</b>
+<b class="d-orange fill">│                     GigaThread Engine with MIG Control                    │</b>
+<b class="d-orange fill">└───────────────────────────────────────────────────────────────────────────┘</b>
+&nbsp;
+<b class="d-dim">┌────┐</b> <b class="d-green fill">┌─────────────┐</b> <b class="d-green fill">┌─────────────┐</b> <b class="d-green fill">┌─────────────┐</b> <b class="d-green fill">┌─────────────┐</b> <b class="d-dim">┌────┐</b>
+<b class="d-dim">│HBM3│</b> <b class="d-green fill">│     GPC     │</b> <b class="d-green fill">│     GPC     │</b> <b class="d-green fill">│     GPC     │</b> <b class="d-green fill">│     GPC     │</b> <b class="d-dim">│HBM3│</b>
+<b class="d-dim">│    │</b> <b class="d-green fill">│  ░░░░░░░░░  │</b> <b class="d-green fill">│  ░░░░░░░░░  │</b> <b class="d-green fill">│  ░░░░░░░░░  │</b> <b class="d-green fill">│  ░░░░░░░░░  │</b> <b class="d-dim">│    │</b>
+<b class="d-dim">│    │</b> <b class="d-green fill">│  ░░░░░░░░░  │</b> <b class="d-green fill">│  ░░░░░░░░░  │</b> <b class="d-green fill">│  ░░░░░░░░░  │</b> <b class="d-green fill">│  ░░░░░░░░░  │</b> <b class="d-dim">│    │</b>
+<b class="d-dim">└────┘</b> <b class="d-green fill">└─────────────┘</b> <b class="d-green fill">└─────────────┘</b> <b class="d-green fill">└─────────────┘</b> <b class="d-green fill">└─────────────┘</b> <b class="d-dim">└────┘</b>
+<b class="d-dim">┌────┐</b> <b class="d-blue fill">┌─────────────────────────────────────────────────────────────┐</b> <b class="d-dim">┌────┐</b>
+<b class="d-dim">│HBM3│</b> <b class="d-blue fill">│                           L2 Cache                          │</b> <b class="d-dim">│HBM3│</b>
+<b class="d-dim">└────┘</b> <b class="d-blue fill">└─────────────────────────────────────────────────────────────┘</b> <b class="d-dim">└────┘</b>
+<b class="d-dim">┌────┐</b> <b class="d-green fill">┌─────────────┐</b> <b class="d-green fill">┌─────────────┐</b> <b class="d-green fill">┌─────────────┐</b> <b class="d-green fill">┌─────────────┐</b> <b class="d-dim">┌────┐</b>
+<b class="d-dim">│HBM3│</b> <b class="d-green fill">│     GPC     │</b> <b class="d-green fill">│     GPC     │</b> <b class="d-green fill">│     GPC     │</b> <b class="d-green fill">│     GPC     │</b> <b class="d-dim">│HBM3│</b>
+<b class="d-dim">│    │</b> <b class="d-green fill">│  ░░░░░░░░░  │</b> <b class="d-green fill">│  ░░░░░░░░░  │</b> <b class="d-green fill">│  ░░░░░░░░░  │</b> <b class="d-green fill">│  ░░░░░░░░░  │</b> <b class="d-dim">│    │</b>
+<b class="d-dim">│    │</b> <b class="d-green fill">│  ░░░░░░░░░  │</b> <b class="d-green fill">│  ░░░░░░░░░  │</b> <b class="d-green fill">│  ░░░░░░░░░  │</b> <b class="d-green fill">│  ░░░░░░░░░  │</b> <b class="d-dim">│    │</b>
+<b class="d-dim">└────┘</b> <b class="d-green fill">└─────────────┘</b> <b class="d-green fill">└─────────────┘</b> <b class="d-green fill">└─────────────┘</b> <b class="d-green fill">└─────────────┘</b> <b class="d-dim">└────┘</b>
+&nbsp;
+┌───────────────────────────────────────────────────────────────────────────┐
+│                               High-Speed Hub                              │
+└───────────────────────────────────────────────────────────────────────────┘
+</pre>
+  <p class="note">HBM3 = High Bandwidth Memory; High Speed Hub consists of NVIDIA's proprietary NVLink connectors.</p>
 </div>
 
 We will be skipping all the external connectors (GigaThread Engine, HBM3, High Speed Hub, PCIe), leaving us to implement caching — straightforward — and an equivalent of the _Graphics Processing Cluster_.
@@ -247,269 +158,58 @@ In this case each cluster is made up of individual generalized _Streaming Multip
 As seen on page 21 of the same whitepaper:
 
 <div class="demo">
-  <style>
-    #post article .demo .sm {
-      display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
-    }
-
-    #post article .demo .sm > .title {
-      font-size: 1.1rem;
-      font-weight: 700;
-    }
-
-    /* The four processing blocks (SM sub-partitions) sit in a 2x2 grid. */
-    #post article .demo .sm .blocks {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.5rem;
-    }
-
-    #post article .demo .sm .block {
-      display: flex;
-      flex-direction: column;
-      gap: 0.3rem;
-      background-color: var(--foreground);
-      border: 1px solid var(--darker-border);
-      padding: 0.4rem;
-    }
-
-    #post article .demo .sm .block .layer {
-      font-size: 0.8rem;
-      padding: 0.35rem;
-    }
-
-    /* Coloured control bands inside each block. */
-    #post article .demo .sm .sched {
-      background-color: #f6a623;
-      border-color: #d98c00;
-      color: #3a2600;
-      font-weight: 600;
-    }
-
-    #post article .demo .sm .dispatch {
-      background-color: #c2611c;
-      border-color: #9d4d13;
-      color: #fff;
-    }
-
-    #post article .demo .sm .regfile {
-      background-color: #2f6c7c;
-      border-color: #234f5b;
-      color: #fff;
-      font-weight: 600;
-    }
-
-    /* Datapath: four lane columns (INT32 / FP32 / FP32 / FP64) beside the
-       tensor core. Each lane is striped with a gradient to imply its ~16 stacked
-       cores, so the density needs no extra markup. */
-    #post article .demo .sm .cores {
-      display: flex;
-      gap: 0.3rem;
-    }
-
-    #post article .demo .sm .lanes {
-      display: flex;
-      flex: 2.1;
-      gap: 0.2rem;
-    }
-
-    #post article .demo .sm .lane {
-      --cell: 1.1rem;
-      flex: 1;
-      min-height: 8rem;
-      display: flex;
-      flex-direction: column;
-      border: 1px solid rgba(0, 0, 0, 0.12);
-      color: #1f3a10;
-      font-size: 0.6rem;
-      font-weight: 700;
-      /* Cell lines start at the top and repeat every --cell, so the first line
-         lands right under the label and the label reads as the first cell. */
-      background-image: repeating-linear-gradient(
-        to bottom,
-        transparent 0 calc(var(--cell) - 1px),
-        rgba(255, 255, 255, 0.55) calc(var(--cell) - 1px) var(--cell)
-      );
-    }
-
-    #post article .demo .sm .lane > span {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: var(--cell);
-    }
-
-    #post article .demo .sm .lane.int {
-      background-color: color-mix(in srgb, var(--theme) 40%, var(--foreground));
-    }
-
-    #post article .demo .sm .lane.fp {
-      background-color: color-mix(in srgb, var(--theme) 24%, var(--foreground));
-    }
-
-    #post article .demo .sm .lane.fp64 {
-      flex: 1.3;
-      background-color: color-mix(in srgb, var(--theme) 58%, var(--foreground));
-      color: #12280a;
-    }
-
-    #post article .demo .sm .tensor {
-      flex: 1.15;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      background-color: color-mix(in srgb, var(--theme) 70%, var(--foreground));
-      border: 1px solid color-mix(in srgb, var(--theme) 80%, black);
-      color: #fff;
-      font-size: 0.8rem;
-      font-weight: 700;
-      line-height: 1.2;
-    }
-
-    #post article .demo .sm .tensor .gen {
-      font-size: 0.7rem;
-      font-weight: 400;
-    }
-
-    /* Load/store units and the special-function unit run along the bottom. */
-    #post article .demo .sm .ldst {
-      display: flex;
-      gap: 0.2rem;
-    }
-
-    #post article .demo .sm .ldst span {
-      flex: 1;
-      background-color: #8f4444;
-      border: 1px solid #6f3434;
-      color: #fff;
-      font-size: 0.6rem;
-      font-weight: 700;
-      padding: 0.3rem 0.1rem;
-      text-align: center;
-    }
-
-    #post article .demo .sm .ldst .sfu {
-      flex: 1.3;
-      background-color: #7a3a3a;
-    }
-
-    /* Shared, SM-wide units below the blocks. */
-    #post article .demo .sm .tma {
-      background-color: #7ab63f;
-      border-color: #5e9130;
-      color: #12280a;
-      font-weight: 700;
-    }
-
-    #post article .demo .sm .tex {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 0.4rem;
-    }
-
-    #post article .demo .sm .tex .box {
-      background-color: #2f56b0;
-      border-color: #22408a;
-      color: #fff;
-      font-weight: 600;
-    }
-
-    @media screen and (max-width: 576px) {
-      #post article .demo .sm .blocks { grid-template-columns: 1fr; }
-      #post article .demo .sm .tex { grid-template-columns: repeat(2, 1fr); }
-    }
-
-  </style>
-  <div class="sm">
-    <div class="layer cache">L1 Instruction Cache</div>
-    <div class="blocks">
-      <div class="block">
-        <div class="layer cache">L0 Instruction Cache</div>
-        <div class="layer sched">Warp Scheduler (32 thread/clk)</div>
-        <div class="layer dispatch">Dispatch Unit (32 thread/clk)</div>
-        <div class="layer regfile">Register File (16,384 x 32-bit)</div>
-        <div class="cores">
-          <div class="lanes">
-            <div class="lane int"><span>INT32</span></div>
-            <div class="lane fp"><span>FP32</span></div>
-            <div class="lane fp"><span>FP32</span></div>
-            <div class="lane fp64"><span>FP64</span></div>
-          </div>
-          <div class="tensor"><span>TENSOR CORE</span><span class="gen">4th Generation</span></div>
-        </div>
-        <div class="ldst">
-          <span>LD/ST</span><span>LD/ST</span><span>LD/ST</span><span>LD/ST</span><span>LD/ST</span><span>LD/ST</span><span>LD/ST</span><span>LD/ST</span><span class="sfu">SFU</span>
-        </div>
-      </div>
-      <div class="block">
-        <div class="layer cache">L0 Instruction Cache</div>
-        <div class="layer sched">Warp Scheduler (32 thread/clk)</div>
-        <div class="layer dispatch">Dispatch Unit (32 thread/clk)</div>
-        <div class="layer regfile">Register File (16,384 x 32-bit)</div>
-        <div class="cores">
-          <div class="lanes">
-            <div class="lane int"><span>INT32</span></div>
-            <div class="lane fp"><span>FP32</span></div>
-            <div class="lane fp"><span>FP32</span></div>
-            <div class="lane fp64"><span>FP64</span></div>
-          </div>
-          <div class="tensor"><span>TENSOR CORE</span><span class="gen">4th Generation</span></div>
-        </div>
-        <div class="ldst">
-          <span>LD/ST</span><span>LD/ST</span><span>LD/ST</span><span>LD/ST</span><span>LD/ST</span><span>LD/ST</span><span>LD/ST</span><span>LD/ST</span><span class="sfu">SFU</span>
-        </div>
-      </div>
-      <div class="block">
-        <div class="layer cache">L0 Instruction Cache</div>
-        <div class="layer sched">Warp Scheduler (32 thread/clk)</div>
-        <div class="layer dispatch">Dispatch Unit (32 thread/clk)</div>
-        <div class="layer regfile">Register File (16,384 x 32-bit)</div>
-        <div class="cores">
-          <div class="lanes">
-            <div class="lane int"><span>INT32</span></div>
-            <div class="lane fp"><span>FP32</span></div>
-            <div class="lane fp"><span>FP32</span></div>
-            <div class="lane fp64"><span>FP64</span></div>
-          </div>
-          <div class="tensor"><span>TENSOR CORE</span><span class="gen">4th Generation</span></div>
-        </div>
-        <div class="ldst">
-          <span>LD/ST</span><span>LD/ST</span><span>LD/ST</span><span>LD/ST</span><span>LD/ST</span><span>LD/ST</span><span>LD/ST</span><span>LD/ST</span><span class="sfu">SFU</span>
-        </div>
-      </div>
-      <div class="block">
-        <div class="layer cache">L0 Instruction Cache</div>
-        <div class="layer sched">Warp Scheduler (32 thread/clk)</div>
-        <div class="layer dispatch">Dispatch Unit (32 thread/clk)</div>
-        <div class="layer regfile">Register File (16,384 x 32-bit)</div>
-        <div class="cores">
-          <div class="lanes">
-            <div class="lane int"><span>INT32</span></div>
-            <div class="lane fp"><span>FP32</span></div>
-            <div class="lane fp"><span>FP32</span></div>
-            <div class="lane fp64"><span>FP64</span></div>
-          </div>
-          <div class="tensor"><span>TENSOR CORE</span><span class="gen">4th Generation</span></div>
-        </div>
-        <div class="ldst">
-          <span>LD/ST</span><span>LD/ST</span><span>LD/ST</span><span>LD/ST</span><span>LD/ST</span><span>LD/ST</span><span>LD/ST</span><span>LD/ST</span><span class="sfu">SFU</span>
-        </div>
-      </div>
-    </div>
-    <div class="layer tma">Tensor Memory Accelerator</div>
-    <div class="layer cache">256 KB L1 Data Cache / Shared Memory</div>
-    <div class="tex">
-      <div class="box">Tex</div>
-      <div class="box">Tex</div>
-      <div class="box">Tex</div>
-      <div class="box">Tex</div>
-    </div>
-    <p class="note">There is no term for the individual execution units here. <code>Tex</code> refers to the Texture Processing Cluster (TPC) I mentioned.</p>
-  </div>
+  <pre class="ascii">
+┌───────────────────────────────────────────────────────────────────────────────────┐
+│                                L1 Instruction Cache                               │
+└───────────────────────────────────────────────────────────────────────────────────┘
+&nbsp;
+┌───────────────────────────────────────┐   ┌───────────────────────────────────────┐
+│          L0 Instruction Cache         │   │          L0 Instruction Cache         │
+├───────────────────────────────────────┤   ├───────────────────────────────────────┤
+<b class="d-orange fill">│     Warp Scheduler (32 thread/clk)    │</b>   <b class="d-orange fill">│     Warp Scheduler (32 thread/clk)    │</b>
+├───────────────────────────────────────┤   ├───────────────────────────────────────┤
+<b class="d-rust">│     Dispatch Unit (32 thread/clk)     │</b>   <b class="d-rust">│     Dispatch Unit (32 thread/clk)     │</b>
+├───────────────────────────────────────┤   ├───────────────────────────────────────┤
+<b class="d-teal fill">│    Register File (16,384 × 32-bit)    │</b>   <b class="d-teal fill">│    Register File (16,384 × 32-bit)    │</b>
+├──────┬──────┬──────┬───────┬──────────┤   ├──────┬──────┬──────┬───────┬──────────┤
+│<b class="d-green">INT32 </b>│<b class="d-green"> FP32 </b>│<b class="d-green"> FP32 </b>│<b class="d-green">  FP64 </b>│<b class="d-green fill">          </b>│   │<b class="d-green">INT32 </b>│<b class="d-green"> FP32 </b>│<b class="d-green"> FP32 </b>│<b class="d-green">  FP64 </b>│<b class="d-green fill">          </b>│
+│<b class="d-green">┈┈┈┈┈┈</b>│<b class="d-green">┈┈┈┈┈┈</b>│<b class="d-green">┈┈┈┈┈┈</b>│<b class="d-green">┈┈┈┈┈┈┈</b>│<b class="d-green fill">  TENSOR  </b>│   │<b class="d-green">┈┈┈┈┈┈</b>│<b class="d-green">┈┈┈┈┈┈</b>│<b class="d-green">┈┈┈┈┈┈</b>│<b class="d-green">┈┈┈┈┈┈┈</b>│<b class="d-green fill">  TENSOR  </b>│
+│<b class="d-green">┈┈┈┈┈┈</b>│<b class="d-green">┈┈┈┈┈┈</b>│<b class="d-green">┈┈┈┈┈┈</b>│<b class="d-green">┈┈┈┈┈┈┈</b>│<b class="d-green fill">   CORE   </b>│   │<b class="d-green">┈┈┈┈┈┈</b>│<b class="d-green">┈┈┈┈┈┈</b>│<b class="d-green">┈┈┈┈┈┈</b>│<b class="d-green">┈┈┈┈┈┈┈</b>│<b class="d-green fill">   CORE   </b>│
+│<b class="d-green">┈┈┈┈┈┈</b>│<b class="d-green">┈┈┈┈┈┈</b>│<b class="d-green">┈┈┈┈┈┈</b>│<b class="d-green">┈┈┈┈┈┈┈</b>│<b class="d-green fill">          </b>│   │<b class="d-green">┈┈┈┈┈┈</b>│<b class="d-green">┈┈┈┈┈┈</b>│<b class="d-green">┈┈┈┈┈┈</b>│<b class="d-green">┈┈┈┈┈┈┈</b>│<b class="d-green fill">          </b>│
+├──────┴──────┴──────┴───────┴──┬───────┤   ├──────┴──────┴──────┴───────┴──┬───────┤
+│<b class="d-red">            LD/ST ×8           </b>│<b class="d-red">  SFU  </b>│   │<b class="d-red">            LD/ST ×8           </b>│<b class="d-red">  SFU  </b>│
+└───────────────────────────────┴───────┘   └───────────────────────────────┴───────┘
+&nbsp;
+┌───────────────────────────────────────┐   ┌───────────────────────────────────────┐
+│          L0 Instruction Cache         │   │          L0 Instruction Cache         │
+├───────────────────────────────────────┤   ├───────────────────────────────────────┤
+<b class="d-orange fill">│     Warp Scheduler (32 thread/clk)    │</b>   <b class="d-orange fill">│     Warp Scheduler (32 thread/clk)    │</b>
+├───────────────────────────────────────┤   ├───────────────────────────────────────┤
+<b class="d-rust">│     Dispatch Unit (32 thread/clk)     │</b>   <b class="d-rust">│     Dispatch Unit (32 thread/clk)     │</b>
+├───────────────────────────────────────┤   ├───────────────────────────────────────┤
+<b class="d-teal fill">│    Register File (16,384 × 32-bit)    │</b>   <b class="d-teal fill">│    Register File (16,384 × 32-bit)    │</b>
+├──────┬──────┬──────┬───────┬──────────┤   ├──────┬──────┬──────┬───────┬──────────┤
+│<b class="d-green">INT32 </b>│<b class="d-green"> FP32 </b>│<b class="d-green"> FP32 </b>│<b class="d-green">  FP64 </b>│<b class="d-green fill">          </b>│   │<b class="d-green">INT32 </b>│<b class="d-green"> FP32 </b>│<b class="d-green"> FP32 </b>│<b class="d-green">  FP64 </b>│<b class="d-green fill">          </b>│
+│<b class="d-green">┈┈┈┈┈┈</b>│<b class="d-green">┈┈┈┈┈┈</b>│<b class="d-green">┈┈┈┈┈┈</b>│<b class="d-green">┈┈┈┈┈┈┈</b>│<b class="d-green fill">  TENSOR  </b>│   │<b class="d-green">┈┈┈┈┈┈</b>│<b class="d-green">┈┈┈┈┈┈</b>│<b class="d-green">┈┈┈┈┈┈</b>│<b class="d-green">┈┈┈┈┈┈┈</b>│<b class="d-green fill">  TENSOR  </b>│
+│<b class="d-green">┈┈┈┈┈┈</b>│<b class="d-green">┈┈┈┈┈┈</b>│<b class="d-green">┈┈┈┈┈┈</b>│<b class="d-green">┈┈┈┈┈┈┈</b>│<b class="d-green fill">   CORE   </b>│   │<b class="d-green">┈┈┈┈┈┈</b>│<b class="d-green">┈┈┈┈┈┈</b>│<b class="d-green">┈┈┈┈┈┈</b>│<b class="d-green">┈┈┈┈┈┈┈</b>│<b class="d-green fill">   CORE   </b>│
+│<b class="d-green">┈┈┈┈┈┈</b>│<b class="d-green">┈┈┈┈┈┈</b>│<b class="d-green">┈┈┈┈┈┈</b>│<b class="d-green">┈┈┈┈┈┈┈</b>│<b class="d-green fill">          </b>│   │<b class="d-green">┈┈┈┈┈┈</b>│<b class="d-green">┈┈┈┈┈┈</b>│<b class="d-green">┈┈┈┈┈┈</b>│<b class="d-green">┈┈┈┈┈┈┈</b>│<b class="d-green fill">          </b>│
+├──────┴──────┴──────┴───────┴──┬───────┤   ├──────┴──────┴──────┴───────┴──┬───────┤
+│<b class="d-red">            LD/ST ×8           </b>│<b class="d-red">  SFU  </b>│   │<b class="d-red">            LD/ST ×8           </b>│<b class="d-red">  SFU  </b>│
+└───────────────────────────────┴───────┘   └───────────────────────────────┴───────┘
+&nbsp;
+<b class="d-green fill">┌───────────────────────────────────────────────────────────────────────────────────┐</b>
+<b class="d-green fill">│                             Tensor Memory Accelerator                             │</b>
+<b class="d-green fill">└───────────────────────────────────────────────────────────────────────────────────┘</b>
+&nbsp;
+┌───────────────────────────────────────────────────────────────────────────────────┐
+│                        256 KB L1 Data Cache / Shared Memory                       │
+└───────────────────────────────────────────────────────────────────────────────────┘
+&nbsp;
+<b class="d-blue fill">┌─────────────────┐</b>   <b class="d-blue fill">┌─────────────────┐</b>   <b class="d-blue fill">┌─────────────────┐</b>   <b class="d-blue fill">┌─────────────────┐</b>
+<b class="d-blue fill">│       Tex       │</b>   <b class="d-blue fill">│       Tex       │</b>   <b class="d-blue fill">│       Tex       │</b>   <b class="d-blue fill">│       Tex       │</b>
+<b class="d-blue fill">└─────────────────┘</b>   <b class="d-blue fill">└─────────────────┘</b>   <b class="d-blue fill">└─────────────────┘</b>   <b class="d-blue fill">└─────────────────┘</b>
+</pre>
+  <p class="note">There is no term for the individual execution units here. <code>Tex</code> refers to the Texture Processing Cluster (TPC) I mentioned.</p>
 </div>
 
 For our GPU, we'll most likely handle FP16 versus 32/64 bits, meaning that in the next part we might need to quantize the model, and will have three layers of instruction caching (same as these diagrams). Things we do on our toy GPU will be constrained by the fact that we have no memory past the highest memory cache. My thinking is that all the memory our kernels will need will fit into this highest memory cache, and our kernels' working set will also fit it in. The scope for implementing memory buses/interconnect is out of scope here, but we'll discuss how modern GPU communication works toward the end.
