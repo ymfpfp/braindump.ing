@@ -322,6 +322,9 @@ header #recent p:has(i) {
     grid-template-columns: minmax(0, var(--lg-aside-width)) minmax(0, var(--lg-main-width)) minmax(0, var(--lg-aside-width));
   }
 }
+#post code {
+  font-family: var(--monospace);
+}
 #post article,
 #post aside {
   font-size: 1.2rem;
@@ -415,7 +418,9 @@ header #recent p:has(i) {
 #post article pre > code span {
   background-color: transparent !important;
 }
-#post article h1, #post article h2 {
+#post article h1,
+#post article h2,
+#post article h3 {
   font-style: italic;
 }
 #post article table {
@@ -499,12 +504,20 @@ header #recent p:has(i) {
   text-wrap: balance;
   padding-right: 1rem;
 }
+#post article h3 {
+  font-size: 1.6rem;
+}
 #post article h2,
 #post article h3 {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 4px;
   margin-bottom: 0;
+}
+#post article h2 code,
+#post article h3 code {
+  font-size: 90%;
+  font-weight: inherit;
 }
 #post article h2 .link,
 #post article h3 .link {
@@ -574,6 +587,9 @@ header #recent p:has(i) {
 #toc a {
   color: var(--foreground);
   text-decoration: none;
+}
+#toc code {
+  font-size: calc(var(--aside-font-size) - 0.1rem);
 }
 #toc h2,
 #toc h3,

@@ -635,7 +635,10 @@ function injectOgImage(html, url) {
 const outDir = fileURLToPath(new URL("../out/", import.meta.url));
 
 loadEnv();
-const config = ogConfig();
+// `--no-og` skips the whole OpenGraph stage — rendering, uploads and the
+// prefix sweep — for builds that only want the highlighting/math pass.
+const noOg = process.argv.includes("--no-og");
+const config = noOg ? null : ogConfig();
 if (config) config.account = await accountId(config.token);
 
 const pages = htmlFiles(outDir).map((path) => ({

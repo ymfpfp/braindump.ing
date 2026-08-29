@@ -169,6 +169,10 @@ header {
       minmax(0, var(--lg-aside-width));
   }
 
+  code {
+    font-family: var(--monospace);
+  }
+
   article,
   aside {
     font-size: 1.2rem;
@@ -278,7 +282,8 @@ header {
     }
 
     h1,
-    h2 {
+    h2,
+    h3 {
       font-style: italic;
     }
 
@@ -393,12 +398,21 @@ header {
       padding-right: 1rem;
     }
 
+    h3 {
+      font-size: 1.6rem;
+    }
+
     h2,
     h3 {
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: 4px;
       margin-bottom: 0;
+
+      code {
+        font-size: 90%;
+        font-weight: inherit;
+      }
 
       .link {
         color: black;
@@ -495,6 +509,10 @@ header {
   p {
     // margin: 0 0 0.5rem 0;
     // margin-bottom: 0.5rem;
+  }
+
+  code {
+    font-size: calc(var(--aside-font-size) - 0.1rem);
   }
 
   h2,
