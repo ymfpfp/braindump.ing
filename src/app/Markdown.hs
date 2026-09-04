@@ -314,7 +314,13 @@ parseNested indent = do
   parseBlock
 
 parseInline :: Parser Inline 
-parseInline = parseLink <|> parseCode <|> parseBold <|> parseItalic <|> parsePlain
+parseInline = parseLink <|> parseCode <|> parseBold <|> parseItalic <|> parseEscape <|> parsePlain
+
+parseEscape :: Parser Inline
+parseEscape = do
+  _ <- match "\\"
+  c <- satisfy $ \_ -> True
+  return $ Plain [c]
 
 parsePlain :: Parser Inline
 parsePlain = do
@@ -369,6 +375,7 @@ isPlain c =
   c /= '*' &&
   c /= '_' &&
   c /= '`' &&
+  c /= '\\' &&
   c /= '\n'
 
 isDigit :: SatisfyFunction

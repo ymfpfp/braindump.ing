@@ -62,9 +62,31 @@ function highlightCode(html) {
 // line and reject empty/escaped (`\$`) delimiters to avoid swallowing prose.
 const INLINE_MATH = /(^|[^\\])\$([^$\n]+?)\$/g;
 
-// Render one TeX snippet to a CommonHTML fragment. A malformed snippet makes
-// `typeset` reject, so on any failure we fall back to the original `$...$` —
+// Display (block) math on its own line, delimited by double dollar signs, e.g.
+// `$$x^2$$`. The content may span several lines, hence `[\s\S]`.
+const DISPLAY_MATH = /\$\$([\s\S]+?)\$\$/g;
+
+// Render one TeX snippet to a CommonHTML fragment in *display* mode: `format`
+// is `TeX` (MathJax's display input) rather than `inline-TeX`, so the output is
+// a centered `MJXc-display` block instead of running text. A malformed snippet
+// makes `typeset` reject, so on any failure we fall back to the original brick —
 // a typo degrades to plain text rather than crashing the build.
+async function renderDisplay(tex) {
+  try {
+    const data = await mjAPI.typeset({
+      math: tex,
+      format: "TeX",
+      html: true,
+    });
+    return data.html ?? `$${tex}$$`;
+  } catch {
+    return `$${tex}$$`;
+  }
+}
+
+// Render one TeX snippet to a CommonHTML fragment in inline mode. A malformed
+// snippet makes `typeset` reject, so on any failure we fall back to the original
+// `$...$` — a typo degrades to plain text rather than crashing the build.
 async function renderInline(tex) {
   try {
     const data = await mjAPI.typeset({
@@ -78,6 +100,26 @@ async function renderInline(tex) {
   }
 }
 
+// Split an outside-code segment into display-math bricks and the prose between
+// them. Display math must be handled first (and excluded from inline scanning),
+// otherwise the inner `$...$` of a `$$...$$` brick would be swallowed by
+// INLINE_MATH.
+function splitDisplay(text) {
+  const segments = [];
+  let last = 0;
+  let m;
+  DISPLAY_MATH.lastIndex = 0;
+  while ((m = DISPLAY_MATH.exec(text))) {
+    if (m.index > last)
+      segments.push({ display: false, text: text.slice(last, m.index) });
+    segments.push({ display: true, tex: m[1] });
+    last = m.index + m[0].length;
+  }
+  if (last < text.length)
+    segments.push({ display: false, text: text.slice(last) });
+  return segments;
+}
+
 // Math may not occur inside code, so highlight first and only scan the segments
 // that fall outside any block (`<pre>...</pre>`) or inline (`<code>...</code>`)
 // code. A `$` inside inline code (e.g. `trim $ words`) is literal, not math.
@@ -85,33 +127,50 @@ async function transform(html) {
   const highlighted = highlightCode(html);
 
   // Collect every distinct TeX snippet outside the code blocks, render them
-  // concurrently, then substitute. Caching by snippet avoids re-typesetting
-  // repeats like `$n$`.
+  // concurrently, then substitute. Display (`$$...$$`) and inline (`$...$`)
+  // bricks are keyed separately so the two rendering modes never collide.
+  // Caching by snippet avoids re-typesetting repeats like `$n$`.
   const CODE = /<pre[\s\S]*?<\/pre>|<code[\s\S]*?<\/code>/g;
   const rendered = new Map();
   const collect = (segment) => {
-    let m;
-    INLINE_MATH.lastIndex = 0;
-    while ((m = INLINE_MATH.exec(segment))) rendered.set(m[2], null);
+    for (const { display, text, tex } of splitDisplay(segment)) {
+      if (display) {
+        rendered.set(`d:${tex}`, null);
+      } else {
+        let m;
+        INLINE_MATH.lastIndex = 0;
+        while ((m = INLINE_MATH.exec(text))) rendered.set(`i:${m[2]}`, null);
+      }
+    }
   };
   splitOutsidePre(highlighted, CODE).forEach(({ inside, text }) => {
     if (!inside) collect(text);
   });
   await Promise.all(
-    [...rendered.keys()].map(async (tex) =>
-      rendered.set(tex, await renderInline(tex)),
+    [...rendered.keys()].map(async (key) =>
+      rendered.set(
+        key,
+        key.startsWith("d:")
+          ? await renderDisplay(key.slice(2))
+          : await renderInline(key.slice(2)),
+      ),
     ),
   );
 
+  const render = (segment) =>
+    splitDisplay(segment)
+      .map(({ display, text, tex }) =>
+        display
+          ? rendered.get(`d:${tex}`)
+          : text.replace(
+              INLINE_MATH,
+              (_match, lead, tex) => `${lead}${rendered.get(`i:${tex}`)}`,
+            ),
+      )
+      .join("");
+
   return splitOutsidePre(highlighted, CODE)
-    .map(({ inside, text }) =>
-      inside
-        ? text
-        : text.replace(
-            INLINE_MATH,
-            (_match, lead, tex) => `${lead}${rendered.get(tex)}`,
-          ),
-    )
+    .map(({ inside, text }) => (inside ? text : render(text)))
     .join("");
 }
 

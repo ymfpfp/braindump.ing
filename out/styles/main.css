@@ -560,6 +560,7 @@ header #recent p:has(i) {
 #post article img {
   max-width: 100%;
   display: block;
+  margin-block: 2rem;
 }
 #post article li {
   margin: 0.5rem;
