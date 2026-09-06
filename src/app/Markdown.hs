@@ -69,7 +69,8 @@ blockToText block = case block of
   Blockquote blocks -> concatMap blockToText blocks
   OrderedList items -> concatMap documentToText items
   UnorderedList items -> concatMap documentToText items
-  Image (alt, _) -> alt
+  -- Images carry no prose, so they stay out of descriptions and summaries.
+  Image _ -> ""
   HorizontalBreak -> ""
   CodeBlock (_, code) -> code
   -- Raw markup carries no prose, so it stays out of descriptions and summaries.
@@ -320,7 +321,9 @@ parseEscape :: Parser Inline
 parseEscape = do
   _ <- match "\\"
   c <- satisfy $ \_ -> True
-  return $ Plain [c]
+  return $ Plain (if isPunctuation c then [c] else ['\\', c])
+  where
+  isPunctuation c = c `elem` ("!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~" :: String)
 
 parsePlain :: Parser Inline
 parsePlain = do
