@@ -15,9 +15,10 @@ data Block
   | Blockquote [Block]
   | OrderedList [[Block]]
   | UnorderedList [[Block]]
-  | Image (String, String)
+  | Image ([Inline], String)
   | HorizontalBreak
   | CodeBlock (String, String)
+  | DisplayMath String
   | HtmlBlock String
   | Fragment [Inline]
   deriving Show
@@ -27,6 +28,7 @@ data Inline
   | Italic [Inline]
   | Bold [Inline]
   | Code String
+  | Math String
   | Link (String, [Inline])
   | Span ([Inline], Props)
   deriving Show
@@ -54,10 +56,13 @@ blockToHtml block = case block of
   Blockquote blocks -> wrap "blockquote" $ concatMap blockToHtml blocks
   OrderedList items -> wrap "ol" $ concatMap (wrap "li" . documentToHtml) items
   UnorderedList items -> wrap "ul" $ concatMap (wrap "li" . documentToHtml) items
-  Image (alt, src) -> wrapWithProps "img" [("alt", alt), ("src", src)] ""
+  Image (alt, src) -> wrapWithProps "img" [("alt", concatMap inlineToText alt), ("src", src)] ""
   HorizontalBreak -> "<hr>"
   CodeBlock (language, code) ->
     wrap "pre" $ wrapWithProps "code" [("class", "language-" ++ language)] code
+  -- Math is handed to the post-processing pass verbatim: the `$$...$$` delimiters
+  -- are what `transform.js` scans for, and the TeX backslashes must stay intact.
+  DisplayMath tex -> "$$" ++ tex ++ "$$"
   -- The escape hatch for hand-written figures: emit the markup verbatim.
   HtmlBlock html -> html
   Fragment inline -> concatMap inlineToHtml inline
@@ -69,10 +74,13 @@ blockToText block = case block of
   Blockquote blocks -> concatMap blockToText blocks
   OrderedList items -> concatMap documentToText items
   UnorderedList items -> concatMap documentToText items
-  -- Images carry no prose, so they stay out of descriptions and summaries.
-  Image _ -> ""
+  -- Images contribute their alt text, which is what reads as prose in
+  -- descriptions and summaries.
+  Image (alt, _) -> concatMap inlineToText alt
   HorizontalBreak -> ""
   CodeBlock (_, code) -> code
+  -- Math contributes its source so descriptions and summaries still read it.
+  DisplayMath tex -> "$$" ++ tex ++ "$$"
   -- Raw markup carries no prose, so it stays out of descriptions and summaries.
   HtmlBlock _ -> ""
   Fragment inline -> concatMap inlineToText inline
@@ -83,6 +91,9 @@ inlineToHtml inline = case inline of
   Italic nested -> wrap "i" $ concatMap inlineToHtml nested
   Bold nested -> wrap "b" $ concatMap inlineToHtml nested
   Code code -> wrap "code" code
+  -- Same story as `DisplayMath`: emit the original `$...$` for `transform.js`,
+  -- leaving TeX escapes untouched.
+  Math tex -> "$" ++ tex ++ "$"
   Link (link, nested) -> 
     wrapWithProps "a" [("href", link)] $ 
       concatMap inlineToHtml nested
@@ -95,6 +106,7 @@ inlineToText inline = case inline of
   Bold nested -> concatMap inlineToText nested
   -- Ignore code.
   Code code -> code
+  Math tex -> tex
   Link (_, nested) -> concatMap inlineToText nested
   Span (nested, _) -> concatMap inlineToText nested
 
@@ -118,7 +130,7 @@ parseBlock = do
   -- Parse as many newlines first.
   _ <- many $ satisfy (\c -> c == '\n')
   parseOrderedList <|> parseUnorderedList <|> parseCodeBlock <|>
-    parseHtmlBlock <|> parseHorizontalBreak <|> parseImage <|> parseBlockquote <|>
+    parseHtmlBlock <|> parseHorizontalBreak <|> parseDisplayMath <|> parseImage <|> parseBlockquote <|>
     parseHeading <|> parseParagraph
 
 -- TODO: Need to figure on \n\n vs \n.
@@ -214,7 +226,7 @@ parseImage :: Parser Block
 parseImage = do
   _ <- match "!"
   _ <- match "["
-  alt <- manyUntil (match "]") (satisfy isPlain)
+  alt <- manyUntil (match "]") parseInline
   _ <- match "]"
 
   _ <- match "("
@@ -226,6 +238,17 @@ parseImage = do
 parseHorizontalBreak :: Parser Block
 -- `<$` vs. `<$>`: Here we're using `<$`, which ends up mapping the lhs on
 parseHorizontalBreak = HorizontalBreak <$ match "---"
+
+-- Display math: `$$...$$` on its own. The content may span lines and is taken
+-- verbatim (no escape handling), so `\{`, `\_` etc. survive for MathJax. The
+-- closing delimiter is found by `manyUntil`, which is non-greedy.
+parseDisplayMath :: Parser Block
+parseDisplayMath = do
+  _ <- match "$$"
+  tex <- manyUntil (match "$$") (satisfy $ \_ -> True)
+  if null tex then empty else do
+    _ <- match "$$"
+    return $ DisplayMath tex
 
 -- A raw HTML escape hatch for hand-written figures. It works like a fenced code
 -- block whose fence is an unindented `<div`...`</div>` pair: we open on a `<div`
@@ -315,7 +338,19 @@ parseNested indent = do
   parseBlock
 
 parseInline :: Parser Inline 
-parseInline = parseLink <|> parseCode <|> parseBold <|> parseItalic <|> parseEscape <|> parsePlain
+parseInline = parseLink <|> parseCode <|> parseBold <|> parseItalic <|> parseMath <|> parseEscape <|> parsePlain
+
+-- Inline math: `$...$` on the same line. Content is taken verbatim so TeX
+-- escapes (e.g. `\{`) survive, and it mirrors `transform.js`'s inline regex:
+-- no newlines and no literal `$` inside.
+parseMath :: Parser Inline
+parseMath = do
+  _ <- match "$"
+  tex <- manyUntil (match "$") (satisfy $ \c -> c /= '$' && c /= '\n')
+  -- A lone `$` (or an empty `$$`) isn't math; let `parsePlain` keep the literal.
+  if null tex then empty else do
+    _ <- match "$"
+    return $ Math tex
 
 parseEscape :: Parser Inline
 parseEscape = do
@@ -379,6 +414,7 @@ isPlain c =
   c /= '_' &&
   c /= '`' &&
   c /= '\\' &&
+  c /= '$' &&
   c /= '\n'
 
 isDigit :: SatisfyFunction

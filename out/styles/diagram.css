@@ -109,6 +109,10 @@ textarea {
   resize: none;
 }
 
+.font-monospace {
+  font-family: var(--monospace);
+}
+
 #post article .demo:has(pre.ascii) {
   padding-inline: 0;
 }

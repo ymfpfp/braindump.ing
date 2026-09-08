@@ -1,0 +1,78 @@
+<div>
+<svg aria-hidden="true" class="h-auto w-full" style="max-width: 1015px;" viewBox="0 0 1015 547">
+<g>
+<line stroke="#999" stroke-dasharray="4 3" stroke-width="1.5" x1="0" x2="1015" y1="103" y2="103"/>
+<line stroke="#2f56b0" stroke-width="1.5" x1="474" x2="218" y1="71" y2="135"/>
+<line stroke="#d98c00" stroke-width="1.5" x1="474" x2="730" y1="71" y2="135"/>
+<rect fill="#567a00" fill-opacity="0.12" height="53" stroke="#567a00" width="150" x="399" y="18" style=""/>
+<text class="font-monospace text-[13px]" dy="0.35em" fill="#567a00" font-family="ui-monospace, Menlo, monospace" font-size="20" text-anchor="middle" x="474" y="45">st0</text>
+</g>
+<g>
+<line stroke="#999" stroke-dasharray="4 3" stroke-width="1.5" x1="0" x2="1015" y1="210" y2="210"/>
+<line stroke="#2f56b0" stroke-width="1.5" x1="218" x2="218" y1="178" y2="242"/>
+<rect fill="#ffffff" height="43" stroke="#2f56b0" width="150" x="143" y="135"/>
+<text class="font-monospace text-[11px]" dy="0.35em" fill="#2f56b0" font-family="ui-monospace, Menlo, monospace" font-size="17" text-anchor="middle" x="218" y="157">I_1=0</text>
+<text class="font-monospace text-[11px]" dy="0.35em" fill="#2f56b0" font-family="ui-monospace, Menlo, monospace" font-size="17" text-anchor="start" x="307" y="157">I = 0</text>
+</g>
+<g>
+<line stroke="#d98c00" stroke-width="1.5" x1="730" x2="730" y1="178" y2="242"/>
+<rect fill="#ffffff" height="43" stroke="#d98c00" width="150" x="655" y="135"/>
+<text class="font-monospace text-[11px]" dy="0.35em" fill="#d98c00" font-family="ui-monospace, Menlo, monospace" font-size="17" text-anchor="middle" x="730" y="157">I_1=1</text>
+<text class="font-monospace text-[11px]" dy="0.35em" fill="#d98c00" font-family="ui-monospace, Menlo, monospace" font-size="17" text-anchor="start" x="819" y="157">I = 1</text>
+</g>
+<g>
+<line stroke="#999" stroke-dasharray="4 3" stroke-width="1.5" x1="0" x2="1015" y1="327" y2="327"/>
+<line stroke="#2f56b0" stroke-width="1.5" x1="218" x2="90" y1="295" y2="359"/>
+<line stroke="#2f56b0" stroke-width="1.5" x1="218" x2="346" y1="295" y2="359"/>
+<rect fill="#2f56b0" fill-opacity="0.12" height="53" stroke="#2f56b0" width="150" x="143" y="242"/>
+<text class="font-monospace text-[13px]" dy="0.35em" fill="#2f56b0" font-family="ui-monospace, Menlo, monospace" font-size="20" text-anchor="middle" x="218" y="269">st1</text>
+</g>
+<g>
+<line stroke="#d98c00" stroke-width="1.5" x1="730" x2="602" y1="295" y2="359"/>
+<line stroke="#d98c00" stroke-width="1.5" x1="730" x2="858" y1="295" y2="359"/>
+<rect fill="#d98c00" fill-opacity="0.12" height="53" stroke="#d98c00" width="150" x="655" y="242"/>
+<text class="font-monospace text-[13px]" dy="0.35em" fill="#d98c00" font-family="ui-monospace, Menlo, monospace" font-size="20" text-anchor="middle" x="730" y="269">st1</text>
+</g>
+<g>
+<line stroke="#999" stroke-dasharray="4 3" stroke-width="1.5" x1="0" x2="1015" y1="434" y2="434"/>
+<line stroke="#2f56b0" stroke-width="1.5" x1="90" x2="90" y1="402" y2="466"/>
+<rect fill="#ffffff" height="43" stroke="#2f56b0" width="150" x="15" y="359"/>
+<text class="font-monospace text-[11px]" dy="0.35em" fill="#2f56b0" font-family="ui-monospace, Menlo, monospace" font-size="17" text-anchor="middle" x="90" y="381">I_2=0</text>
+<text class="font-monospace text-[11px]" dy="0.35em" fill="#2f56b0" font-family="ui-monospace, Menlo, monospace" font-size="17" text-anchor="start" x="179" y="381">I = 00</text>
+</g>
+<g>
+<line stroke="#2f56b0" stroke-width="1.5" x1="346" x2="346" y1="402" y2="466"/>
+<rect fill="#ffffff" height="43" stroke="#2f56b0" width="150" x="271" y="359"/>
+<text class="font-monospace text-[11px]" dy="0.35em" fill="#2f56b0" font-family="ui-monospace, Menlo, monospace" font-size="17" text-anchor="middle" x="346" y="381">I_2=1</text>
+<text class="font-monospace text-[11px]" dy="0.35em" fill="#2f56b0" font-family="ui-monospace, Menlo, monospace" font-size="17" text-anchor="start" x="435" y="381">I = 01</text>
+</g>
+<g>
+<line stroke="#d98c00" stroke-width="1.5" x1="602" x2="602" y1="402" y2="466"/>
+<rect fill="#ffffff" height="43" stroke="#d98c00" width="150" x="527" y="359"/>
+<text class="font-monospace text-[11px]" dy="0.35em" fill="#d98c00" font-family="ui-monospace, Menlo, monospace" font-size="17" text-anchor="middle" x="602" y="381">I_2=0</text>
+<text class="font-monospace text-[11px]" dy="0.35em" fill="#d98c00" font-family="ui-monospace, Menlo, monospace" font-size="17" text-anchor="start" x="691" y="381">I = 10</text>
+</g>
+<g>
+<line stroke="#d98c00" stroke-width="1.5" x1="858" x2="858" y1="402" y2="466"/>
+<rect fill="#ffffff" height="43" stroke="#d98c00" width="150" x="783" y="359"/>
+<text class="font-monospace text-[11px]" dy="0.35em" fill="#d98c00" font-family="ui-monospace, Menlo, monospace" font-size="17" text-anchor="middle" x="858" y="381">I_2=1</text>
+<text class="font-monospace text-[11px]" dy="0.35em" fill="#d98c00" font-family="ui-monospace, Menlo, monospace" font-size="17" text-anchor="start" x="947" y="381">I = 11</text>
+</g>
+<g>
+<rect fill="#2f56b0" fill-opacity="0.12" height="53" stroke="#2f56b0" width="150" x="15" y="466"/>
+<text class="font-monospace text-[13px]" dy="0.35em" fill="#2f56b0" font-family="ui-monospace, Menlo, monospace" font-size="20" text-anchor="middle" x="90" y="493">st2</text>
+</g>
+<g>
+<rect fill="#2f56b0" fill-opacity="0.12" height="53" stroke="#2f56b0" width="150" x="271" y="466"/>
+<text class="font-monospace text-[13px]" dy="0.35em" fill="#2f56b0" font-family="ui-monospace, Menlo, monospace" font-size="20" text-anchor="middle" x="346" y="493">st2</text>
+</g>
+<g>
+<rect fill="#d98c00" fill-opacity="0.12" height="53" stroke="#d98c00" width="150" x="527" y="466"/>
+<text class="font-monospace text-[13px]" dy="0.35em" fill="#d98c00" font-family="ui-monospace, Menlo, monospace" font-size="20" text-anchor="middle" x="602" y="493">st2</text>
+</g>
+<g>
+<rect fill="#d98c00" fill-opacity="0.12" height="53" stroke="#d98c00" width="150" x="783" y="466"/>
+<text class="font-monospace text-[13px]" dy="0.35em" fill="#d98c00" font-family="ui-monospace, Menlo, monospace" font-size="20" text-anchor="middle" x="858" y="493">st2</text>
+</g>
+</svg>
+</div>

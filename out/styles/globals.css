@@ -108,3 +108,7 @@ input {
 textarea {
   resize: none;
 }
+
+.font-monospace {
+  font-family: var(--monospace);
+}

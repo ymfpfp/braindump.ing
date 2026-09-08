@@ -109,6 +109,10 @@ textarea {
   resize: none;
 }
 
+.font-monospace {
+  font-family: var(--monospace);
+}
+
 body,
 html {
   background-image: radial-gradient(circle, var(--darker-border) 2px, transparent 2px);
