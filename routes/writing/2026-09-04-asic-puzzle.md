@@ -20,27 +20,27 @@ Let's start with what we're given! First off, if we download the [repo](https://
 
 From the layout image, I got kind of hopeful because you can see that all the inputs we can toggle are single-bit. While we don't know that the functionality of each of these inputs necessarily match up to the respective label, let's just assume they're true, and take a gander at what this chip might do!
 
-* Whatever we are doing, there's some sort of sequential logic going on, since there's a clock! A sequential circuit can be represented by a [finite state machine](https://en.wikipedia.org/wiki/Finite-state_machine).
-* We only have one bit of serious input, `input`, which indicates we are **serially communicating** something.
-* Therefore, we can derive this as some of state machine where we have to input the right set of input bits — $\text{input} = \{0, 1\}[]$, to set `success` to high. You can call this whatever you want, e.g. it's a password checker or whatever. 
+- Whatever we are doing, there's some sort of sequential logic going on, since there's a clock! A sequential circuit can be represented by a [finite state machine](https://en.wikipedia.org/wiki/Finite-state_machine).
+- We only have one bit of serious input, `input`, which indicates we are **serially communicating** something.
+- Therefore, we can derive this as some of state machine where we have to input the right set of input bits — $\text{input} = \{0, 1\}[]$, to set `success` to high. You can call this whatever you want, e.g. it's a password checker or whatever.
 
 Other than this info, there isn't much more use we're going to get out of this picture, I think. But now our guess is that if this is a state machine, we can figure out how to get it to a more useful representation, namely:
 
 $$f(S) = \{S', O\}$$
 
-where $S$ is the set of all state and $O$ is the extra output. 
+where $S$ is the set of all state and $O$ is the extra output.
 
 Once we're there we can figure out how to brute force it, or maybe we'll be able to notice patterns on our own. **So that'll be our goal now — to simplify down to this state transition function.**
 
-Next up is the waveform (to open it, the puzzle mentioned [Surfer](https://surfer-project.org/), which is what I used to inspect the puzzle): 
+Next up is the waveform (to open it, the puzzle mentioned [Surfer](https://surfer-project.org/), which is what I used to inspect the puzzle):
 
 ![Waveform visualization](https://cdn.braindump.ing/writing/asic-puzzle/surfer.png)
 
 I'm not an expert at this so right now I'm not really deriving any useful info from this; maybe this could come in handy later though, since in a puzzle there is a purpose to everything! There are three Easter eggs (or ish) in the waveform file though — .vcd files are just text:
 
-* The date is funny, "Sat Dec 31 23:59:60 2016". At first I thought it was just peculiar because "2016", but apparently this is a leap second.
-* Version: "Leave no stone unturned! But for this file, consider looking at it in a waveform viewer instead."
-* The output, which at each step/cycle is one byte, produces the ASCII sequence "TRY AGAIN" twice.
+- The date is funny, "Sat Dec 31 23:59:60 2016". At first I thought it was just peculiar because "2016", but apparently this is a leap second.
+- Version: "Leave no stone unturned! But for this file, consider looking at it in a waveform viewer instead."
+- The output, which at each step/cycle is one byte, produces the ASCII sequence "TRY AGAIN" twice.
 
 ## Extracting the netlist
 
@@ -54,17 +54,17 @@ Essentially, it's a script you write to confirm that the layout matches a given 
 
 KLayout's documentation has a wonderful introduction to LVS [here](https://www.klayout.de/doc-qt5/manual/lvs_intro.html?curius=3118) that has an example of a LVS script. I won't go into too much more in detail here.
 
-Writing this LVS script by hand is tedious, so it's either write/prompt a program to do it, or find a program that already exists. Fortunately, [Efabless](https://www.tomshardware.com/tech-industry/semiconductors/efabless-shuts-down-fate-of-tiny-tapeout-chip-production-projects-unclear) has a LVS script that we can install inside KLayout by going to Tools > Manage Packages > searching ["Efabless\_sky130 1.0.7"](https://github.com/efabless/sky130_klayout_pdk/) and installing it.
+Writing this LVS script by hand is tedious, so it's either write/prompt a program to do it, or find a program that already exists. Fortunately, [Efabless](https://www.tomshardware.com/tech-industry/semiconductors/efabless-shuts-down-fate-of-tiny-tapeout-chip-production-projects-unclear) has a LVS script that we can install inside KLayout by going to Tools > Manage Packages > searching ["Efabless_sky130 1.0.7"](https://github.com/efabless/sky130_klayout_pdk/) and installing it.
 
 We can pull that script into our puzzle directory and then remove the parts that do the comparison. Alternatively, you can also find it [here](https://github.com/efabless/sky130_klayout_pdk/blob/main/tech/sky130/lvs/sky130.lvs) in their repo.
 
 Removing all the parts that we don't need:
 
 ```diff
---- original.lvs	
-+++ sky130.lvs	
+--- original.lvs
++++ sky130.lvs
 @@ -438,20 +438,6 @@
- 
+
  # Instantiate a reader using the new delegate
  reader = RBA::NetlistSpiceReader::new(SubcircuitModelsReader::new)
 
@@ -73,21 +73,21 @@ Removing all the parts that we don't need:
 -  schematic($schematic, reader)
 -  logger.info("Netlist file: #{$schematic}")
 -else
--  begin  
+-  begin
 -    schematic("#{source.cell_name}.cdl", reader)
 -    logger.info("Netlist file: #{source.cell_name}.cdl")
--  rescue 
+-  rescue
 -    puts "No schematic loaded , please add your netlist file"
 -    logger.error("No schematic loaded, please add your netlist file")
--  end 
+-  end
 -end
- 
+
  class BResistor < RBA::DeviceClassResistorWithBulk
    def initialize
 @@ -2637,9 +2623,6 @@
- 
+
  logger.info("Starting SKY130 LVS comparison section")
- 
+
 -#=== FLATTEN CELLS ===
 -align
 
@@ -97,7 +97,7 @@ Removing all the parts that we don't need:
 @@ -2666,31 +2649,11 @@
    netlist.purge_nets
  end
- 
+
 -#=== SCHEMATIC OPTIONS ===
 -if SCH_SIMPLE
 -  schematic.simplify
@@ -106,7 +106,7 @@ Removing all the parts that we don't need:
  #=== IGNORE EXTREME VALUES ===
  max_res(1e9)
  min_caps(1e-16)
- 
+
 -#=== COMPARE ===
 -compare
 
@@ -147,7 +147,7 @@ X$9 VGND \$1412 \$3588 \$3918 VPWR VPWR VGND sky130_fd_sc_hd__dfxtp_2
 X$10 VGND \$1363 \$3588 \$3994 VPWR VPWR VGND sky130_fd_sc_hd__dfxtp_2
 X$11 VGND \$1362 \$3066 \$4002 VPWR VPWR VGND sky130_fd_sc_hd__dfxtp_2
 X$12 VGND rst_n \$2651 \$3066 \$3069 VPWR VPWR VGND sky130_fd_sc_hd__dfstp_2
-	
+
 * ...
 ```
 
@@ -200,8 +200,8 @@ We can do this comparison with a tool like [Yosys](https://yosyshq.readthedocs.i
 
 [^2]: I only knew about this because I was messing around with Yosys to do the exact opposite of what this puzzle is about. See the [notes](#notes) at the end of this post.
 
-In this case, Verilog is such an HDL, so Yosys can parse it into an IR and then manipulate it. Along the way, it can simplify the IR and then compare it to another simplified IR. 
-To do this in Yosys, we simply send in a list of commands and a lot of IR manipulation magic happens on the backend. We can also send in a script like so: 
+In this case, Verilog is such an HDL, so Yosys can parse it into an IR and then manipulate it. Along the way, it can simplify the IR and then compare it to another simplified IR.
+To do this in Yosys, we simply send in a list of commands and a lot of IR manipulation magic happens on the backend. We can also send in a script like so:
 
 ```sh
 read_verilog 01_netlist.v
@@ -209,7 +209,7 @@ read_verilog produced_netlist.v
 
 # Process into Yosys' internal representation.
 proc
-# Simplify memory. 
+# Simplify memory.
 memory
 # Flatten so cells are directly nested.
 flatten
@@ -224,15 +224,15 @@ equiv_status -assert
 
 Feel free to refer to the [Yosys command reference](https://yosyshq.readthedocs.io/projects/yosys/en/latest/cmd-cmd.html?curius=3118) for more details.
 
-I got two errors while trying to run this. The bigger error is that both netlists make use of SkyWater cells, and Yosys has no idea what these functionally look like; in other words, we haven't mapped them yet. 
+I got two errors while trying to run this. The bigger error is that both netlists make use of SkyWater cells, and Yosys has no idea what these functionally look like; in other words, we haven't mapped them yet.
 
 ![Black box visualization of `sky130_fd_sc_hd__and2_2`](https://cdn.braindump.ing/writing/asic-puzzle/box.png)
 
-By default, Yosys is fine with treating these as a black box and ignoring them; `check -assert -mapped` asserts that that doesn't happen. 
+By default, Yosys is fine with treating these as a black box and ignoring them; `check -assert -mapped` asserts that that doesn't happen.
 
 So we have to import them. Fortunately, the [PDK](https://github.com/google/skywater-pdk/tree/7198cf647113f56041e02abf3eb623692820c5e1/libraries/sky130_fd_sc_hd) has the functional Verilog for each cell that we need. For example, the warmup puzzle has a Verilog module called `adder_demo`, and in there there's `sky130_fd_sc_hd__and2_2`[^3], which we can find in [`cells/and2/sky130_fd_sc_hd__and2.functional.v`](https://github.com/google/skywater-pdk-libs-sky130_fd_sc_hd/blob/ac7fb61f06e6470b94e8afdf7c25268f62fbd7b1/cells/and2/sky130_fd_sc_hd__and2.functional.v):
 
-[^3]: The `_2` at the end represents drive (how big the transistors are). 
+[^3]: The `_2` at the end represents drive (how big the transistors are).
 
 ```verilog
 `ifndef SKY130_FD_SC_HD__AND2_FUNCTIONAL_V
@@ -345,7 +345,7 @@ fi
 # PASS: 01_netlist.v and produced_netlist.v are functionally equivalent.
 ```
 
-Nice! Of course, in retrospect, I realized that I didn't have to do all this. I mean, if the cells are labeled correctly, they have to have the same functionality, right? But I think I was sort of confused as to what exactly a cell library was and doing this extra work helped clarify a lot. 
+Nice! Of course, in retrospect, I realized that I didn't have to do all this. I mean, if the cells are labeled correctly, they have to have the same functionality, right? But I think I was sort of confused as to what exactly a cell library was and doing this extra work helped clarify a lot.
 
 I also could have waited until fully decompiling down to logic gates to do this verification. Hindsight is 20/20, though, and we still need the functional Verilog representation of the cells to convert the whole thing down to logic gates and flip flops for state, so that's ok. In fact, before we move on to converting the whole thing down to logic gates, I'm just going to shove a bunch of `read_verilog` calls into a `cells_fn.ys`, derived from our original puzzle netlist `produced_netlist.v`:
 
@@ -414,7 +414,7 @@ proc
 opt
 
 flatten
-# Generic techmapping, convert to actual logical circuits. 
+# Generic techmapping, convert to actual logical circuits.
 techmap
 # Optimize again.
 opt
@@ -460,15 +460,15 @@ flatten logic
 write_verilog -noattr logic.v
 ```
 
-[`techmap`](https://yosyshq.readthedocs.io/projects/yosys/en/latest/cmd/index_passes_techmap.html#cmd-techmap) and [`abc`](https://yosyshq.readthedocs.io/projects/yosys/en/latest/using_yosys/synthesis/abc.html) are doing most of the heavy lifting here. The former does technology mapping, which does the actual, "Hey, how do we turn these cells into, like, actual gates and wires between the gates?" ABC is a "public-domain system for logic synthesis... of binary logic circuits" as stated in this [paper](https://link.springer.com/content/pdf/10.1007/978-3-642-14295-6_5.pdf?curius=3118), but all you and I really need to know is that it's a dependency Yosys relies on to provide simplification of logic circuits by making use of Boolean algebra. 
+[`techmap`](https://yosyshq.readthedocs.io/projects/yosys/en/latest/cmd/index_passes_techmap.html#cmd-techmap) and [`abc`](https://yosyshq.readthedocs.io/projects/yosys/en/latest/using_yosys/synthesis/abc.html) are doing most of the heavy lifting here. The former does technology mapping, which does the actual, "Hey, how do we turn these cells into, like, actual gates and wires between the gates?" ABC is a "public-domain system for logic synthesis... of binary logic circuits" as stated in this [paper](https://link.springer.com/content/pdf/10.1007/978-3-642-14295-6_5.pdf?curius=3118), but all you and I really need to know is that it's a dependency Yosys relies on to provide simplification of logic circuits by making use of Boolean algebra.
 
-(I talk a bit about this Boolean simplification stuff later when we get to ["Solvers come to the rescue"](#solvers-come-to-the-rescue) so keep reading!) 
+(I talk a bit about this Boolean simplification stuff later when we get to ["Solvers come to the rescue"](#solvers-come-to-the-rescue) so keep reading!)
 
 I also want to point out `stat` as a really useful command here for seeing what's going on. Here, we can see that after a lot of simplifying, the resulting puzzle only makes use of positive-edge triggered D flip flops, shortened to `DFF_P`. In fact, it tells us there are 92 of them, which means there's 92 bits of sequential state that are being tracked in between cycles, **which means that in addition to our input bits, these are the other bits of state in $S$ in our state transition function**. We now know:
 
 $$S = \{ \text{rst_n, enable, input, X[} 92 \text{]} \}$$
 
-Given this info, and how each bit in $X$ actually changes over each cycle, we can derive our state transition function :) 
+Given this info, and how each bit in $X$ actually changes over each cycle, we can derive our state transition function :)
 
 After running this and outputting the resulting representation to Verilog, we finally have the nuts and bolts of our logic in `logic.v`. This turns out to be roughly 6000 lines of statements that look like a mix of wires that get assigned Boolean expressions, plus a set of positive edge events. Like here, `O0` through `O7` represent the output wires:
 
@@ -503,9 +503,9 @@ module logic (I, clk, VGND, VPWR, enable, rst_n, success, O7, O6, O5, O4, O3, O2
 endmodule
 ```
 
-There are indeed 92 more `always` blocks so we're in a really, really good spot! We have gone from an unrevealing layout file to an actual set of changing inputs.  
+There are indeed 92 more `always` blocks so we're in a really, really good spot! We have gone from an unrevealing layout file to an actual set of changing inputs.
 
-Except there's 6000 lines of this to trace through 🫪 Let's try to construct that state transition function... 
+Except there's 6000 lines of this to trace through 🫪 Let's try to construct that state transition function...
 
 ## Getting a state transition function
 
@@ -572,9 +572,9 @@ def next_state(state, debug_signals=True, ops=None):
     return new_state, signals
 ```
 
-The transpiler handles the ordering of assigning values to wires — i.e., above, you can see that wire `X_408_Q` depends on `_1044_`, which depends on `X_173_X` and `rst_n`, which depends on... well, you get the idea. This makes sense! A circuit, bar any sequential magic, is just a graph! 
+The transpiler handles the ordering of assigning values to wires — i.e., above, you can see that wire `X_408_Q` depends on `_1044_`, which depends on `X_173_X` and `rst_n`, which depends on... well, you get the idea. This makes sense! A circuit, bar any sequential magic, is just a graph!
 
-The transpiler handles `always` blocks by dropping whatever is referenced inside the event and merging it with the rest of this assignment, thus fully getting rid of any flip flops, the "[n]ext state values" if you will. 
+The transpiler handles `always` blocks by dropping whatever is referenced inside the event and merging it with the rest of this assignment, thus fully getting rid of any flip flops, the "[n]ext state values" if you will.
 
 <img alt="Drop clk" src="https://cdn.braindump.ing/writing/asic-puzzle/drop.png" width="80%">
 
@@ -617,7 +617,7 @@ b1010100 %
 
 At timestamp 1255000, we set `%`, which maps to `O`, to binary 1010100, which is 84 (ASCII "T"), and `!`, which maps to `clk`, to high.
 
-Then we have a bunch of timestamps that look like this. So all we need to do is parse this, and then for each cycle/step, we can update our logic simulator and see if it produces the same state that the waveform dumps. With `run_validation("example_inputs.vcd")`: 
+Then we have a bunch of timestamps that look like this. So all we need to do is parse this, and then for each cycle/step, we can update our logic simulator and see if it produces the same state that the waveform dumps. With `run_validation("example_inputs.vcd")`:
 
 ```
 PASS: all 22 comparisons matched
@@ -635,7 +635,7 @@ Z3, from what I can understand, is a collection of solvers that can perform SMT.
 
 $$(\neg a \vee b) \wedge (a \vee \neg b \vee c) \wedge (\neg c)$$
 
-*How do we get this to produce true as an answer?* By relying on the fact that boolean equations are commutative, we can group parts into AND statements (as denoted by the parentheses), OR statements, and individual unary statements (NOT, or a variable by itself) to simplify the equation. From there, we can determine constraints (i.e., $c$ above must be false for $\neg c$ to evaluate to true), and then mess around with setting variables to true/false until we either reach SATisfied or UNSATisfied (impossible to satisfy, either literally or within time/memory constraints). The last part is the bread and butter of SAT solvers. 
+_How do we get this to produce true as an answer?_ By relying on the fact that boolean equations are commutative, we can group parts into AND statements (as denoted by the parentheses), OR statements, and individual unary statements (NOT, or a variable by itself) to simplify the equation. From there, we can determine constraints (i.e., $c$ above must be false for $\neg c$ to evaluate to true), and then mess around with setting variables to true/false until we either reach SATisfied or UNSATisfied (impossible to satisfy, either literally or within time/memory constraints). The last part is the bread and butter of SAT solvers.
 
 SMT, which is short for Satisfiability Modulo Theories, builds on top of this by figuring how to apply different kinds of solvers (different kinds of theories?) to solve problems that are similar to SAT problems, but for more general atoms. For example:
 
@@ -645,9 +645,9 @@ $$3x - y + 2z = 13$$
 
 $$2x + y + z = 10$$
 
-**SAT is useful because our state transition function just gave us a whole lot of Boolean logic to wade through. SMT is useful because we're trying to use all that Boolean logic to simulate and solve what is basically a systems of equations!** Specifically, the systems of equations takes place over *time*, as we'll see.
+**SAT is useful because our state transition function just gave us a whole lot of Boolean logic to wade through. SMT is useful because we're trying to use all that Boolean logic to simulate and solve what is basically a systems of equations!** Specifically, the systems of equations takes place over _time_, as we'll see.
 
-To understand how to use Z3, I found [*A Dumb Introduction to z3*](https://ar-ms.me/thoughts/a-gentle-introduction-to-z3/?curius=3118) to be useful. Even though it makes use of the Rust bindings, it's not too different from the Python bindings; for example, the above systems of equations solved with Z3:
+To understand how to use Z3, I found [_A Dumb Introduction to z3_](https://ar-ms.me/thoughts/a-gentle-introduction-to-z3/?curius=3118) to be useful. Even though it makes use of the Rust bindings, it's not too different from the Python bindings; for example, the above systems of equations solved with Z3:
 
 ```python
 import z3
@@ -668,7 +668,7 @@ print(model.eval(x * 2, model_completion=True))
 # 10
 ```
 
-So, how do we convert our environment to translate cleanly into Z3? We need to a) figure out how to represent our data in Z3, and b) how to structure this as a search problem so that Z3 can do its thing. 
+So, how do we convert our environment to translate cleanly into Z3? We need to a) figure out how to represent our data in Z3, and b) how to structure this as a search problem so that Z3 can do its thing.
 
 For a), we can represent the input bits as a [`BitVec`](https://microsoft.github.io/z3guide/docs/theories/Bitvectors/), which is basically a Z3 datatype that represents a fixed-length vector of bits, i.e. `z3.BitVec(symbol: str, length: int)`.
 
@@ -678,9 +678,9 @@ We have to stop at some point, so we can try traversing the tree up until a cert
 
 @components/asic-puzzle/tree.svg
 
-In the tree above, the outputs of `st2` rely on the outputs of `st1`, so that's an extra constraint that Z3 will be aware of. Also, remember that Z3 will represent this as a bunch of unsolved equations and *won't actually compute anything* until it makes sure the constraints don't have contradictions. So maybe it'll realize that, I dunno, `I1=1` actually doesn't work with the constraints and just cut off that branch entirely.
+In the tree above, the outputs of `st2` rely on the outputs of `st1`, so that's an extra constraint that Z3 will be aware of. Also, remember that Z3 will represent this as a bunch of unsolved equations and _won't actually compute anything_ until it makes sure the constraints don't have contradictions. So maybe it'll realize that, I dunno, `I1=1` actually doesn't work with the constraints and just cut off that branch entirely.
 
-So if we can model this tree, and then pass it off to Z3, we can cross our fingers and hope that it's able to solve it. Hopefully the code is more clarifying: 
+So if we can model this tree, and then pass it off to Z3, we can cross our fingers and hope that it's able to solve it. Hopefully the code is more clarifying:
 
 ```python
 from dataclasses import replace
@@ -722,18 +722,18 @@ def run(N):
         I_symbols.append(I_i)
 
         curr = replace(st, I=I_i, enable=z3.BitVecVal(1, 1), rst_n=z3.BitVecVal(1, 1))
-        # Derive the next set of "nodes", if you will. 
+        # Derive the next set of "nodes", if you will.
         next = logic.next_state(curr, debug_signals=False, ops=OPS)
         st_next = symbolic_state(f"st{i}")
 
-        # Add the constraints. They get propagated... 
+        # Add the constraints. They get propagated...
         for f in FIELDS:
             s.add(getattr(st_next, f.name) == getattr(next, f.name))
 
         st = st_next
         states.append(st)
 
-    # The constraint we care about is that one of these states has `success` as high. 
+    # The constraint we care about is that one of these states has `success` as high.
     s.add(z3.Or([getattr(states[i], "success") == 1 for i in range(1, N + 1)]))
 
     result = s.check()
@@ -872,10 +872,10 @@ That doesn't look like gibberish to me, yay :)
 
 Takeaways from this:
 
-* Having never done this before, I took a couple of extra steps that I probably didn't need to take. I tried to detail that in this post, at the expense of maybe being a bit confusing :)
-* I didn't talk much about the four parsers that were used to solve this puzzle because I didn't write them (and I don't think you want to read slop code), but as you can imagine they're really primitive, just lexer &rarr; parser produces an AST/IR &rarr; traverse through AST and produce final format. For parsing the waveform file, it's even simpler, just a direct pass to get a dictionary of timestamps and the map of variables changed during that timestamp.
-* LLMs are really good for discardable tasks like this where code quality doesn't matter (i.e. I don't read it, I just need to verify the output is what I would expect). What would take me a day or two is maybe about half an hour, and the LLMs can also write temp verification scripts to check its output. I did this puzzle with a shitty free model.
-	* My assumption is that you can probably also just give this puzzle directly to an agent and it'll be able to solve it. It's much more fun to have an idea of what's going on though.
-* Like I mentioned, I took some time before working on the puzzle to read about how all of this stuff worked, since I didn't actually understand anything that was going on. Specifically I read about how FPGAs work (I figured they were related), how transistors work, how ASICs work, etc. Context is useful for understanding how to solve problems.
-	* I also got nerd-sniped a bit before actually focusing on this puzzle, I admit... I wanted to understand what it would be like to go down the opposite lane so I started looking into that. (Still trying to replicate [OpenLane](https://openroad.org/) via individual steps. I even started writing a tiny Yosys 💀)
-* I want to learn more about how Z3 works internally. 
+- Having never done this before, I took a couple of extra steps that I probably didn't need to take. I tried to detail that in this post, at the expense of maybe being a bit confusing :)
+- I didn't talk much about the four parsers that were used to solve this puzzle because I didn't write them (and I don't think you want to read slop code), but as you can imagine they're really primitive, just lexer &rarr; parser produces an AST/IR &rarr; traverse through AST and produce final format. For parsing the waveform file, it's even simpler, just a direct pass to get a dictionary of timestamps and the map of variables changed during that timestamp.
+- LLMs are really good for discardable tasks like this where code quality doesn't matter (i.e. I don't read it, I just need to verify the output is what I would expect). What would take me a day or two is maybe about half an hour, and the LLMs can also write temp verification scripts to check its output. I did this puzzle with a shitty free model.
+  - My assumption is that you can probably also just give this puzzle directly to an agent and it'll be able to solve it. It's much more fun to have an idea of what's going on though.
+- Like I mentioned, I took some time before working on the puzzle to read about how all of this stuff worked, since I didn't actually understand anything that was going on. Specifically I read about how FPGAs work (I figured they were related), how transistors work, how ASICs work, etc. Context is useful for understanding how to solve problems.
+  - I also got nerd-sniped a bit before actually focusing on this puzzle, I admit... I wanted to understand what it would be like to go down the opposite lane so I started looking into that. (Still trying to replicate [OpenLane](https://openroad.org/) via individual steps. I even started writing a tiny Yosys 💀)
+- I want to learn more about how Z3 works internally.
