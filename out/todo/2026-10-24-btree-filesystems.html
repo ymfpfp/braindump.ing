@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta property="og:title" content="braindump.ing | A Tour Of Modern Filesystems, Part II: B-tree magic" />
+    <meta property="og:site_name" content="braindump.ing" />
+
+    <meta name="description" content="Carrying up from the previous postXFSIn the mid 1990s, Silicon Graphics wanted to design a highly scalable filesystem for high-performance computing. The features that XFS introduced deeply influenced ext4.So far, we've been storing inode data in a table, which really is just an array we can index into. This is..." />
+    <meta name="og:description" content="Carrying up from the previous postXFSIn the mid 1990s, Silicon Graphics wanted to design a highly scalable filesystem for high-performance computing. The features that XFS introduced deeply influenced ext4.So far, we've been storing inode data in a table, which really is just an array we can index into. This is..." />
+
+    <meta property="og:url" content="https://braindump.ing/2026-10-24-btree-filesystems.html" />
+    <link rel="canonical" href="https://braindump.ing/2026-10-24-btree-filesystems.html" />
+
+    <meta property="og:image" content="https://cdn.braindump.ing/writing/og/todo-2026-10-24-btree-filesystems.f49034e8.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+
+    <meta name="robots" content="index,follow" />
+    <meta name="googlebot" content="index,follow" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <!-- <meta name="twitter:site" content="" /> -->
+    <!-- <meta name="twitter:creator" content="" /> -->
+    <meta property="og:type" content="article" />
+    <meta property="og:locale" content="en_US" />
+
+    <meta name="theme-color" content="#690" />
+
+    <link rel="icon" type="image/png" href="/images/dumpster.png" />
+
+    <meta property="article:author:first_name" content="JC" />
+    <meta property="article:author:username" content="JC" />
+    <meta property="article:author:gender" content="female" />
+
+    <script
+      data-goatcounter="https://gc.braindump.ing/count"
+      async
+      src="//gc.braindump.ing/count.js"
+    ></script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": "A Tour Of Modern Filesystems, Part II: B-tree magic",
+        "abstract": "Carrying up from the previous postXFSIn the mid 1990s, Silicon Graphics wanted to design a highly scalable filesystem for high-performance computing. The features that XFS introduced deeply influenced ext4.So far, we've been storing inode data in a table, which really is just an array we can index into. This is...",
+        "image": [
+          {
+            "contentUrl": "https://cdn.braindump.ing/writing/og/todo-2026-10-24-btree-filesystems.f49034e8.png",
+            "width": "1200",
+            "height": "630"
+          }
+        ],
+        "author": [
+          {
+            "@type": "Person",
+            "name": "JC",
+            "url": "https://braindump.ing"
+          }
+        ]
+      }
+    </script>
+
+    <title>braindump.ing | A Tour Of Modern Filesystems, Part II: B-tree magic</title>
+    <link href="/styles/globals.css" rel="stylesheet" />
+    <link href="/styles/main.css" rel="stylesheet" />
+    <link href="/styles/prism.css" rel="stylesheet" />
+    <link href="/styles/mjx.css" rel="stylesheet" />
+    <script src="/scripts/email.js"></script>
+  </head>
+  <body>
+    <header>
+      <aside></aside>
+      <div>
+        <div id="logo">
+          <h1><a href="/">braindump.ing</a></h1>
+        </div>
+        <div id="recent">
+          <div>
+            <p><a href="/writing.html">Writing</a></p>
+            <p><a href="/aesthetics.html">Aesthetics</a></p>
+            <p>
+              <i
+                >No, I'm not a straightforwardly happy person, but I'd much
+                rather enjoy sunburning with you.</i
+              >
+              <!-- <i -->
+              <!--   >How fast the night changes: when will I be ready to just enjoy -->
+              <!--   sunburning with you?</i -->
+              <!-- > -->
+              <!-- <i>Wonder is the foundation of all philosophy, inquiry its progress, ignorance its end.</i> -->
+            </p>
+          </div>
+        </div>
+      </div>
+    </header>
+    <div id="post">
+      <aside></aside>
+      <article id="index"><p>Carrying up from the previous post</p><h2 id="xfs">XFS</h2><p>In the mid 1990s, <a href="https://en.wikipedia.org/wiki/Silicon_Graphics">Silicon Graphics</a> wanted to design a highly scalable filesystem for high-performance computing. The features that XFS introduced deeply influenced ext4.</p><p>So far, we've been storing inode data in a table, which really is just an array we can index into. This is fine, but observe that this is bad for some situations.</p><p>XFS doesn't actually stand for anything, it's the X Filesystem.</p><p>XFS is made up of individual <i>Allocation Groups</i>. These are similar to block groups in ext, but the difference is that these are much more self-contained: they can be thought of as their own filesystem. This means that you can perform operations on them in parallel, which, as you can imagine, scales really well!</p><p>todo(jc): This is a dropdown</p><hr><h3 id="btrees-and-variations">B-trees and variations</h3><p>First off, I assume you understand what a <a href="https://en.wikipedia.org/wiki/Tree_(abstract_data_type">tree</a> is; a B-tree is just a <i>self-balancing</i> tree where every node. Because it rebalances on every operation, it can maintain a worse-case <span class="mjx-chtml"><span class="mjx-math" aria-label="O(n)"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.519em; padding-bottom: 0.298em;">O</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.446em; padding-bottom: 0.593em;">(</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.225em; padding-bottom: 0.298em;">n</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.446em; padding-bottom: 0.593em;">)</span></span></span></span></span> time complexity over</p><p>Here's what a B-tree might look like:</p><p>todo(jc): Depiction.</p><p>XFS doesn't use B-trees; rather, it uses a variation of B-trees, called <b>B+ trees</b>. In B+ trees, data is only stored in the leaf nodes</p><hr><p>Sometimes actualizing what the data structures being used actually looks like in practice is useful, so let's take a look at the source code for the b+ trees XFS uses in <a href=""><code>fs/xfs/libxfs/xfs_btree.h</code></a>.</p><p>First off, there are two kinds of B+ trees in</p><hr><p>One of the strongest uses of B+ trees here is to</p><h2 id="btrfs">Btrfs</h2><p>Btrfs is short for B-tree FS, and is supposed to be a replacement filesystem for Ext:</p><blockquote><p>Despite the fact that Ext4 adds a number of compelling features to the filesystem, T'so [one of the main developers of Ext] doesn't see it as a major step forward. He dismisses it as a rehash of outdated "1970s technology" and describes it as a short-term solution. He believes that the way forward is Oracle's open source Btrfs filesystem...</p><p>— <a href="https://arstechnica.com/information-technology/2009/04/linux-collaboration-summit-the-kernel-panel/">Panelists ponder the kernel at Linux Collaboration Summit (2009)</a></p></blockquote><p>It comes with a slew of features that Ext doesn't have, notably:</p><ul><li><p>Checksumming</p></li><li><p>Snapshots</p></li><li><p>The concept of having a logical to physical addressing scheme is strongly worked in</p></li></ul><p>As you might expect, Btrfs is called what it's called because, well, it makes use of B-trees. In fact, every piece of metadata is encoded as a B-tree. Let's take a look at what that looks:</p><h3 id="what-the-btrees-look-like">What the B-trees look like</h3><p>Before we get started, I want to take a look at what the B-trees here look like. For that, let's look inside the source code, at <a href="https://github.com/torvalds/linux/blob/master/include/uapi/linux/btrfs_tree.h"><code>include/uapi/linux/btrfs_tree.h</code></a> within the Linux kernel source.</p><p>First off, each node is <b>fixed size</b>. The size is determined by the superblock.</p><p>Each node has a header, which looks like <a href="https://github.com/torvalds/linux/blob/2709dd5ae32f0828f386327c76bba9f39f63a1c6/include/uapi/linux/btrfs_tree.h#L488">this</a>:</p><pre class="language-c"><code class="language-c"><span class="token comment">/*
+ * Every tree block (leaf or node) starts with this header.
+ */</span>
+<span class="token keyword">struct</span> <span class="token class-name">btrfs_header</span> <span class="token punctuation">{</span>
+	<span class="token comment">/* These first four must match the super block */</span>
+	__u8 csum<span class="token punctuation">[</span>BTRFS_CSUM_SIZE<span class="token punctuation">]</span><span class="token punctuation">;</span>
+	<span class="token comment">/* FS specific uuid */</span>
+	__u8 fsid<span class="token punctuation">[</span>BTRFS_FSID_SIZE<span class="token punctuation">]</span><span class="token punctuation">;</span>
+	<span class="token comment">/* Which block this node is supposed to live in */</span>
+	__le64 bytenr<span class="token punctuation">;</span>
+	__le64 flags<span class="token punctuation">;</span>
+
+	<span class="token comment">/* Allowed to be different from the super from here on down */</span>
+	__u8 chunk_tree_uuid<span class="token punctuation">[</span>BTRFS_UUID_SIZE<span class="token punctuation">]</span><span class="token punctuation">;</span>
+	__le64 generation<span class="token punctuation">;</span>
+	__le64 owner<span class="token punctuation">;</span>
+	__le32 nritems<span class="token punctuation">;</span>
+	__u8 level<span class="token punctuation">;</span>
+<span class="token punctuation">}</span> <span class="token keyword">__attribute__</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>__packed__<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre><p>The notable field here is <code>nritems</code>, which is a integer value describing how many items are in this node. Since the node is fixed size, this is useful for tracking The shape of the items depend on whether the node is an internal node or a leaf node.</p><p>At this point, our tree looks something like this:</p><p>todo(jc): Depiction of a tree, all headers.</p><p>For internal nodes, each item looks like <a href="https://github.com/torvalds/linux/blob/4352b8aee98005853aa63f57d6377282de17a33f/include/uapi/linux/btrfs_tree.h#L573">this</a>:</p><pre class="language-c"><code class="language-c"><span class="token comment">/*
+ * All non-leaf blocks are nodes, they hold only keys and pointers to other
+ * blocks.
+ */</span>
+<span class="token keyword">struct</span> <span class="token class-name">btrfs_key_ptr</span> <span class="token punctuation">{</span>
+	<span class="token keyword">struct</span> <span class="token class-name">btrfs_disk_key</span> key<span class="token punctuation">;</span>
+	__le64 blockptr<span class="token punctuation">;</span>
+	__le64 generation<span class="token punctuation">;</span>
+<span class="token punctuation">}</span> <span class="token keyword">__attribute__</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>__packed__<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token keyword">struct</span> <span class="token class-name">btrfs_node</span> <span class="token punctuation">{</span>
+	<span class="token keyword">struct</span> <span class="token class-name">btrfs_header</span> header<span class="token punctuation">;</span>
+	<span class="token keyword">struct</span> <span class="token class-name">btrfs_key_ptr</span> ptrs<span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span> <span class="token keyword">__attribute__</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>__packed__<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre><p>As you can see, each internal node is made up of an array of <code>btrfs_key_ptr</code>. Each of these <code>btrfs_key_ptr</code> is roughly in the shape of (key, pointer to block).</p><p>This makes sense because most of our metadata will point to actual data, or even other metadata. The question is what the key, represented by <code>btrfs_disk_key</code>, looks like:</p><pre class="language-c"><code class="language-c"><span class="token comment">/*
+ * The key defines the order in the tree, and so it also defines (optimal)
+ * block layout.
+ *
+ * objectid corresponds to the inode number.
+ *
+ * type tells us things about the object, and is a kind of stream selector.
+ * so for a given inode, keys with type of 1 might refer to the inode data,
+ * type of 2 may point to file data in the btree and type == 3 may point to
+ * extents.
+ *
+ * offset is the starting byte offset for this key in the stream.
+ *
+ * btrfs_disk_key is in disk byte order.  struct btrfs_key is always
+ * in cpu native order.  Otherwise they are identical and their sizes
+ * should be the same (ie both packed)
+ */</span>
+<span class="token keyword">struct</span> <span class="token class-name">btrfs_disk_key</span> <span class="token punctuation">{</span>
+	__le64 objectid<span class="token punctuation">;</span>
+	__u8 type<span class="token punctuation">;</span>
+	__le64 offset<span class="token punctuation">;</span>
+<span class="token punctuation">}</span> <span class="token keyword">__attribute__</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>__packed__<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre><p>This is a very general-purpose key. First off, although <code>objectid</code> in the comments specifically refers to it as an inode number, it is a general-purpose numerical ID that has meaning based what <code>type</code> is. <code>type</code> is essentially an enum</p><p>So at this point we have something like</p><p>So eventually you get to the leaf nodes, which look like <a href="">this</a>:</p><pre class="language-c"><code class="language-c"><span class="token comment">/*
+ * A leaf is full of items. offset and size tell us where to find the item in
+ * the leaf (relative to the start of the data area)
+ */</span>
+<span class="token keyword">struct</span> <span class="token class-name">btrfs_item</span> <span class="token punctuation">{</span>
+	<span class="token keyword">struct</span> <span class="token class-name">btrfs_disk_key</span> key<span class="token punctuation">;</span>
+	__le32 offset<span class="token punctuation">;</span>
+	__le32 size<span class="token punctuation">;</span>
+<span class="token punctuation">}</span> <span class="token keyword">__attribute__</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>__packed__<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token comment">/*
+ * Leaves have an item area and a data area:
+ * [item0, item1....itemN] [free space] [dataN...data1, data0]
+ *
+ * The data is separate from the items to get the keys closer together during
+ * searches.
+ */</span>
+<span class="token keyword">struct</span> <span class="token class-name">btrfs_leaf</span> <span class="token punctuation">{</span>
+	<span class="token keyword">struct</span> <span class="token class-name">btrfs_header</span> header<span class="token punctuation">;</span>
+	<span class="token keyword">struct</span> <span class="token class-name">btrfs_item</span> items<span class="token punctuation">[</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span> <span class="token keyword">__attribute__</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>__packed__<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre><p>Leaf nodes are special in the sense that they</p><p>Overrall, you can understand the structure of a b-tree in Btrfs as looking something like this:</p><p>todo(jc): Depict this.</p><p>You might notice this feels more akin to a B+ tree than a</p><p>Ok — so this is a new data structure we're using! But how?</p><p>First, as you might have come to expect by now, there's a superblock. Once again you can find this definition inside <a href="https://github.com/torvalds/linux/blob/4352b8aee98005853aa63f57d6377282de17a33f/include/uapi/linux/btrfs_tree.h#L671"><code>include/uapi/linux/btrfs_tree.h</code></a>:</p><pre class="language-c"><code class="language-c"><span class="token comment">/*
+ * The super block basically lists the main trees of the FS.
+ */</span>
+<span class="token keyword">struct</span> <span class="token class-name">btrfs_super_block</span> <span class="token punctuation">{</span>
+	<span class="token comment">/* The first 4 fields must match struct btrfs_header */</span>
+	__u8 csum<span class="token punctuation">[</span>BTRFS_CSUM_SIZE<span class="token punctuation">]</span><span class="token punctuation">;</span>
+	<span class="token comment">/* FS specific UUID, visible to user */</span>
+	__u8 fsid<span class="token punctuation">[</span>BTRFS_FSID_SIZE<span class="token punctuation">]</span><span class="token punctuation">;</span>
+	<span class="token comment">/* This block number */</span>
+	__le64 bytenr<span class="token punctuation">;</span>
+	__le64 flags<span class="token punctuation">;</span>
+
+	<span class="token comment">/* Allowed to be different from the btrfs_header from here own down */</span>
+	__le64 magic<span class="token punctuation">;</span>
+	__le64 generation<span class="token punctuation">;</span>
+	__le64 root<span class="token punctuation">;</span>
+	__le64 chunk_root<span class="token punctuation">;</span>
+	__le64 log_root<span class="token punctuation">;</span>
+
+	<span class="token comment">/*
+	 * This member has never been utilized since the very beginning, thus
+	 * it's always 0 regardless of kernel version.  We always use
+	 * generation + 1 to read log tree root.  So here we mark it deprecated.
+	 */</span>
+	__le64 __unused_log_root_transid<span class="token punctuation">;</span>
+	__le64 total_bytes<span class="token punctuation">;</span>
+	__le64 bytes_used<span class="token punctuation">;</span>
+	__le64 root_dir_objectid<span class="token punctuation">;</span>
+	__le64 num_devices<span class="token punctuation">;</span>
+	__le32 sectorsize<span class="token punctuation">;</span>
+	__le32 nodesize<span class="token punctuation">;</span>
+	__le32 __unused_leafsize<span class="token punctuation">;</span>
+	__le32 stripesize<span class="token punctuation">;</span>
+	__le32 sys_chunk_array_size<span class="token punctuation">;</span>
+	__le64 chunk_root_generation<span class="token punctuation">;</span>
+	__le64 compat_flags<span class="token punctuation">;</span>
+	__le64 compat_ro_flags<span class="token punctuation">;</span>
+	__le64 incompat_flags<span class="token punctuation">;</span>
+	__le16 csum_type<span class="token punctuation">;</span>
+	__u8 root_level<span class="token punctuation">;</span>
+	__u8 chunk_root_level<span class="token punctuation">;</span>
+	__u8 log_root_level<span class="token punctuation">;</span>
+	<span class="token keyword">struct</span> <span class="token class-name">btrfs_dev_item</span> dev_item<span class="token punctuation">;</span>
+
+	<span class="token keyword">char</span> label<span class="token punctuation">[</span>BTRFS_LABEL_SIZE<span class="token punctuation">]</span><span class="token punctuation">;</span>
+
+	__le64 cache_generation<span class="token punctuation">;</span>
+	__le64 uuid_tree_generation<span class="token punctuation">;</span>
+
+	<span class="token comment">/* The UUID written into btree blocks */</span>
+	__u8 metadata_uuid<span class="token punctuation">[</span>BTRFS_FSID_SIZE<span class="token punctuation">]</span><span class="token punctuation">;</span>
+
+	__u64 nr_global_roots<span class="token punctuation">;</span>
+
+	<span class="token comment">/* Future expansion */</span>
+	__le64 reserved<span class="token punctuation">[</span><span class="token number">27</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+	__u8 sys_chunk_array<span class="token punctuation">[</span>BTRFS_SYSTEM_CHUNK_ARRAY_SIZE<span class="token punctuation">]</span><span class="token punctuation">;</span>
+	<span class="token keyword">struct</span> <span class="token class-name">btrfs_root_backup</span> super_roots<span class="token punctuation">[</span>BTRFS_NUM_BACKUP_ROOTS<span class="token punctuation">]</span><span class="token punctuation">;</span>
+
+	<span class="token comment">/* Padded to 4096 bytes */</span>
+	__u8 padding<span class="token punctuation">[</span><span class="token number">565</span><span class="token punctuation">]</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span> <span class="token keyword">__attribute__</span> <span class="token punctuation">(</span><span class="token punctuation">(</span>__packed__<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span></code></pre><p>Unlike Ext or XFS, we don't replicate our superblock within each "group" (whether that be block groups, or Allocation Groups). Instead, there are up to three of them, depending on the size of your disk at fixed addresses: 64KiB, 64MiB, and 256GiB.</p><p>But back to what's actually inside the superblock. As the helpful comment indicates, the superblock has pointers to the main B-trees the filesystem needs to bootstrap itself:</p><ul><li><p><code>root</code>, the root tree</p></li><li><p><code>chunk_root</code>, the chunk tree</p></li><li><p><code>log_root</code>, the log tree</p></li></ul><p>The root tree enapsulates a load of stuff, as we'll see, so we won't start there. We'll start with the chunk tree instead.</p><h3 id="chunk-tree">Chunk tree</h3><p>Earlier, I mentioned</p><p><b>How do we bootstrap to the chunk tree?</b> If every address encoded in Btrfs is a logical address, how do we get to the chunk tree, which tells us the actual physical address? Fortunately, it's encoded in the superblock in <code>sys_chunk_array</code>, which to refresh, looks like:</p><pre class="language-c"><code class="language-c">    <span class="token comment">// ...</span>
+	__le32 sys_chunk_array_size<span class="token punctuation">;</span>
+    <span class="token comment">// ...</span>
+	__u8 sys_chunk_array<span class="token punctuation">[</span>BTRFS_SYSTEM_CHUNK_ARRAY_SIZE<span class="token punctuation">]</span><span class="token punctuation">;</span>
+    <span class="token comment">// ...</span></code></pre><p><a href="https://github.com/torvalds/linux/blob/66498c75b4f8017f62d720d9b59675bdf3abce91/fs/btrfs/volumes.c#L7940"><code>btrfs_read_sys_array</code></a> in <code>fs/btrfs/volumes.c</code> tells us that <code>sys_chunk_array</code> looks roughly:</p><pre class="language-c"><code class="language-c"><span class="token keyword">int</span> <span class="token function">btrfs_read_sys_array</span><span class="token punctuation">(</span><span class="token keyword">struct</span> <span class="token class-name">btrfs_fs_info</span> <span class="token operator">*</span>fs_info<span class="token punctuation">)</span>
+<span class="token punctuation">{</span>
+    <span class="token comment">// ...</span>
+	<span class="token keyword">while</span> <span class="token punctuation">(</span>cur_offset <span class="token operator">&lt;</span> array_size<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+		<span class="token keyword">struct</span> <span class="token class-name">btrfs_chunk</span> <span class="token operator">*</span>chunk<span class="token punctuation">;</span>
+		<span class="token keyword">struct</span> <span class="token class-name">btrfs_disk_key</span> <span class="token operator">*</span>disk_key <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token keyword">struct</span> <span class="token class-name">btrfs_disk_key</span> <span class="token operator">*</span><span class="token punctuation">)</span>array_ptr<span class="token punctuation">;</span>
+		u32 len <span class="token operator">=</span> <span class="token keyword">sizeof</span><span class="token punctuation">(</span><span class="token operator">*</span>disk_key<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+		<span class="token comment">/*
+		 * The sys_chunk_array has been already verified at super block
+		 * read time.  Only do ASSERT()s for basic checks.
+		 */</span>
+		<span class="token function">ASSERT</span><span class="token punctuation">(</span>cur_offset <span class="token operator">+</span> len <span class="token operator">&lt;=</span> array_size<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+		<span class="token function">btrfs_disk_key_to_cpu</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>key<span class="token punctuation">,</span> disk_key<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+		array_ptr <span class="token operator">+=</span> len<span class="token punctuation">;</span>
+		sb_array_offset <span class="token operator">+=</span> len<span class="token punctuation">;</span>
+		cur_offset <span class="token operator">+=</span> len<span class="token punctuation">;</span>
+
+		<span class="token function">ASSERT</span><span class="token punctuation">(</span>key<span class="token punctuation">.</span>type <span class="token operator">==</span> BTRFS_CHUNK_ITEM_KEY<span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+		chunk <span class="token operator">=</span> <span class="token punctuation">(</span><span class="token keyword">struct</span> <span class="token class-name">btrfs_chunk</span> <span class="token operator">*</span><span class="token punctuation">)</span>sb_array_offset<span class="token punctuation">;</span>
+    <span class="token comment">// ...</span>
+<span class="token punctuation">}</span></code></pre><h3 id="root-tree">Root tree</h3><p>Now that we're all bootstrapped and ready to convert all t</p><h3 id="subvolumes">Subvolumes</h3><p>The root tree has</p><p>The default subvolume</p><p>Now let's look how the design of Btrfs</p><h3 id="snapshots-with-cow">Snapshots with CoW</h3><p>Using subvolumes means that we can now do snapshots really easily.</p><h3 id="device-tree">Device tree</h3><p>Another sort of first-class concept that</p><p>In my opinion, Btrfs feels very incomplete. It seems like it tries to straddle the line</p><h2 id="zfs">ZFS</h2><p>ZFS is rethinking all of these abstractions on a much bigger scale: quite literally, it stands for Zettabyte File System<sup>99</sup><span class="aside">(99) <span class="mjx-chtml"><span class="mjx-math" aria-label="10^{21}"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-msubsup"><span class="mjx-base"><span class="mjx-mn"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.372em; padding-bottom: 0.372em;">10</span></span></span><span class="mjx-sup" style="font-size: 70.7%; vertical-align: 0.591em; padding-left: 0px; padding-right: 0.071em;"><span class="mjx-texatom" style=""><span class="mjx-mrow"><span class="mjx-mn"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.372em; padding-bottom: 0.372em;">21</span></span></span></span></span></span></span></span></span> bits.</span>.</p><p>ZFS introduces a completely radical concept: a completely new storage model! Well, new in the sense that it asks, "How can we reinvent the way data goes from user program to device driver so that it's even more scalable than it currently is?"</p><p>A visual diagram of this difference:</p><p>todo(jc): Diagram</p><p>As you can see, rather than going through the traditional syscall &rarr; file system &rarr; volume manager</p><p>Since it bypasses parts of the traditional Linux filesystem stack, the source driver and associated kernel subsystem are open sourced in a different repository</p><h3 id="spa">SPA</h3><p>We'll start with the SPA, short for Storage Pool Allocator. This abstracts away all attached devices, in favor of exposing logical addresses.</p><p>The paper</p><p>How does one store data in the SPA?</p><h3 id="vdevs">vdevs</h3><p>vdevs stands for</p><h3 id="arc">ARC</h3><p>One of the cool things about ZFS is that it really does reinvent everything. It even bypasses the Linux page cache by introducing its own page cache! This</p><p>Let's take a look at the psuedocode the paper presents us with</p><p>What does ZFS add on top of this:</p><h3 id="zpl">ZPL</h3><p>Now we can finally make DMU objects seem like</p><h3 id="other-features">Other features</h3><p>ZFS has so many layers to it — it's roughly around 300k lines of code at time of writing this — so trying to discuss all the features. Here are some interesting ones, taken from the <a href="">wonderful talk</a> given by:</p><ul><li><p>RAID levels 1, 5, 6 suffe</p></li></ul><h2 id="lfs">LFS</h2><p>So far, we've been thinking about storing</p><p>What if we kept storing</p><h2 id="extra-fat">Extra: FAT</h2><p>Separate</p><h2 id="extra-apfs">Extra: APFS</h2><p>APFS was released around 2017 as the successor to Apple's</p><p>Now, for a fun detour, let's look at a FUSE implementation for this!</p><h2 id="so-what-filesystem">So, what filesystem?</h2><p>I'm not in a position to give you advice on that, but the answer is probably "It depends". The lesson to take away from all of this is that you can't do everything and you should find a reasonable compromise.</p><p>I think it's crazy how far you can take this idea that everything is a file. Object storage, which AWS pioneered, is basically a custom filesystem on a huge scale. Each node in AWS'</p><p>For a list of the papers, talks, etc. previewed while researching this, see <a href="">here</a>.</p><p>I didn't mean for this to end up being this long, but <a href="https://danluu.com/deconstruct-files/?curius=3118&trail=6ead794a">files are fraught with peril</a>! And so a lot of the work ends up trying to figure out ways to navigate that in conjunction with speed.</p><hr><p>Diagrams rendered with LLM assistance.</p>
+</article>
+      <aside>
+        <div id="toc"><h2><a href="#xfs">XFS</a></h2><h3><a href="#btrees-and-variations">B-trees and variations</a></h3><h2><a href="#btrfs">Btrfs</a></h2><h3><a href="#what-the-btrees-look-like">What the B-trees look like</a></h3><h3><a href="#chunk-tree">Chunk tree</a></h3><h3><a href="#root-tree">Root tree</a></h3><h3><a href="#subvolumes">Subvolumes</a></h3><h3><a href="#snapshots-with-cow">Snapshots with CoW</a></h3><h3><a href="#device-tree">Device tree</a></h3><h2><a href="#zfs">ZFS</a></h2><h3><a href="#spa">SPA</a></h3><h3><a href="#vdevs">vdevs</a></h3><h3><a href="#arc">ARC</a></h3><h3><a href="#zpl">ZPL</a></h3><h3><a href="#other-features">Other features</a></h3><h2><a href="#lfs">LFS</a></h2><h2><a href="#extra-fat">Extra: FAT</a></h2><h2><a href="#extra-apfs">Extra: APFS</a></h2><h2><a href="#so-what-filesystem">So, what filesystem?</a></h2></div>
+      </aside>
+    </div>
+    <div id="footer">
+      <aside></aside>
+      <footer>
+        <div class="subscribe">
+          <p>
+            Sometimes I write posts! This happens at infrequent intervals so if
+            you like what I write you can subscribe to get notified when I do.
+          </p>
+          <p>No spam.</p>
+          <form>
+            <input
+              required="true"
+              autocomplete="off"
+              name="email"
+              type="email"
+              placeholder="sven.wonders@braindump.ing"
+            />
+            <button type="submit">Subscribe</button>
+          </form>
+        </div>
+        <div>
+          <p>
+            Everything here is written by me, occasionally reviewed by an LLM,
+            and then rewritten by me if needed! You can find the source
+            <a href="https://github.com/ymfpfp/braindump.ing">here</a>.
+          </p>
+          <p>
+            Questions? Something wrong? Want someone to talk to? Feel free to
+            email at <i>jc[at]website</i>.
+          </p>
+        </div>
+      </footer>
+      <aside></aside>
+    </div>
+  </body>
+</html>

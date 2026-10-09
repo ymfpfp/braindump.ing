@@ -21,6 +21,7 @@
   "homepage": "https://github.com/ymfpfp/braindump.ing#readme",
   "devDependencies": {
     "prettier": "^3.7.4",
+    "sass": "^1.104.1",
     "typescript": "^6.0.3"
   },
   "dependencies": {
