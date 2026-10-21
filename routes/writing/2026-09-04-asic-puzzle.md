@@ -54,7 +54,7 @@ Essentially, it's a script you write to confirm that the layout matches a given 
 
 KLayout's documentation has a wonderful introduction to LVS [here](https://www.klayout.de/doc-qt5/manual/lvs_intro.html?curius=3118) that has an example of a LVS script. I won't go into too much more in detail here.
 
-Writing this LVS script by hand is tedious, so it's either write/prompt a program to do it, or find a program that already exists. Fortunately, [Efabless](https://www.tomshardware.com/tech-industry/semiconductors/efabless-shuts-down-fate-of-tiny-tapeout-chip-production-projects-unclear) has a LVS script that we can install inside KLayout by going to Tools > Manage Packages > searching ["Efabless_sky130 1.0.7"](https://github.com/efabless/sky130_klayout_pdk/) and installing it.
+Writing this LVS script by hand is tedious, so it's either write/prompt a program to do it, or find a program that already exists. Fortunately, [Efabless](https://www.tomshardware.com/tech-industry/semiconductors/efabless-shuts-down-fate-of-tiny-tapeout-chip-production-projects-unclear) has a LVS script that we can install inside KLayout by going to Tools > Manage Packages > searching [`Efabless_sky130 1.0.7`](https://github.com/efabless/sky130_klayout_pdk/) and installing it.
 
 We can pull that script into our puzzle directory and then remove the parts that do the comparison. Alternatively, you can also find it [here](https://github.com/efabless/sky130_klayout_pdk/blob/main/tech/sky130/lvs/sky130.lvs) in their repo.
 

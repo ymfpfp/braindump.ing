@@ -12,9 +12,9 @@
     <meta property="og:url" content="https://braindump.ing/2026-09-04-asic-puzzle.html" />
     <link rel="canonical" href="https://braindump.ing/2026-09-04-asic-puzzle.html" />
 
-    <meta property="og:image" content="https://cdn.braindump.ing/writing/og/writing-2026-09-04-asic-puzzle.43424ca1.png" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
+    <meta property="og:image" content="" />
+    <meta property="og:image:width" content="" />
+    <meta property="og:image:height" content="" />
 
     <meta name="robots" content="index,follow" />
     <meta name="googlebot" content="index,follow" />
@@ -45,9 +45,9 @@
         "abstract": "TL;DR[^1]: I treated the ASIC as a black-box state machine. I extracted its transistor-level layout into a SPICE netlist using KLayout/LVS, converted that into Verilog, simplified it with Yosys into 92 flip-flops plus combinational logic, and transpiled that into a Python state-transition function. I then encoded the transition function symbolically...",
         "image": [
           {
-            "contentUrl": "https://cdn.braindump.ing/writing/og/writing-2026-09-04-asic-puzzle.43424ca1.png",
-            "width": "1200",
-            "height": "630"
+            "contentUrl": "",
+            "width": "",
+            "height": ""
           }
         ],
         "author": [
@@ -100,90 +100,71 @@
     <p>2026-09-04</p>
     <h1>Solving the Jane Street ASIC reverse-engineering puzzle</h1>
   </div>
-  <p>TL;DR<sup>1</sup><span class="aside">(1) Written by AI, rest of post is written by me.</span>: I treated the ASIC as a black-box state machine. I extracted its transistor-level layout into a SPICE netlist using KLayout/LVS, converted that into Verilog, simplified it with Yosys into 92 flip-flops plus combinational logic, and transpiled that into a Python state-transition function. I then encoded the transition function symbolically in Z3 and asked it to find an input sequence that makes success go high. It found a 122-bit sequence which eventually causes the chip to output <code>(* TWO STARS *)</code>.</p><p>Jane Street recently published a <a href="https://blog.janestreet.com/can-you-reverse-engineer-an-asic/">puzzle</a> on reverse engineering an ASIC. Given a layout file:</p><img alt="GDS visualization" src="https://cdn.braindump.ing/writing/asic-puzzle/gds.png"></img><p>We need to figure out a) what this ASIC does, and b) try to coax a value out of it that doesn't read like gibberish.</p><p>Let's start with what we're given! First off, if we download the <a href="https://github.com/janestreet/asic-puzzle-2026">repo</a>, we can see that we're given the GDS file for this as shown above (which we can view with <a href="https://www.klayout.de/">KLayout</a> or the <a href="https://gds-viewer.tinytapeout.com/">TinyTapeout GDS viewer</a> as mentioned in the puzzle description); an image of the layout that is supposed to "hint at its functionality"; and an example waveform so we can see the relationship between the inputs and outputs.</p><img alt="Layout image" src="https://cdn.braindump.ing/writing/asic-puzzle/layout.png"></img><p>From the layout image, I got kind of hopeful because you can see that all the inputs we can toggle are single-bit. While we don't know that the functionality of each of these inputs necessarily match up to the respective label, let's just assume they're true, and take a gander at what this chip might do!</p><ul><li><p>Whatever we are doing, there's some sort of sequential logic going on, since there's a clock! A sequential circuit can be represented by a <a href="https://en.wikipedia.org/wiki/Finite-state_machine">finite state machine</a>.</p></li><li><p>We only have one bit of serious input, <code>input</code>, which indicates we are <b>serially communicating</b> something.</p></li><li><p>Therefore, we can derive this as some of state machine where we have to input the right set of input bits — <span class="mjx-chtml"><span class="mjx-math" aria-label="\text{input} = \{0, 1\}[]"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mtext"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.372em; padding-bottom: 0.519em;">input</span></span><span class="mjx-mo MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.077em; padding-bottom: 0.298em;">=</span></span><span class="mjx-mo MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.446em; padding-bottom: 0.593em;">{</span></span><span class="mjx-mn"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.372em; padding-bottom: 0.372em;">0</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.144em; padding-bottom: 0.519em;">,</span></span><span class="mjx-mn MJXc-space1"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.372em; padding-bottom: 0.372em;">1</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.446em; padding-bottom: 0.593em;">}</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.446em; padding-bottom: 0.593em;">[</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.446em; padding-bottom: 0.593em;">]</span></span></span></span></span>, to set <code>success</code> to high. You can call this whatever you want, e.g. it's a password checker or whatever.</p></li></ul><p>Other than this info, there isn't much more use we're going to get out of this picture, I think. But now our guess is that if this is a state machine, we can figure out how to get it to a more useful representation, namely:</p><span class="mjx-chtml MJXc-display" style="text-align: center;"><span class="mjx-math" aria-label="f(S) = \{S', O\}"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.519em; padding-bottom: 0.519em; padding-right: 0.06em;">f</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.446em; padding-bottom: 0.593em;">(</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.519em; padding-bottom: 0.298em; padding-right: 0.032em;">S</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.446em; padding-bottom: 0.593em;">)</span></span><span class="mjx-mo MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.077em; padding-bottom: 0.298em;">=</span></span><span class="mjx-mo MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.446em; padding-bottom: 0.593em;">{</span></span><span class="mjx-msup"><span class="mjx-base" style="margin-right: -0.032em;"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.519em; padding-bottom: 0.298em; padding-right: 0.032em;">S</span></span></span><span class="mjx-sup" style="font-size: 70.7%; vertical-align: 0.584em; padding-left: 0.13em; padding-right: 0.071em;"><span class="mjx-mo" style=""><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.298em; padding-bottom: 0.298em;">′</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.144em; padding-bottom: 0.519em;">,</span></span><span class="mjx-mi MJXc-space1"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.519em; padding-bottom: 0.298em;">O</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.446em; padding-bottom: 0.593em;">}</span></span></span></span></span><p>where <span class="mjx-chtml"><span class="mjx-math" aria-label="S"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.519em; padding-bottom: 0.298em; padding-right: 0.032em;">S</span></span></span></span></span> is the set of all state and <span class="mjx-chtml"><span class="mjx-math" aria-label="O"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.519em; padding-bottom: 0.298em;">O</span></span></span></span></span> is the extra output.</p><p>Once we're there we can figure out how to brute force it, or maybe we'll be able to notice patterns on our own. <b>So that'll be our goal now — to simplify down to this state transition function.</b></p><p>Next up is the waveform (to open it, the puzzle mentioned <a href="https://surfer-project.org/">Surfer</a>, which is what I used to inspect the puzzle):</p><img alt="Waveform visualization" src="https://cdn.braindump.ing/writing/asic-puzzle/surfer.png"></img><p>I'm not an expert at this so right now I'm not really deriving any useful info from this; maybe this could come in handy later though, since in a puzzle there is a purpose to everything! There are three Easter eggs (or ish) in the waveform file though — .vcd files are just text:</p><ul><li><p>The date is funny, "Sat Dec 31 23:59:60 2016". At first I thought it was just peculiar because "2016", but apparently this is a leap second.</p></li><li><p>Version: "Leave no stone unturned! But for this file, consider looking at it in a waveform viewer instead."</p></li><li><p>The output, which at each step/cycle is one byte, produces the ASCII sequence "TRY AGAIN" twice.</p></li></ul><h2 id="extracting-the-netlist">Extracting the netlist</h2><p>If we open the GDS file in KLayout or TinyTapeout — I used the latter for this part — we can see that the cell instances have their types intact:</p><img alt="Cell instances" src="https://cdn.braindump.ing/writing/asic-puzzle/cells.png"></img><p>This is really really good, because the <a href="https://github.com/google/skywater-pdk">SkyWater PDK</a> is open source and we can use it to derive a netlist from the GDS file. I wasn't really sure how to do this so I asked an LLM. It turns out there's this thing called LVS, which is short for Layout Vs. Schematic.</p><p>Essentially, it's a script you write to confirm that the layout matches a given schematic — a <a href="https://ibiblio.org/kuphaldt/socratic/model/mod_spice_semi.pdf?curius=3118">SPICE</a> netlist. Specifically, it converts a layout back to SPICE, then tries to make sure it's functionally equivalent to a SPICE netlist you pass in. This means that we can remove the latter step — we don't have a SPICE netlist on hand — and just use the script to derive the SPICE netlist.</p><p>KLayout's documentation has a wonderful introduction to LVS <a href="https://www.klayout.de/doc-qt5/manual/lvs_intro.html?curius=3118">here</a> that has an example of a LVS script. I won't go into too much more in detail here.</p><p>Writing this LVS script by hand is tedious, so it's either write/prompt a program to do it, or find a program that already exists. Fortunately, <a href="https://www.tomshardware.com/tech-industry/semiconductors/efabless-shuts-down-fate-of-tiny-tapeout-chip-production-projects-unclear">Efabless</a> has a LVS script that we can install inside KLayout by going to Tools > Manage Packages > searching ["Efabless<i>sky130 1.0.7"](https://github.com/efabless/sky130</i>klayout<i>pdk/) and installing it.
+  <p>TL;DR<sup>1</sup><span class="aside">(1) Written by AI, rest of post is written by me.</span>: I treated the ASIC as a black-box state machine. I extracted its transistor-level layout into a SPICE netlist using KLayout/LVS, converted that into Verilog, simplified it with Yosys into 92 flip-flops plus combinational logic, and transpiled that into a Python state-transition function. I then encoded the transition function symbolically in Z3 and asked it to find an input sequence that makes success go high. It found a 122-bit sequence which eventually causes the chip to output <code>(* TWO STARS *)</code>.</p><p>Jane Street recently published a <a href="https://blog.janestreet.com/can-you-reverse-engineer-an-asic/">puzzle</a> on reverse engineering an ASIC. Given a layout file:</p><img alt="GDS visualization" src="https://cdn.braindump.ing/writing/asic-puzzle/gds.png"></img><p>We need to figure out a) what this ASIC does, and b) try to coax a value out of it that doesn't read like gibberish.</p><p>Let's start with what we're given! First off, if we download the <a href="https://github.com/janestreet/asic-puzzle-2026">repo</a>, we can see that we're given the GDS file for this as shown above (which we can view with <a href="https://www.klayout.de/">KLayout</a> or the <a href="https://gds-viewer.tinytapeout.com/">TinyTapeout GDS viewer</a> as mentioned in the puzzle description); an image of the layout that is supposed to "hint at its functionality"; and an example waveform so we can see the relationship between the inputs and outputs.</p><img alt="Layout image" src="https://cdn.braindump.ing/writing/asic-puzzle/layout.png"></img><p>From the layout image, I got kind of hopeful because you can see that all the inputs we can toggle are single-bit. While we don't know that the functionality of each of these inputs necessarily match up to the respective label, let's just assume they're true, and take a gander at what this chip might do!</p><ul><li><p>Whatever we are doing, there's some sort of sequential logic going on, since there's a clock! A sequential circuit can be represented by a <a href="https://en.wikipedia.org/wiki/Finite-state_machine">finite state machine</a>.</p></li><li><p>We only have one bit of serious input, <code>input</code>, which indicates we are <b>serially communicating</b> something.</p></li><li><p>Therefore, we can derive this as some of state machine where we have to input the right set of input bits — <span class="mjx-chtml"><span class="mjx-math" aria-label="\text{input} = \{0, 1\}[]"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mtext"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.372em; padding-bottom: 0.519em;">input</span></span><span class="mjx-mo MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.077em; padding-bottom: 0.298em;">=</span></span><span class="mjx-mo MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.446em; padding-bottom: 0.593em;">{</span></span><span class="mjx-mn"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.372em; padding-bottom: 0.372em;">0</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.144em; padding-bottom: 0.519em;">,</span></span><span class="mjx-mn MJXc-space1"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.372em; padding-bottom: 0.372em;">1</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.446em; padding-bottom: 0.593em;">}</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.446em; padding-bottom: 0.593em;">[</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.446em; padding-bottom: 0.593em;">]</span></span></span></span></span>, to set <code>success</code> to high. You can call this whatever you want, e.g. it's a password checker or whatever.</p></li></ul><p>Other than this info, there isn't much more use we're going to get out of this picture, I think. But now our guess is that if this is a state machine, we can figure out how to get it to a more useful representation, namely:</p><span class="mjx-chtml MJXc-display" style="text-align: center;"><span class="mjx-math" aria-label="f(S) = \{S', O\}"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.519em; padding-bottom: 0.519em; padding-right: 0.06em;">f</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.446em; padding-bottom: 0.593em;">(</span></span><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.519em; padding-bottom: 0.298em; padding-right: 0.032em;">S</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.446em; padding-bottom: 0.593em;">)</span></span><span class="mjx-mo MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.077em; padding-bottom: 0.298em;">=</span></span><span class="mjx-mo MJXc-space3"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.446em; padding-bottom: 0.593em;">{</span></span><span class="mjx-msup"><span class="mjx-base" style="margin-right: -0.032em;"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.519em; padding-bottom: 0.298em; padding-right: 0.032em;">S</span></span></span><span class="mjx-sup" style="font-size: 70.7%; vertical-align: 0.584em; padding-left: 0.13em; padding-right: 0.071em;"><span class="mjx-mo" style=""><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.298em; padding-bottom: 0.298em;">′</span></span></span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="margin-top: -0.144em; padding-bottom: 0.519em;">,</span></span><span class="mjx-mi MJXc-space1"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.519em; padding-bottom: 0.298em;">O</span></span><span class="mjx-mo"><span class="mjx-char MJXc-TeX-main-R" style="padding-top: 0.446em; padding-bottom: 0.593em;">}</span></span></span></span></span><p>where <span class="mjx-chtml"><span class="mjx-math" aria-label="S"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.519em; padding-bottom: 0.298em; padding-right: 0.032em;">S</span></span></span></span></span> is the set of all state and <span class="mjx-chtml"><span class="mjx-math" aria-label="O"><span class="mjx-mrow" aria-hidden="true"><span class="mjx-mi"><span class="mjx-char MJXc-TeX-math-I" style="padding-top: 0.519em; padding-bottom: 0.298em;">O</span></span></span></span></span> is the extra output.</p><p>Once we're there we can figure out how to brute force it, or maybe we'll be able to notice patterns on our own. <b>So that'll be our goal now — to simplify down to this state transition function.</b></p><p>Next up is the waveform (to open it, the puzzle mentioned <a href="https://surfer-project.org/">Surfer</a>, which is what I used to inspect the puzzle):</p><img alt="Waveform visualization" src="https://cdn.braindump.ing/writing/asic-puzzle/surfer.png"></img><p>I'm not an expert at this so right now I'm not really deriving any useful info from this; maybe this could come in handy later though, since in a puzzle there is a purpose to everything! There are three Easter eggs (or ish) in the waveform file though — .vcd files are just text:</p><ul><li><p>The date is funny, "Sat Dec 31 23:59:60 2016". At first I thought it was just peculiar because "2016", but apparently this is a leap second.</p></li><li><p>Version: "Leave no stone unturned! But for this file, consider looking at it in a waveform viewer instead."</p></li><li><p>The output, which at each step/cycle is one byte, produces the ASCII sequence "TRY AGAIN" twice.</p></li></ul><h2 id="extracting-the-netlist">Extracting the netlist</h2><p>If we open the GDS file in KLayout or TinyTapeout — I used the latter for this part — we can see that the cell instances have their types intact:</p><img alt="Cell instances" src="https://cdn.braindump.ing/writing/asic-puzzle/cells.png"></img><p>This is really really good, because the <a href="https://github.com/google/skywater-pdk">SkyWater PDK</a> is open source and we can use it to derive a netlist from the GDS file. I wasn't really sure how to do this so I asked an LLM. It turns out there's this thing called LVS, which is short for Layout Vs. Schematic.</p><p>Essentially, it's a script you write to confirm that the layout matches a given schematic — a <a href="https://ibiblio.org/kuphaldt/socratic/model/mod_spice_semi.pdf?curius=3118">SPICE</a> netlist. Specifically, it converts a layout back to SPICE, then tries to make sure it's functionally equivalent to a SPICE netlist you pass in. This means that we can remove the latter step — we don't have a SPICE netlist on hand — and just use the script to derive the SPICE netlist.</p><p>KLayout's documentation has a wonderful introduction to LVS <a href="https://www.klayout.de/doc-qt5/manual/lvs_intro.html?curius=3118">here</a> that has an example of a LVS script. I won't go into too much more in detail here.</p><p>Writing this LVS script by hand is tedious, so it's either write/prompt a program to do it, or find a program that already exists. Fortunately, <a href="https://www.tomshardware.com/tech-industry/semiconductors/efabless-shuts-down-fate-of-tiny-tapeout-chip-production-projects-unclear">Efabless</a> has a LVS script that we can install inside KLayout by going to Tools > Manage Packages > searching <a href="https://github.com/efabless/sky130_klayout_pdk/"><code>Efabless_sky130 1.0.7</code></a> and installing it.</p><p>We can pull that script into our puzzle directory and then remove the parts that do the comparison. Alternatively, you can also find it <a href="https://github.com/efabless/sky130_klayout_pdk/blob/main/tech/sky130/lvs/sky130.lvs">here</a> in their repo.</p><p>Removing all the parts that we don't need:</p><pre class="language-diff"><code class="language-diff"><span class="token coord">--- original.lvs</span>
+<span class="token coord">+++ sky130.lvs</span>
+<span class="token coord">@@ -438,20 +438,6 @@</span>
 
-We can pull that script into our puzzle directory and then remove the parts that do the comparison. Alternatively, you can also find it <a href="https://github.com/efabless/sky130_klayout_pdk/blob/main/tech/sky130/lvs/sky130.lvs">here</a> in their repo.
+<span class="token unchanged"><span class="token prefix unchanged"> </span><span class="token line"># Instantiate a reader using the new delegate
+</span><span class="token prefix unchanged"> </span><span class="token line">reader = RBA::NetlistSpiceReader::new(SubcircuitModelsReader::new)
+</span></span>
+<span class="token deleted-sign deleted"><span class="token prefix deleted">-</span><span class="token line">#=== GET NETLIST ===
+</span><span class="token prefix deleted">-</span><span class="token line">if $schematic
+</span><span class="token prefix deleted">-</span><span class="token line">  schematic($schematic, reader)
+</span><span class="token prefix deleted">-</span><span class="token line">  logger.info("Netlist file: #{$schematic}")
+</span><span class="token prefix deleted">-</span><span class="token line">else
+</span><span class="token prefix deleted">-</span><span class="token line">  begin
+</span><span class="token prefix deleted">-</span><span class="token line">    schematic("#{source.cell_name}.cdl", reader)
+</span><span class="token prefix deleted">-</span><span class="token line">    logger.info("Netlist file: #{source.cell_name}.cdl")
+</span><span class="token prefix deleted">-</span><span class="token line">  rescue
+</span><span class="token prefix deleted">-</span><span class="token line">    puts "No schematic loaded , please add your netlist file"
+</span><span class="token prefix deleted">-</span><span class="token line">    logger.error("No schematic loaded, please add your netlist file")
+</span><span class="token prefix deleted">-</span><span class="token line">  end
+</span><span class="token prefix deleted">-</span><span class="token line">end
+</span></span>
+<span class="token unchanged"><span class="token prefix unchanged"> </span><span class="token line">class BResistor &lt; RBA::DeviceClassResistorWithBulk
+</span><span class="token prefix unchanged"> </span><span class="token line">  def initialize
+</span></span><span class="token coord">@@ -2637,9 +2623,6 @@</span>
 
-Removing all the parts that we don't need:
-
-<code></code><code>diff
---- original.lvs
-+++ sky130.lvs
-@@ -438,20 +438,6 @@
-
- # Instantiate a reader using the new delegate
- reader = RBA::NetlistSpiceReader::new(SubcircuitModelsReader::new)
-
--#=== GET NETLIST ===
--if $schematic
--  schematic($schematic, reader)
--  logger.info("Netlist file: #{$schematic}")
--else
--  begin
--    schematic("#{source.cell_name}.cdl", reader)
--    logger.info("Netlist file: #{source.cell_name}.cdl")
--  rescue
--    puts "No schematic loaded , please add your netlist file"
--    logger.error("No schematic loaded, please add your netlist file")
--  end
--end
-
- class BResistor < RBA::DeviceClassResistorWithBulk
-   def initialize
-@@ -2637,9 +2623,6 @@
-
- logger.info("Starting SKY130 LVS comparison section")
-
--#=== FLATTEN CELLS ===
--align
-
- #=== NETLIST EXTRACTION ===
- if SIMPLIFY
-   netlist.simplify
-@@ -2666,31 +2649,11 @@
-   netlist.purge_nets
- end
-
--#=== SCHEMATIC OPTIONS ===
--if SCH_SIMPLE
--  schematic.simplify
--end
-
- #=== IGNORE EXTREME VALUES ===
- max_res(1e9)
- min_caps(1e-16)
-
--#=== COMPARE ===
--compare
-
- #=== TIME ESTIMATE ===
- exec_end_time = Time.now
- run_time = exec_end_time - exec_start_time
- logger.info("LVS Total Run time %f seconds" % [run_time])
-
--#=== DECISION ===
--if ! compare
--  logger.info("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
--  logger.error("ERROR : Netlists don't match")
--  logger.info("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
--  exit(1)
--else
--  logger.info("==========================================")
--  logger.info("INFO : Congratulations! Netlists match.")
--  logger.info("==========================================")
--end
-</code><code></code>
-
-Then run that with:
-
-<code></code><code>
-klayout -b -r sky130.lvs -rd input=puzzle.gds -rd target_netlist=extracted.cir
-</code><code></code>
-
-This gives us a SPICE netlist at <code>extracted.cir</code>, wooh!
-
-<code></code><code>
-* Extracted by KLayout with SKY130 LVS runset on : 30/08/2026 16:36
+<span class="token unchanged"><span class="token prefix unchanged"> </span><span class="token line">logger.info("Starting SKY130 LVS comparison section")
+</span></span>
+<span class="token deleted-sign deleted"><span class="token prefix deleted">-</span><span class="token line">#=== FLATTEN CELLS ===
+</span><span class="token prefix deleted">-</span><span class="token line">align
+</span></span>
+<span class="token unchanged"><span class="token prefix unchanged"> </span><span class="token line">#=== NETLIST EXTRACTION ===
+</span><span class="token prefix unchanged"> </span><span class="token line">if SIMPLIFY
+</span><span class="token prefix unchanged"> </span><span class="token line">  netlist.simplify
+</span></span><span class="token coord">@@ -2666,31 +2649,11 @@</span>
+<span class="token unchanged"><span class="token prefix unchanged"> </span><span class="token line">  netlist.purge_nets
+</span><span class="token prefix unchanged"> </span><span class="token line">end
+</span></span>
+<span class="token deleted-sign deleted"><span class="token prefix deleted">-</span><span class="token line">#=== SCHEMATIC OPTIONS ===
+</span><span class="token prefix deleted">-</span><span class="token line">if SCH_SIMPLE
+</span><span class="token prefix deleted">-</span><span class="token line">  schematic.simplify
+</span><span class="token prefix deleted">-</span><span class="token line">end
+</span></span>
+<span class="token unchanged"><span class="token prefix unchanged"> </span><span class="token line">#=== IGNORE EXTREME VALUES ===
+</span><span class="token prefix unchanged"> </span><span class="token line">max_res(1e9)
+</span><span class="token prefix unchanged"> </span><span class="token line">min_caps(1e-16)
+</span></span>
+<span class="token deleted-sign deleted"><span class="token prefix deleted">-</span><span class="token line">#=== COMPARE ===
+</span><span class="token prefix deleted">-</span><span class="token line">compare
+</span></span>
+<span class="token unchanged"><span class="token prefix unchanged"> </span><span class="token line">#=== TIME ESTIMATE ===
+</span><span class="token prefix unchanged"> </span><span class="token line">exec_end_time = Time.now
+</span><span class="token prefix unchanged"> </span><span class="token line">run_time = exec_end_time - exec_start_time
+</span><span class="token prefix unchanged"> </span><span class="token line">logger.info("LVS Total Run time %f seconds" % [run_time])
+</span></span>
+<span class="token deleted-sign deleted"><span class="token prefix deleted">-</span><span class="token line">#=== DECISION ===
+</span><span class="token prefix deleted">-</span><span class="token line">if ! compare
+</span><span class="token prefix deleted">-</span><span class="token line">  logger.info("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+</span><span class="token prefix deleted">-</span><span class="token line">  logger.error("ERROR : Netlists don't match")
+</span><span class="token prefix deleted">-</span><span class="token line">  logger.info("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+</span><span class="token prefix deleted">-</span><span class="token line">  exit(1)
+</span><span class="token prefix deleted">-</span><span class="token line">else
+</span><span class="token prefix deleted">-</span><span class="token line">  logger.info("==========================================")
+</span><span class="token prefix deleted">-</span><span class="token line">  logger.info("INFO : Congratulations! Netlists match.")
+</span><span class="token prefix deleted">-</span><span class="token line">  logger.info("==========================================")
+</span><span class="token prefix deleted">-</span><span class="token line">end</span></span></code></pre><p>Then run that with:</p><pre class="language-"><code class="language-">klayout -b -r sky130.lvs -rd input=puzzle.gds -rd target_netlist=extracted.cir</code></pre><p>This gives us a SPICE netlist at <code>extracted.cir</code>, wooh!</p><pre class="language-"><code class="language-">* Extracted by KLayout with SKY130 LVS runset on : 30/08/2026 16:36
 
 .SUBCKT puzzle I O[0] O[1] O[2] O[3] O[4] O[5] O[6] O[7] VGND VPWR clk enable
 + rst_n success
@@ -194,126 +175,86 @@ X$10 VGND \$1363 \$3588 \$3994 VPWR VPWR VGND sky130_fd_sc_hd__dfxtp_2
 X$11 VGND \$1362 \$3066 \$4002 VPWR VPWR VGND sky130_fd_sc_hd__dfxtp_2
 X$12 VGND rst_n \$2651 \$3066 \$3069 VPWR VPWR VGND sky130_fd_sc_hd__dfstp_2
 
-* ...
-</code><code></code>
-
-## Transpiling to Verilog
-
-Ok, a new piece of info to work with! Too bad I don't actually have any idea of what these cells do logically; it's pretty difficult to parse in its current state. Our next steps therefore are to convert this to Verilog and then to simplify down the cells to their fundamental logic gates.
-
-For converting to Verilog, I had an agent write a SPICE to Verilog parser, which was relatively quick and self-contained. The <code>spice2verilog</code> my agent wrote in action produces something like this from the SPICE netlist:
-
-<code></code><code>verilog
-module puzzle (
-    I,
-    O,
-    VGND,
-    VPWR,
-    clk,
-    enable,
-    rst_n,
+* ...</code></pre><h2 id="transpiling-to-verilog">Transpiling to Verilog</h2><p>Ok, a new piece of info to work with! Too bad I don't actually have any idea of what these cells do logically; it's pretty difficult to parse in its current state. Our next steps therefore are to convert this to Verilog and then to simplify down the cells to their fundamental logic gates.</p><p>For converting to Verilog, I had an agent write a SPICE to Verilog parser, which was relatively quick and self-contained. The <code>spice2verilog</code> my agent wrote in action produces something like this from the SPICE netlist:</p><pre class="language-verilog"><code class="language-verilog"><span class="token keyword">module</span> puzzle <span class="token punctuation">(</span>
+    I<span class="token punctuation">,</span>
+    O<span class="token punctuation">,</span>
+    VGND<span class="token punctuation">,</span>
+    VPWR<span class="token punctuation">,</span>
+    clk<span class="token punctuation">,</span>
+    enable<span class="token punctuation">,</span>
+    rst_n<span class="token punctuation">,</span>
     success
-);
-    input I;
-    output [7:0] O;
-    inout VGND;
-    inout VPWR;
-    input clk;
-    input enable;
-    input rst_n;
-    output success;
-    wire _148;
-    wire _16;
-    wire _1;
-	// ...
-	sky130_fd_sc_hd__o21a_2 X_1 (.VPB(VPWR), .VGND(VGND), .VPWR(VPWR), .X(_148), .B1(_16), .A2(_1), .A1(_31), .sky130_gnd(VGND));
-    sky130_fd_sc_hd__and2_2 X_8 (.VPB(VPWR), .VPWR(VPWR), .A(_89), .B(_23), .X(_1), .VGND(VGND), .sky130_gnd(VGND));
-    sky130_fd_sc_hd__dfxtp_2 X_9 (.VGND(VGND), .Q(_1412), .CLK(_3588), .D(_3918), .VPWR(VPWR), .VPB(VPWR), .sky130_gnd(VGND));
-    sky130_fd_sc_hd__dfxtp_2 X_10 (.VGND(VGND), .Q(_1363), .CLK(_3588), .D(_3994), .VPWR(VPWR), .VPB(VPWR), .sky130_gnd(VGND));
-    sky130_fd_sc_hd__dfxtp_2 X_11 (.VGND(VGND), .Q(_1362), .CLK(_3066), .D(_4002), .VPWR(VPWR), .VPB(VPWR), .sky130_gnd(VGND));
-    sky130_fd_sc_hd__dfstp_2 X_12 (.VGND(VGND), .SET_B(rst_n), .Q(_2651), .CLK(_3066), .D(_3069), .VPWR(VPWR), .VPB(VPWR), .sky130_gnd(VGND));
-	// ...
-endmodule
-</code><code></code>
-
-## Verifying what we've got
-
-At this point in time, I thought it was a good time to verify that the two steps we've taken so far, GDS &rarr; SPICE &rarr; Verilog, actually produce output that we might expect. To do this, we would have to compare our generated Verilog netlist to a golden Verilog netlist.
-
-Of course, we don't have one of those. And this is where the warmup puzzle comes in handy, because it does have a golden Verilog netlist, <a href="https://github.com/janestreet/asic-puzzle-2026/blob/master/warmup/01_netlist.v"><code>warmup/01_netlist.v</code></a>!
-
-We can do this comparison with a tool like <a href="https://yosyshq.readthedocs.io/projects/yosys/en/latest/introduction.html">Yosys</a><sup>2</sup>. Yosys is "an open source framework for RTL synthesis". RTL stands for Register Transfer Level. Basically Yosys lets you do manipulations on HDLs that describe hardware as a list of instructions that manipulate and move data between registers, eventually synthesizing such an abstraction down to actual flip flops and logic circuits. Such HDLs are said to operate at the Register Transfer Level.
-
-<sup>2</sup>: I only knew about this because I was messing around with Yosys to do the exact opposite of what this puzzle is about. See the <a href="#notes">notes</a> at the end of this post.
-
-In this case, Verilog is such an HDL, so Yosys can parse it into an IR and then manipulate it. Along the way, it can simplify the IR and then compare it to another simplified IR.
-To do this in Yosys, we simply send in a list of commands and a lot of IR manipulation magic happens on the backend. We can also send in a script like so:
-
-<code></code><code>sh
-read_verilog 01_netlist.v
+<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">input</span> I<span class="token punctuation">;</span>
+    <span class="token keyword">output</span> <span class="token punctuation">[</span><span class="token number">7</span><span class="token punctuation">:</span><span class="token number">0</span><span class="token punctuation">]</span> O<span class="token punctuation">;</span>
+    <span class="token keyword">inout</span> VGND<span class="token punctuation">;</span>
+    <span class="token keyword">inout</span> VPWR<span class="token punctuation">;</span>
+    <span class="token keyword">input</span> clk<span class="token punctuation">;</span>
+    <span class="token keyword">input</span> enable<span class="token punctuation">;</span>
+    <span class="token keyword">input</span> rst_n<span class="token punctuation">;</span>
+    <span class="token keyword">output</span> success<span class="token punctuation">;</span>
+    <span class="token keyword">wire</span> <span class="token number">_148</span><span class="token punctuation">;</span>
+    <span class="token keyword">wire</span> <span class="token number">_16</span><span class="token punctuation">;</span>
+    <span class="token keyword">wire</span> <span class="token number">_1</span><span class="token punctuation">;</span>
+	<span class="token comment">// ...</span>
+	sky130_fd_sc_hd__o21a_2 X_1 <span class="token punctuation">(</span><span class="token punctuation">.</span><span class="token function">VPB</span><span class="token punctuation">(</span>VPWR<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token function">VGND</span><span class="token punctuation">(</span>VGND<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token function">VPWR</span><span class="token punctuation">(</span>VPWR<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token function">X</span><span class="token punctuation">(</span><span class="token number">_148</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token function">B1</span><span class="token punctuation">(</span><span class="token number">_16</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token function">A2</span><span class="token punctuation">(</span><span class="token number">_1</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token function">A1</span><span class="token punctuation">(</span><span class="token number">_31</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token function">sky130_gnd</span><span class="token punctuation">(</span>VGND<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    sky130_fd_sc_hd__and2_2 X_8 <span class="token punctuation">(</span><span class="token punctuation">.</span><span class="token function">VPB</span><span class="token punctuation">(</span>VPWR<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token function">VPWR</span><span class="token punctuation">(</span>VPWR<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token function">A</span><span class="token punctuation">(</span><span class="token number">_89</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token function">B</span><span class="token punctuation">(</span><span class="token number">_23</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token function">X</span><span class="token punctuation">(</span><span class="token number">_1</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token function">VGND</span><span class="token punctuation">(</span>VGND<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token function">sky130_gnd</span><span class="token punctuation">(</span>VGND<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    sky130_fd_sc_hd__dfxtp_2 X_9 <span class="token punctuation">(</span><span class="token punctuation">.</span><span class="token function">VGND</span><span class="token punctuation">(</span>VGND<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token function">Q</span><span class="token punctuation">(</span><span class="token number">_1412</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token function">CLK</span><span class="token punctuation">(</span><span class="token number">_3588</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token function">D</span><span class="token punctuation">(</span><span class="token number">_3918</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token function">VPWR</span><span class="token punctuation">(</span>VPWR<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token function">VPB</span><span class="token punctuation">(</span>VPWR<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token function">sky130_gnd</span><span class="token punctuation">(</span>VGND<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    sky130_fd_sc_hd__dfxtp_2 X_10 <span class="token punctuation">(</span><span class="token punctuation">.</span><span class="token function">VGND</span><span class="token punctuation">(</span>VGND<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token function">Q</span><span class="token punctuation">(</span><span class="token number">_1363</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token function">CLK</span><span class="token punctuation">(</span><span class="token number">_3588</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token function">D</span><span class="token punctuation">(</span><span class="token number">_3994</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token function">VPWR</span><span class="token punctuation">(</span>VPWR<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token function">VPB</span><span class="token punctuation">(</span>VPWR<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token function">sky130_gnd</span><span class="token punctuation">(</span>VGND<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    sky130_fd_sc_hd__dfxtp_2 X_11 <span class="token punctuation">(</span><span class="token punctuation">.</span><span class="token function">VGND</span><span class="token punctuation">(</span>VGND<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token function">Q</span><span class="token punctuation">(</span><span class="token number">_1362</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token function">CLK</span><span class="token punctuation">(</span><span class="token number">_3066</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token function">D</span><span class="token punctuation">(</span><span class="token number">_4002</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token function">VPWR</span><span class="token punctuation">(</span>VPWR<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token function">VPB</span><span class="token punctuation">(</span>VPWR<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token function">sky130_gnd</span><span class="token punctuation">(</span>VGND<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    sky130_fd_sc_hd__dfstp_2 X_12 <span class="token punctuation">(</span><span class="token punctuation">.</span><span class="token function">VGND</span><span class="token punctuation">(</span>VGND<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token function">SET_B</span><span class="token punctuation">(</span>rst_n<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token function">Q</span><span class="token punctuation">(</span><span class="token number">_2651</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token function">CLK</span><span class="token punctuation">(</span><span class="token number">_3066</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token function">D</span><span class="token punctuation">(</span><span class="token number">_3069</span><span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token function">VPWR</span><span class="token punctuation">(</span>VPWR<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token function">VPB</span><span class="token punctuation">(</span>VPWR<span class="token punctuation">)</span><span class="token punctuation">,</span> <span class="token punctuation">.</span><span class="token function">sky130_gnd</span><span class="token punctuation">(</span>VGND<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+	<span class="token comment">// ...</span>
+<span class="token keyword">endmodule</span></code></pre><h2 id="verifying-what-weve-got">Verifying what we've got</h2><p>At this point in time, I thought it was a good time to verify that the two steps we've taken so far, GDS &rarr; SPICE &rarr; Verilog, actually produce output that we might expect. To do this, we would have to compare our generated Verilog netlist to a golden Verilog netlist.</p><p>Of course, we don't have one of those. And this is where the warmup puzzle comes in handy, because it does have a golden Verilog netlist, <a href="https://github.com/janestreet/asic-puzzle-2026/blob/master/warmup/01_netlist.v"><code>warmup/01_netlist.v</code></a>!</p><p>We can do this comparison with a tool like <a href="https://yosyshq.readthedocs.io/projects/yosys/en/latest/introduction.html">Yosys</a><sup>2</sup><span class="aside">(2) I only knew about this because I was messing around with Yosys to do the exact opposite of what this puzzle is about. See the <a href="#notes">notes</a> at the end of this post.</span>. Yosys is "an open source framework for RTL synthesis". RTL stands for Register Transfer Level. Basically Yosys lets you do manipulations on HDLs that describe hardware as a list of instructions that manipulate and move data between registers, eventually synthesizing such an abstraction down to actual flip flops and logic circuits. Such HDLs are said to operate at the Register Transfer Level.</p><p>In this case, Verilog is such an HDL, so Yosys can parse it into an IR and then manipulate it. Along the way, it can simplify the IR and then compare it to another simplified IR.</p><p>To do this in Yosys, we simply send in a list of commands and a lot of IR manipulation magic happens on the backend. We can also send in a script like so:</p><pre class="language-sh"><code class="language-sh">read_verilog 01_netlist.v
 read_verilog produced_netlist.v
 
-# Process into Yosys' internal representation.
+<span class="token comment"># Process into Yosys' internal representation.</span>
 proc
-# Simplify memory.
+<span class="token comment"># Simplify memory.</span>
 memory
-# Flatten so cells are directly nested.
+<span class="token comment"># Flatten so cells are directly nested.</span>
 flatten
-# Optimize, this is made of the smaller Yosys optimize commands.
+<span class="token comment"># Optimize, this is made of the smaller Yosys optimize commands.</span>
 opt
 
-check -assert -mapped
+check <span class="token parameter variable">-assert</span> <span class="token parameter variable">-mapped</span>
 equiv_make adder_demo produced equiv
 equiv_simple equiv
-equiv_status -assert
-</code><code></code>
+equiv_status <span class="token parameter variable">-assert</span></code></pre><p>Feel free to refer to the <a href="https://yosyshq.readthedocs.io/projects/yosys/en/latest/cmd-cmd.html?curius=3118">Yosys command reference</a> for more details.</p><p>I got two errors while trying to run this. The bigger error is that both netlists make use of SkyWater cells, and Yosys has no idea what these functionally look like; in other words, we haven't mapped them yet.</p><img alt="Black box visualization of sky130_fd_sc_hd__and2_2" src="https://cdn.braindump.ing/writing/asic-puzzle/box.png"></img><p>By default, Yosys is fine with treating these as a black box and ignoring them; <code>check -assert -mapped</code> asserts that that doesn't happen.</p><p>So we have to import them. Fortunately, the <a href="https://github.com/google/skywater-pdk/tree/7198cf647113f56041e02abf3eb623692820c5e1/libraries/sky130_fd_sc_hd">PDK</a> has the functional Verilog for each cell that we need. For example, the warmup puzzle has a Verilog module called <code>adder_demo</code>, and in there there's <code>sky130_fd_sc_hd__and2_2</code><sup>3</sup><span class="aside">(3) The <code>_2</code> at the end represents drive (how big the transistors are).</span>, which we can find in <a href="https://github.com/google/skywater-pdk-libs-sky130_fd_sc_hd/blob/ac7fb61f06e6470b94e8afdf7c25268f62fbd7b1/cells/and2/sky130_fd_sc_hd__and2.functional.v"><code>cells/and2/sky130_fd_sc_hd__and2.functional.v</code></a>:</p><pre class="language-verilog"><code class="language-verilog"><span class="token constant">`ifndef</span> SKY130_FD_SC_HD__AND2_FUNCTIONAL_V
+<span class="token constant">`define</span> SKY130_FD_SC_HD__AND2_FUNCTIONAL_V
 
-Feel free to refer to the <a href="https://yosyshq.readthedocs.io/projects/yosys/en/latest/cmd-cmd.html?curius=3118">Yosys command reference</a> for more details.
-
-I got two errors while trying to run this. The bigger error is that both netlists make use of SkyWater cells, and Yosys has no idea what these functionally look like; in other words, we haven't mapped them yet.
-
-!<a href="https://cdn.braindump.ing/writing/asic-puzzle/box.png">Black box visualization of <code>sky130_fd_sc_hd__and2_2</code></a>
-
-By default, Yosys is fine with treating these as a black box and ignoring them; <code>check -assert -mapped</code> asserts that that doesn't happen.
-
-So we have to import them. Fortunately, the <a href="https://github.com/google/skywater-pdk/tree/7198cf647113f56041e02abf3eb623692820c5e1/libraries/sky130_fd_sc_hd">PDK</a> has the functional Verilog for each cell that we need. For example, the warmup puzzle has a Verilog module called <code>adder_demo</code>, and in there there's <code>sky130_fd_sc_hd__and2_2</code><sup>3</sup>, which we can find in <a href="https://github.com/google/skywater-pdk-libs-sky130_fd_sc_hd/blob/ac7fb61f06e6470b94e8afdf7c25268f62fbd7b1/cells/and2/sky130_fd_sc_hd__and2.functional.v"><code>cells/and2/sky130_fd_sc_hd__and2.functional.v</code></a>:
-
-<sup>3</sup>: The <code>_2</code> at the end represents drive (how big the transistors are).
-
-<code></code><code>verilog
-</code>ifndef SKY130</i>FD<i>SC</i>HD<i></i>AND2<i>FUNCTIONAL</i>V</p><p><code>define SKY130_FD_SC_HD__AND2_FUNCTIONAL_V
-
-/**
+<span class="token comment">/**
  * and2: 2-input AND.
  *
  * Verilog simulation functional model.
- */
+ */</span>
 
-</code>timescale 1ns / 1ps</p><p><code>default_nettype none
+<span class="token constant">`timescale</span> <span class="token number">1</span>ns <span class="token operator">/</span> <span class="token number">1</span>ps
+<span class="token constant">`default_nettype</span> none
 
-</code>celldefine</p><p>module sky130<i>fd</i>sc<i>hd</i><i>and2 (
-    X,
-    A,
+<span class="token constant">`celldefine</span>
+<span class="token keyword">module</span> sky130_fd_sc_hd__and2 <span class="token punctuation">(</span>
+    X<span class="token punctuation">,</span>
+    A<span class="token punctuation">,</span>
     B
-);
+<span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-    // Module ports
-    output X;
-    input  A;
-    input  B;
+    <span class="token comment">// Module ports</span>
+    <span class="token keyword">output</span> X<span class="token punctuation">;</span>
+    <span class="token keyword">input</span>  A<span class="token punctuation">;</span>
+    <span class="token keyword">input</span>  B<span class="token punctuation">;</span>
 
-    // Local signals
-    wire and0</i>out<i>X;
+    <span class="token comment">// Local signals</span>
+    <span class="token keyword">wire</span> and0_out_X<span class="token punctuation">;</span>
 
-    //  Name  Output      Other arguments
-    and and0 (and0</i>out<i>X, A, B           );
-    buf buf0 (X         , and0</i>out<i>X     );
+    <span class="token comment">//  Name  Output      Other arguments</span>
+    <span class="token keyword">and</span> and0 <span class="token punctuation">(</span>and0_out_X<span class="token punctuation">,</span> A<span class="token punctuation">,</span> B           <span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token keyword">buf</span> buf0 <span class="token punctuation">(</span>X         <span class="token punctuation">,</span> and0_out_X     <span class="token punctuation">)</span><span class="token punctuation">;</span>
 
-endmodule
-<code>endcelldefine
+<span class="token keyword">endmodule</span>
+<span class="token constant">`endcelldefine</span>
 
-</code>default</i>nettype wire</p><p><code>endif  // SKY130_FD_SC_HD__AND2_FUNCTIONAL_V
-</code><code></code></p><p>All we need to do is grab all of these <code>*.functional.v</code> modules. Since I have them on my laptop I can just write (or, have an agent) write a shell script to just grab all the ones I need:</p><pre class="language-sh"><code class="language-sh"><span class="token function">cat</span> <span class="token operator">></span> <span class="token string">"<span class="token variable">$WORKDIR</span>/cut_defs.v"</span> <span class="token operator">&lt;&lt;</span><span class="token string">'EOF'
+<span class="token constant">`default_nettype</span> <span class="token keyword">wire</span>
+<span class="token constant">`endif</span>  <span class="token comment">// SKY130_FD_SC_HD__AND2_FUNCTIONAL_V</span></code></pre><p>All we need to do is grab all of these <code>*.functional.v</code> modules. Since I have them on my laptop I can just write (or, have an agent) write a shell script to just grab all the ones I need:</p><pre class="language-sh"><code class="language-sh"><span class="token function">cat</span> <span class="token operator">></span> <span class="token string">"<span class="token variable">$WORKDIR</span>/cut_defs.v"</span> <span class="token operator">&lt;&lt;</span><span class="token string">'EOF'
 module sky130_fd_sc_hd__dfrtp (Q, CLK, D, RESET_B);
   input Q, D, CLK, RESET_B;
   wire unused = Q;
@@ -807,7 +748,7 @@ full message displayed: '(* TWO STARS *)'</code></pre><p>That doesn't look like 
 </div>
 </article>
       <aside>
-        <div id="toc"><h2><a href="#extracting-the-netlist">Extracting the netlist</a></h2><h2><a href="#simplify-simplify">Simplify, simplify!</a></h2><h2><a href="#getting-a-state-transition-function">Getting a state transition function</a></h2><h2><a href="#the-waveform-is-useful-actually">The waveform is useful, actually</a></h2><h2><a href="#solvers-come-to-the-rescue">Solvers come to the rescue</a></h2><h2><a href="#notes">Notes</a></h2></div>
+        <div id="toc"><h2><a href="#extracting-the-netlist">Extracting the netlist</a></h2><h2><a href="#transpiling-to-verilog">Transpiling to Verilog</a></h2><h2><a href="#verifying-what-weve-got">Verifying what we've got</a></h2><h2><a href="#simplify-simplify">Simplify, simplify!</a></h2><h2><a href="#getting-a-state-transition-function">Getting a state transition function</a></h2><h2><a href="#the-waveform-is-useful-actually">The waveform is useful, actually</a></h2><h2><a href="#solvers-come-to-the-rescue">Solvers come to the rescue</a></h2><h2><a href="#notes">Notes</a></h2></div>
       </aside>
     </div>
     <div id="footer">
