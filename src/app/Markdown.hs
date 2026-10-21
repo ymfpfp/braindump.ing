@@ -1,6 +1,7 @@
 module Markdown where
 
 import Control.Applicative
+import Data.Char (isAlphaNum)
 import qualified Data.Map as Map
 import Data.Map (Map)
 import Parser
@@ -365,9 +366,25 @@ parsePlain = do
   -- Parse at least one character, usually a special character that wasn't able to
   -- be parsed.
   first <- satisfy $ \_ -> True
-  rest <- many $ satisfy isPlain
+  rest <- plainRest first
 
   return $ Plain (first:rest)
+
+  where
+  plainRest :: Char -> Parser String
+  plainRest previous =
+    (do
+      c <- satisfy isPlain
+      (c:) <$> plainRest c)
+    <|> (do
+      -- Underscores inside identifiers are literal, including runs such as
+      -- `sky130_fd_sc_hd__and2_2`. Keep them out of the emphasis parser.
+      underscores <- some $ satisfy (== '_')
+      _ <- check $ satisfy isAlphaNum
+      if isAlphaNum previous
+        then (underscores ++) <$> plainRest '_'
+        else empty)
+    <|> pure []
 
 parseItalic :: Parser Inline
 parseItalic = do
